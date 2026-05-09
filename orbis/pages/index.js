@@ -1374,7 +1374,8 @@ function OrbisApp() {
     }
   }
 
-  const activeNav = NAVS.find(o => o.id === s.activeModule)
+  const allNavItems = NAV_GROUPS.flatMap(g => g.items).concat([{ id: 'settings', label: 'Settings' }])
+  const activeNav = allNavItems.find(o => o.id === s.activeModule)
 
   return (
     <>
