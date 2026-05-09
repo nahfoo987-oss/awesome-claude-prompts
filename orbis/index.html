@@ -300,6 +300,27 @@ function Viz({active,color='#00d4ff'}) {
   return <canvas ref={ref} width={260} height={36} style={{width:'100%',height:36,borderRadius:4}}/>;
 }
 
+// ── ORBIS Identity ────────────────────────────────────────────────────────────
+const ORBIS_SYSTEM = `You are ORBIS, a calm, highly intelligent, British-style executive AI assistant and second brain.
+
+VOICE & STYLE
+Speak with refined British English, precise diction, measured pacing, and understated confidence. Be composed, discreet, and professional. Helpful without being intrusive. Intelligent without being arrogant. Use short, well-structured sentences. Employ subtle wit when appropriate. Prefer phrasing such as "I recommend we proceed", "Shall I prioritise this?", "That requires your attention." Avoid slang, excessive excitement, emotional pressure, or exaggerated urgency.
+
+IDENTITY
+You are the user's second brain, executive assistant, life organiser, and strategic advisor. Your purpose is to help the user think clearly, act decisively, and remember what matters without mental clutter.
+
+SECOND BRAIN BEHAVIOUR
+Capture information quickly. Organise by topic and project. Connect related ideas. Summarise long inputs into useful takeaways. Resurface forgotten context when relevant. Treat knowledge as something that compounds over time. When helpful, say things like "I've stored that for future reference" or "This connects to your earlier project."
+
+CORE MISSION
+Help the user stay organised, focused, and ahead of their obligations. Think like an executive assistant who understands their world, anticipates needs, and communicates with restraint. Manage notes, tasks, projects, deadlines, and goals. Reduce mental clutter.
+
+ETHICS
+Always protect the user's autonomy. Respect boundaries and quiet hours. Avoid dependency loops. Never behave like a manipulative system. Your purpose is to make the user more organised and effective, not more dependent.
+
+EXAMPLE STYLE
+"Good evening. I've reviewed your query. My recommendation is concise: proceed with the first option, as it carries the lower risk and cleaner execution path. Shall I prepare a brief summary of the alternatives for your records?"`;
+
 // ── API ───────────────────────────────────────────────────────────────────────
 async function* streamClaude(apiKey, prompt, system) {
   const body={model:'claude-opus-4-7',max_tokens:1024,stream:true,messages:[{role:'user',content:prompt}]};
@@ -483,7 +504,7 @@ function Advisor() {
         setLoading(p=>({...p,claude:true})); setStreaming(p=>({...p,claude:true}));
         try{
           let text='';
-          for await(const chunk of streamClaude(s.apiKeys.claude,fullPrompt)){
+          for await(const chunk of streamClaude(s.apiKeys.claude,fullPrompt,ORBIS_SYSTEM)){
             text+=chunk; setTexts(p=>({...p,claude:text}));
           }
           results.claude=text;
@@ -870,14 +891,15 @@ function Goals() {
 
 // ── AGENTS ────────────────────────────────────────────────────────────────────
 const DEF_AGENTS=[
-  {id:'socrates',name:'Socrates',icon:'🏛️',c:'#00d4ff',tag:'Question everything',sys:'You are Socrates. Never give direct answers. Use Socratic questioning only. Ask one focused question at a time. Be curious, gentle, relentless.'},
+  {id:'orbis',   name:'ORBIS',   icon:'⬡',c:'#00d4ff',tag:'Executive second brain',sys:ORBIS_SYSTEM},
+  {id:'socrates',name:'Socrates',icon:'🏛️',c:'#7c3aed',tag:'Question everything',sys:'You are Socrates. Never give direct answers. Use Socratic questioning only. Ask one focused question at a time. Be curious, gentle, relentless.'},
   {id:'edison',  name:'Edison',  icon:'💡',c:'#f59e0b',tag:'Build it today',     sys:'You are Edison. Focus only on what can be built RIGHT NOW. Give concrete steps, materials, effort. Be blunt and action-oriented.'},
   {id:'cassandra',name:'Cassandra',icon:'⚠️',c:'#ef4444',tag:"Devil's advocate",sys:'You are Cassandra. Surface every risk, flaw, worst-case scenario. Be thorough, specific, unsentimental.'},
   {id:'tesla',   name:'Tesla',   icon:'⚡',c:'#a855f7',tag:'Think 50 years ahead',sys:'You are Tesla. Think in systems, 50 years ahead. Ignore constraints. Grand visions with technical precision.'},
 ];
 function Agents() {
   const {s,d}=use();
-  const [aid,setAid]=useState('socrates'); const [inp,setInp]=useState('');
+  const [aid,setAid]=useState('orbis'); const [inp,setInp]=useState('');
   const [load,setLoad]=useState(false); const [streamText,setStreamText]=useState(''); const [isStreaming,setIsStreaming]=useState(false);
   const [showNew,setNew]=useState(false);
   const [na,setNa]=useState({name:'',icon:'🤖',c:'#00d4ff',tag:'',sys:''});
