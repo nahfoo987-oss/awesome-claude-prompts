@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ORBIS — Neural Intelligence Interface</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#00d4ff;--purple:#7c3aed;--green:#00ff88;--amber:#f59e0b;
+  --red:#ef4444;--pink:#ec4899;--orange:#f97316;--violet:#a855f7;--cyan:#06b6d4;
+  --bg:#050510;--text:#e2e8f0;--muted:#64748b;
+}
+html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow-x:hidden}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px}
+::-webkit-scrollbar-track{background:transparent}
+::selection{background:rgba(0,212,255,0.3)}
+input,textarea,button{font-family:inherit}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 20px currentColor}50%{box-shadow:0 0 40px currentColor,0 0 70px currentColor}}
+@keyframes spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes scan-line{0%{top:-2px}100%{top:100%}}
+@keyframes flicker{0%,95%,100%{opacity:1}96%{opacity:.4}97%{opacity:1}98%{opacity:.6}}
+@keyframes boot-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useReducer, createContext, useContext } = React;
+
+// ── Crypto ────────────────────────────────────────────────────────────────────
+const STORE_KEY = 'orbis_v2';
+async function deriveKey() {
+  const enc = new TextEncoder();
+  const km = await crypto.subtle.importKey('raw', enc.encode('orbis-default'), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('orbis-salt-2024'),iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function save(data) {
+  try {
+    const key = await deriveKey(), iv = crypto.getRandomValues(new Uint8Array(12)), enc = new TextEncoder();
+    const ct = await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(data)));
+    const buf = new Uint8Array(iv.length+ct.byteLength); buf.set(iv); buf.set(new Uint8Array(ct),iv.length);
+    localStorage.setItem(STORE_KEY, btoa(String.fromCharCode(...buf)));
+  } catch {}
+}
+async function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY); if (!raw) return null;
+    const key = await deriveKey(), buf = Uint8Array.from(atob(raw),c=>c.charCodeAt(0));
+    const dec = await crypto.subtle.decrypt({name:'AES-GCM',iv:buf.slice(0,12)},key,buf.slice(12));
+    return JSON.parse(new TextDecoder().decode(dec));
+  } catch { return null; }
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const Ctx = createContext(null);
+const init = {
+  module:'home', notes:[], journals:[], goals:[], customAgents:[], agentMessages:{},
+  apiKeys:{claude:'',gpt:'',gemini:''}, synthHistory:[], graphNodes:[], graphLinks:[],
+  mouse:{x:.5,y:.5}, bootDone:false,
+};
+
+function kw(text) {
+  const stop = new Set(['the','a','an','is','in','it','of','to','and','or','for','on','at','by','with','that','this','was','are','be','from','as']);
+  return [...new Set(text.toLowerCase().replace(/[^a-z\s]/g,'').split(/\s+/).filter(w=>w.length>4&&!stop.has(w)))].slice(0,6);
+}
+
+function reducer(s, a) {
+  switch(a.type) {
+    case 'NAV':    return {...s, module:a.v};
+    case 'BOOT':   return {...s, bootDone:true};
+    case 'KEYS':   return {...s, apiKeys:{...s.apiKeys,...a.v}};
+    case 'MOUSE':  return {...s, mouse:a.v};
+    case 'LOAD':   return {...s, ...a.v};
+
+    case 'ADD_NOTE': {
+      const n={id:Date.now(),title:a.title,body:'',updated:Date.now()};
+      return {...s, notes:[...s.notes,n], graphNodes:[...s.graphNodes,{id:n.id,label:a.title,updated:Date.now(),size:6}]};
+    }
+    case 'UPD_NOTE': {
+      const notes=s.notes.map(n=>n.id===a.id?{...n,...a.v,updated:Date.now()}:n);
+      const note=notes.find(n=>n.id===a.id);
+      let gn=s.graphNodes.map(nd=>nd.id===a.id?{...nd,label:note.title,updated:Date.now()}:nd);
+      let gl=s.graphLinks;
+      if(a.v.body) kw(a.v.body).forEach(w=>{
+        const kid=`kw_${w}`;
+        if(!gn.find(n=>n.id===kid)) gn=[...gn,{id:kid,label:w,type:'keyword',updated:Date.now(),size:4}];
+        if(!gl.find(l=>l.source===a.id&&l.target===kid)) gl=[...gl,{source:a.id,target:kid}];
+      });
+      return {...s,notes,graphNodes:gn,graphLinks:gl};
+    }
+    case 'DEL_NOTE':
+      return {...s,notes:s.notes.filter(n=>n.id!==a.id),graphNodes:s.graphNodes.filter(n=>n.id!==a.id),graphLinks:s.graphLinks.filter(l=>l.source!==a.id&&l.target!==a.id)};
+
+    case 'ADD_J':   return {...s,journals:[...s.journals,{id:Date.now(),date:a.date,body:'',mood:3,reflection:''}]};
+    case 'UPD_J':   return {...s,journals:s.journals.map(j=>j.id===a.id?{...j,...a.v}:j)};
+    case 'DEL_J':   return {...s,journals:s.journals.filter(j=>j.id!==a.id)};
+
+    case 'ADD_G':   return {...s,goals:[...s.goals,{id:Date.now(),title:a.title,desc:a.desc||'',status:'todo',progress:0,milestones:[]}]};
+    case 'UPD_G':   return {...s,goals:s.goals.map(g=>g.id===a.id?{...g,...a.v}:g)};
+    case 'DEL_G':   return {...s,goals:s.goals.filter(g=>g.id!==a.id)};
+    case 'ADD_M':   return {...s,goals:s.goals.map(g=>g.id===a.gid?{...g,milestones:[...g.milestones,{id:Date.now(),text:a.text,done:false}]}:g)};
+    case 'TOG_M': {
+      const goals=s.goals.map(g=>{
+        if(g.id!==a.gid) return g;
+        const ms=g.milestones.map(m=>m.id===a.mid?{...m,done:!m.done}:m);
+        return {...g,milestones:ms,progress:ms.length?Math.round(ms.filter(m=>m.done).length/ms.length*100):0};
+      });
+      return {...s,goals};
+    }
+    case 'DEL_M':   return {...s,goals:s.goals.map(g=>g.id===a.gid?{...g,milestones:g.milestones.filter(m=>m.id!==a.mid)}:g)};
+
+    case 'ADD_AGENT':   return {...s,customAgents:[...s.customAgents,a.agent]};
+    case 'AGENT_MSG': {
+      const prev=s.agentMessages[a.aid]||[];
+      return {...s,agentMessages:{...s.agentMessages,[a.aid]:[...prev,a.msg]}};
+    }
+    case 'CLEAR_AGENT': {
+      const m={...s.agentMessages}; delete m[a.aid]; return {...s,agentMessages:m};
+    }
+    case 'ADD_SYNTH':   return {...s,synthHistory:[a.v,...s.synthHistory].slice(0,20)};
+    default: return s;
+  }
+}
+
+function Provider({children}) {
+  const [s,d]=useReducer(reducer,init);
+  useEffect(()=>{ window.__d=d; },[d]);
+  useEffect(()=>{
+    if(!s.bootDone) return;
+    save({notes:s.notes,journals:s.journals,goals:s.goals,customAgents:s.customAgents,agentMessages:s.agentMessages,synthHistory:s.synthHistory,graphNodes:s.graphNodes,graphLinks:s.graphLinks});
+  },[s.notes,s.journals,s.goals,s.customAgents,s.agentMessages,s.synthHistory,s.graphNodes,s.graphLinks,s.bootDone]);
+  useEffect(()=>{ load().then(v=>v&&d({type:'LOAD',v})); },[]);
+  return <Ctx.Provider value={{s,d}}>{children}</Ctx.Provider>;
+}
+const use = ()=>useContext(Ctx);
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+const BOOT=[
+  {t:'ORBIS Neural Interface v4.0',ms:0,c:'#00d4ff'},
+  {t:'Initializing quantum memory subsystems...',ms:350},
+  {t:'Neural Net .......................... ONLINE',ms:700,c:'#00ff88'},
+  {t:'Knowledge Graph Engine .............. ONLINE',ms:1000,c:'#00ff88'},
+  {t:'Multi-Model Sync .................... ACTIVE',ms:1250,c:'#00ff88'},
+  {t:'Conflict Analysis Module ............ ARMED', ms:1500,c:'#f59e0b'},
+  {t:'Journal & Reflection Engine ......... ONLINE',ms:1750,c:'#00ff88'},
+  {t:'Goals & Roadmap Tracker ............. ONLINE',ms:2000,c:'#00ff88'},
+  {t:'Named AI Agent Framework ............ ONLINE',ms:2250,c:'#00ff88'},
+  {t:'3D Orb Room (Three.js) .............. ONLINE',ms:2500,c:'#00ff88'},
+  {t:'Encrypting local storage vault ...... SECURE',ms:2750,c:'#00ff88'},
+  {t:'────────────────────────────────────────────',ms:3000,c:'#1e3a5f'},
+  {t:'All systems nominal. ORBIS is online.',ms:3200,c:'#00d4ff'},
+];
+function Boot({onDone}) {
+  const [lines,setLines]=useState([]);
+  const [fade,setFade]=useState(false);
+  useEffect(()=>{
+    BOOT.forEach((l,i)=>{
+      setTimeout(()=>{
+        setLines(p=>[...p,l]);
+        if(i===BOOT.length-1){setTimeout(()=>setFade(true),400);setTimeout(onDone,800);}
+      },l.ms);
+    });
+  },[]);
+  return (
+    <div style={{position:'fixed',inset:0,background:'#050510',zIndex:9999,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',opacity:fade?0:1,transition:'opacity .8s',pointerEvents:fade?'none':'all'}}>
+      <div style={{position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none'}}>
+        <div style={{position:'absolute',left:0,right:0,height:2,background:'linear-gradient(90deg,transparent,#00d4ff44,transparent)',animation:'scan-line 3s linear infinite'}}/>
+      </div>
+      <div style={{marginBottom:36,textAlign:'center'}}>
+        <div style={{fontSize:60,fontWeight:900,letterSpacing:14,background:'linear-gradient(135deg,#00d4ff,#7c3aed)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',animation:'pulse-glow 2s ease-in-out infinite'}}>ORBIS</div>
+        <div style={{color:'#334155',fontSize:11,letterSpacing:7,marginTop:4}}>NEURAL INTELLIGENCE INTERFACE</div>
+      </div>
+      <div style={{width:520,background:'rgba(0,0,0,.6)',border:'1px solid #0f2d4a',borderRadius:4,padding:'18px 22px',fontSize:12}}>
+        {lines.map((l,i)=>(
+          <div key={i} style={{color:l.c||'#94a3b8',marginBottom:3,animation:'boot-fade .3s ease'}}>
+            <span style={{color:'#1e3a5f',marginRight:8}}>[{String(i).padStart(2,'0')}]</span>{l.t}
+          </div>
+        ))}
+        <span style={{color:'#00d4ff',animation:'flicker 1s infinite'}}>█</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Starfield ─────────────────────────────────────────────────────────────────
+function Stars() {
+  const ref=useRef(); const raf=useRef();
+  useEffect(()=>{
+    const c=ref.current; if(!c) return;
+    const ctx=c.getContext('2d'); let stars=[];
+    const resize=()=>{
+      c.width=window.innerWidth; c.height=window.innerHeight;
+      stars=Array.from({length:200},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.2+.2,s:Math.random()*.3+.05,o:Math.random()*.7+.2,t:Math.random()*Math.PI*2}));
+    };
+    resize(); window.addEventListener('resize',resize);
+    const draw=()=>{
+      ctx.clearRect(0,0,c.width,c.height);
+      ctx.strokeStyle='rgba(0,212,255,.03)'; ctx.lineWidth=1;
+      for(let x=0;x<c.width;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke();}
+      for(let y=0;y<c.height;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke();}
+      const now=Date.now()/1000;
+      stars.forEach(s=>{
+        const tw=Math.sin(now*1.5+s.t)*.3+.7;
+        ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(200,220,255,${s.o*tw})`;ctx.fill();
+        s.y-=s.s; if(s.y<0){s.y=c.height;s.x=Math.random()*c.width;}
+      });
+      raf.current=requestAnimationFrame(draw);
+    };
+    draw();
+    return()=>{cancelAnimationFrame(raf.current);window.removeEventListener('resize',resize);};
+  },[]);
+  return <canvas ref={ref} style={{position:'fixed',inset:0,zIndex:0,pointerEvents:'none'}}/>;
+}
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+const NAVS=[
+  {id:'home',    icon:'⬡',c:'#00d4ff',l:'HOME'},
+  {id:'advisor', icon:'◈',c:'#7c3aed',l:'ADVISOR'},
+  {id:'graph',   icon:'◎',c:'#00ff88',l:'GRAPH'},
+  {id:'notes',   icon:'▣',c:'#f59e0b',l:'NOTES'},
+  {id:'journal', icon:'◉',c:'#ec4899',l:'JOURNAL'},
+  {id:'goals',   icon:'◇',c:'#f97316',l:'GOALS'},
+  {id:'agents',  icon:'◑',c:'#a855f7',l:'AGENTS'},
+  {id:'orbs3d',  icon:'⊕',c:'#06b6d4',l:'3D ROOM'},
+  {id:'config',  icon:'⚙',c:'#ef4444',l:'CONFIG'},
+];
+function Sidebar() {
+  const {s,d}=use();
+  return (
+    <nav style={{position:'fixed',left:0,top:0,bottom:0,width:68,zIndex:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,borderRight:'1px solid rgba(0,212,255,.08)',background:'rgba(5,5,16,.7)',backdropFilter:'blur(12px)'}}>
+      <div style={{color:'#00d4ff',fontSize:16,fontWeight:900,marginBottom:10}}>⬡</div>
+      {NAVS.map(n=>{
+        const active=s.module===n.id;
+        return (
+          <button key={n.id} onClick={()=>d({type:'NAV',v:n.id})} title={n.l} style={{width:42,height:42,borderRadius:'50%',border:`1px solid ${active?n.c:'rgba(255,255,255,.06)'}`,background:active?`${n.c}22`:'transparent',color:active?n.c:'#475569',fontSize:16,cursor:'pointer',transition:'all .2s',boxShadow:active?`0 0 14px ${n.c}66`:'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            {n.icon}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+// ── Voice Visualizer ──────────────────────────────────────────────────────────
+function Viz({active,color='#00d4ff'}) {
+  const ref=useRef(); const raf=useRef(); const bars=useRef(Array.from({length:32},()=>0));
+  useEffect(()=>{
+    const c=ref.current; if(!c) return; const ctx=c.getContext('2d');
+    const draw=()=>{
+      ctx.clearRect(0,0,c.width,c.height);
+      const bw=c.width/32;
+      bars.current.forEach((h,i)=>{
+        bars.current[i]+=(((active?Math.random()*.8+.1:.05))-h)*(active?.3:.1);
+        const bh=bars.current[i]*c.height, x=i*bw;
+        const g=ctx.createLinearGradient(0,c.height,0,c.height-bh);
+        g.addColorStop(0,`${color}22`);g.addColorStop(1,color);
+        ctx.fillStyle=g;ctx.fillRect(x+1,c.height-bh,bw-2,bh);
+      });
+      raf.current=requestAnimationFrame(draw);
+    };
+    draw(); return()=>cancelAnimationFrame(raf.current);
+  },[active,color]);
+  return <canvas ref={ref} width={260} height={36} style={{width:'100%',height:36,borderRadius:4}}/>;
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function claude(key,prompt,system) {
+  const body={model:'claude-opus-4-7',max_tokens:1024,messages:[{role:'user',content:prompt}]};
+  if(system) body.system=system;
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json(); if(d.error) throw new Error(d.error.message); return d.content[0].text;
+}
+async function gpt(key,prompt) {
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o',messages:[{role:'user',content:prompt}],max_tokens:1024})});
+  const d=await r.json(); if(d.error) throw new Error(d.error.message); return d.choices[0].message.content;
+}
+async function gemini(key,prompt) {
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+  const d=await r.json(); if(d.error) throw new Error(d.error.message); return d.candidates[0].content.parts[0].text;
+}
+
+// ── HOME ──────────────────────────────────────────────────────────────────────
+function Home() {
+  const {s,d}=use(); const [t,setT]=useState('');
+  useEffect(()=>{const id=setInterval(()=>setT(new Date().toLocaleTimeString('en-US',{hour12:false})),1000);setT(new Date().toLocaleTimeString('en-US',{hour12:false}));return()=>clearInterval(id);},[]);
+  return (
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',gap:32}}>
+      <div style={{position:'relative',width:160,height:160}}>
+        <div style={{position:'absolute',inset:0,borderRadius:'50%',background:'radial-gradient(circle at 35% 35%,#00d4ff44,#7c3aed22,#050510)',border:'1px solid rgba(0,212,255,.3)',animation:'pulse-glow 3s ease-in-out infinite,float 4s ease-in-out infinite',boxShadow:'0 0 50px rgba(0,212,255,.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:40}}>
+          <span style={{background:'linear-gradient(135deg,#00d4ff,#7c3aed)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>⬡</span>
+        </div>
+        <div style={{position:'absolute',inset:-18,borderRadius:'50%',border:'1px solid rgba(0,212,255,.1)',animation:'spin-slow 8s linear infinite'}}>
+          <div style={{position:'absolute',top:-3,left:'50%',transform:'translateX(-50%)',width:7,height:7,borderRadius:'50%',background:'#00d4ff',boxShadow:'0 0 8px #00d4ff'}}/>
+        </div>
+      </div>
+      <div style={{textAlign:'center'}}>
+        <div style={{fontSize:42,fontWeight:900,letterSpacing:12,background:'linear-gradient(135deg,#00d4ff,#7c3aed)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>ORBIS</div>
+        <div style={{color:'#334155',fontSize:10,letterSpacing:6,marginTop:3}}>NEURAL INTELLIGENCE INTERFACE</div>
+        <div style={{color:'#00d4ff',fontSize:24,fontWeight:300,marginTop:10}}>{t}</div>
+      </div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:12,justifyContent:'center',maxWidth:420}}>
+        {NAVS.filter(n=>n.id!=='home').map(n=>(
+          <button key={n.id} onClick={()=>d({type:'NAV',v:n.id})} style={{width:64,height:64,borderRadius:'50%',border:`1px solid ${n.c}44`,background:`${n.c}11`,color:n.c,cursor:'pointer',fontSize:18,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,transition:'all .2s'}}
+            onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 0 20px ${n.c}66`;e.currentTarget.style.transform='scale(1.12)';}}
+            onMouseLeave={e=>{e.currentTarget.style.boxShadow='none';e.currentTarget.style.transform='scale(1)';}}>
+            {n.icon}<span style={{fontSize:7,letterSpacing:1}}>{n.l}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── ADVISOR ───────────────────────────────────────────────────────────────────
+const MODELS={claude:{name:'Claude',c:'#00d4ff',icon:'◈'},gpt:{name:'GPT-4',c:'#7c3aed',icon:'◎'},gemini:{name:'Gemini',c:'#00ff88',icon:'◇'}};
+function conflicts(res) {
+  const pairs=[[/\byes\b/i,/\bno\b/i],[/\bshould\b/i,/\bshouldn't\b/i],[/\bincreas/i,/\bdecreas/i],[/\bsimple\b/i,/\bcomplex\b/i],[/\brecommend\b/i,/\bavoid\b/i]];
+  const out=[]; const ks=Object.keys(res);
+  for(let i=0;i<ks.length;i++) for(let j=i+1;j<ks.length;j++) {
+    const a=res[ks[i]]||'', b=res[ks[j]]||'';
+    pairs.forEach(([pa,pb])=>{ if((pa.test(a)&&pb.test(b))||(pa.test(b)&&pb.test(a))) out.push(`${MODELS[ks[i]]?.name} vs ${MODELS[ks[j]]?.name}: divergent on "${pa.source.replace(/\\/g,'')}"`) });
+  }
+  return [...new Set(out)];
+}
+function Advisor() {
+  const {s,d}=use();
+  const [q,setQ]=useState(''); const [load,setLoad]=useState({}); const [resp,setResp]=useState({}); const [errs,setErrs]=useState({}); const [done,setDone]=useState(false);
+  const hasKey=s.apiKeys.claude||s.apiKeys.gpt||s.apiKeys.gemini;
+  const run=async()=>{
+    if(!q.trim()||!hasKey) return;
+    setResp({}); setErrs({}); setDone(false);
+    const callers=[];
+    if(s.apiKeys.claude) callers.push(['claude',()=>claude(s.apiKeys.claude,q)]);
+    if(s.apiKeys.gpt)    callers.push(['gpt',   ()=>gpt(s.apiKeys.gpt,q)]);
+    if(s.apiKeys.gemini) callers.push(['gemini',()=>gemini(s.apiKeys.gemini,q)]);
+    setLoad(Object.fromEntries(callers.map(([k])=>[k,true])));
+    const nr={};
+    await Promise.all(callers.map(async([k,fn])=>{
+      try{const t=await fn();nr[k]=t;setResp(p=>({...p,[k]:t}));}
+      catch(e){setErrs(p=>({...p,[k]:e.message}));}
+      finally{setLoad(p=>({...p,[k]:false}));}
+    }));
+    setDone(true); d({type:'ADD_SYNTH',v:{q,responses:nr,ts:Date.now()}});
+  };
+  const cf=done?conflicts(resp):[];
+  const score=Math.max(0,100-cf.length*15);
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:12,height:'100%'}}>
+      <div style={{color:'#7c3aed',fontSize:12,letterSpacing:2,fontWeight:700}}>◈ MULTI-AI ADVISOR</div>
+      <div style={{display:'flex',gap:8}}>
+        <textarea value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&run()} placeholder="Enter query... (Ctrl+Enter)" style={{flex:1,background:'rgba(0,0,0,.3)',border:'1px solid rgba(124,58,237,.2)',borderRadius:6,color:'#e2e8f0',padding:'9px 12px',fontSize:13,resize:'vertical',minHeight:56,outline:'none'}}/>
+        <button onClick={run} style={{padding:'0 16px',background:'rgba(124,58,237,.15)',border:'1px solid #7c3aed44',borderRadius:6,color:'#7c3aed',cursor:'pointer',fontSize:12,alignSelf:'flex-end',height:38}}>QUERY</button>
+      </div>
+      {!hasKey&&<div style={{color:'#f59e0b',fontSize:12}}>⚠ Add API keys in Config.</div>}
+      <div style={{display:'flex',gap:10,flex:1,overflow:'hidden',minHeight:0}}>
+        {Object.entries(MODELS).map(([k,m])=>(
+          <div key={k} style={{flex:1,border:`1px solid ${m.c}22`,borderRadius:8,padding:12,background:`${m.c}08`,display:'flex',flexDirection:'column',gap:7,overflow:'hidden'}}>
+            <div style={{display:'flex',alignItems:'center',gap:7}}>
+              <span style={{color:m.c,fontSize:15}}>{m.icon}</span>
+              <span style={{color:m.c,fontSize:11,fontWeight:700,letterSpacing:2}}>{m.name}</span>
+              {load[k]&&<span style={{color:'#64748b',fontSize:9,marginLeft:'auto',animation:'flicker .5s infinite'}}>THINKING...</span>}
+            </div>
+            <Viz active={!!load[k]} color={m.c}/>
+            {errs[k]&&<div style={{color:'#ef4444',fontSize:12}}>⚠ {errs[k]}</div>}
+            {resp[k]&&<div style={{color:'#cbd5e1',fontSize:12,lineHeight:1.7,flex:1,overflowY:'auto'}}>{resp[k]}</div>}
+            {!load[k]&&!resp[k]&&!errs[k]&&<div style={{color:'#1e3a5f',fontSize:12}}>Awaiting query...</div>}
+          </div>
+        ))}
+      </div>
+      {done&&Object.keys(resp).length>0&&(
+        <div style={{border:'1px solid rgba(124,58,237,.2)',borderRadius:8,padding:14,background:'rgba(124,58,237,.04)'}}>
+          <div style={{color:'#7c3aed',fontSize:11,letterSpacing:2,marginBottom:8,fontWeight:700}}>◈ ORBIS-CORE SYNTHESIS</div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#64748b',marginBottom:3}}>
+            <span>MODEL CONSENSUS</span><span style={{color:score>70?'#00ff88':score>40?'#f59e0b':'#ef4444'}}>{score}%</span>
+          </div>
+          <div style={{height:3,background:'#1e293b',borderRadius:2,marginBottom:10}}>
+            <div style={{height:'100%',borderRadius:2,width:`${score}%`,background:score>70?'#00ff88':score>40?'#f59e0b':'#ef4444',transition:'width 1s'}}/>
+          </div>
+          {cf.length>0&&(
+            <div style={{background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)',borderRadius:5,padding:9,marginBottom:9}}>
+              <div style={{color:'#ef4444',fontSize:10,letterSpacing:2,marginBottom:5}}>⚠ CONFLICT ANALYSIS</div>
+              {cf.map((c,i)=><div key={i} style={{color:'#fca5a5',fontSize:11,marginBottom:2}}>• {c}</div>)}
+            </div>
+          )}
+          <div style={{color:'#cbd5e1',fontSize:12,lineHeight:1.7}}>
+            <strong style={{color:'#7c3aed'}}>Unified advisory:</strong>{' '}
+            {cf.length===0?'All models converge. High confidence.':`${cf.length} conflict(s) detected — review before acting.`}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── GRAPH ─────────────────────────────────────────────────────────────────────
+const NODE_C={note:'#f59e0b',keyword:'#00d4ff',synthesis:'#7c3aed'};
+function Graph() {
+  const {s}=use(); const svgRef=useRef(); const [focusId,setFocus]=useState(null); const [tip,setTip]=useState(null);
+  useEffect(()=>{
+    const svg=d3.select(svgRef.current); if(!svgRef.current) return;
+    const W=svgRef.current.clientWidth||700, H=svgRef.current.clientHeight||500;
+    svg.selectAll('*').remove();
+    const defs=svg.append('defs');
+    const gf=defs.append('filter').attr('id','glow'); gf.append('feGaussianBlur').attr('stdDeviation','4').attr('result','cb'); const fm=gf.append('feMerge'); fm.append('feMergeNode').attr('in','cb'); fm.append('feMergeNode').attr('in','SourceGraphic');
+    defs.append('filter').attr('id','blur').append('feGaussianBlur').attr('stdDeviation','3');
+    const g=svg.append('g');
+    svg.call(d3.zoom().scaleExtent([.3,3]).on('zoom',e=>g.attr('transform',e.transform)));
+    const nodes=s.graphNodes; const links=s.graphLinks;
+    if(!nodes.length){svg.append('text').attr('x',W/2).attr('y',H/2).attr('text-anchor','middle').attr('fill','#1e3a5f').attr('font-family','monospace').attr('font-size',13).text('Create notes to build your knowledge graph');return;}
+    const nm=new Map(nodes.map(n=>[n.id,{...n,x:W/2+(Math.random()-.5)*200,y:H/2+(Math.random()-.5)*200}]));
+    const sn=[...nm.values()];
+    const sl=links.map(l=>({source:nm.get(typeof l.source==='object'?l.source.id:l.source),target:nm.get(typeof l.target==='object'?l.target.id:l.target)})).filter(l=>l.source&&l.target);
+    const sim=d3.forceSimulation(sn).force('link',d3.forceLink(sl).id(d=>d.id).distance(80)).force('charge',d3.forceManyBody().strength(-200)).force('center',d3.forceCenter(W/2,H/2)).force('col',d3.forceCollide(20));
+    const link=g.append('g').selectAll('line').data(sl).join('line').attr('stroke','rgba(0,212,255,.15)').attr('stroke-width',1);
+    const node=g.append('g').selectAll('g').data(sn).join('g').attr('cursor','pointer')
+      .call(d3.drag().on('start',(e,d)=>{if(!e.active)sim.alphaTarget(.3).restart();d.fx=d.x;d.fy=d.y;}).on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y;}).on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}))
+      .on('click',(e,d)=>setFocus(p=>p===d.id?null:d.id))
+      .on('mouseover',(e,d)=>setTip({x:e.offsetX,y:e.offsetY,label:d.label,type:d.type||'note',updated:d.updated}))
+      .on('mouseleave',()=>setTip(null));
+    node.append('circle').attr('r',d=>(d.size||6)+(d.type!=='keyword'?4:0)).attr('fill',d=>`${NODE_C[d.type]||NODE_C.note}22`).attr('stroke',d=>NODE_C[d.type]||NODE_C.note).attr('stroke-width',1.5).attr('filter','url(#glow)');
+    node.each(function(d){const fr=d.updated?Math.max(0,1-(Date.now()-d.updated)/(86400000)):0;if(fr>.3)d3.select(this).append('circle').attr('r',(d.size||6)+10+fr*8).attr('fill','none').attr('stroke',NODE_C[d.type]||NODE_C.note).attr('stroke-width',.5).attr('opacity',fr*.4).attr('filter','url(#glow)');});
+    node.append('text').text(d=>d.label?.slice(0,20)).attr('fill',d=>NODE_C[d.type]||NODE_C.note).attr('font-size',d=>d.type==='keyword'?9:11).attr('font-family','monospace').attr('text-anchor','middle').attr('dy',d=>(d.size||6)+14).attr('opacity',.8);
+    sim.on('tick',()=>{
+      link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+      node.attr('transform',d=>`translate(${d.x},${d.y})`);
+      if(focusId){node.attr('filter',d=>d.id===focusId?'url(#glow)':'url(#blur)').attr('opacity',d=>d.id===focusId?1:.2);link.attr('opacity',d=>(d.source.id===focusId||d.target.id===focusId)?.6:.05);}
+      else{node.attr('filter','url(#glow)').attr('opacity',1);link.attr('opacity',1);}
+    });
+    return()=>sim.stop();
+  },[s.graphNodes,s.graphLinks,focusId]);
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%',gap:10}}>
+      <div style={{display:'flex',alignItems:'center',gap:12}}>
+        <span style={{color:'#00ff88',fontSize:12,letterSpacing:2,fontWeight:700}}>◎ KNOWLEDGE GRAPH</span>
+        <span style={{color:'#334155',fontSize:11}}>{s.graphNodes.length} nodes · {s.graphLinks.length} links</span>
+        {focusId&&<button onClick={()=>setFocus(null)} style={{marginLeft:'auto',background:'rgba(0,255,136,.1)',border:'1px solid rgba(0,255,136,.2)',borderRadius:4,color:'#00ff88',cursor:'pointer',padding:'3px 9px',fontSize:10}}>CLEAR FOCUS</button>}
+      </div>
+      <div style={{display:'flex',gap:14,fontSize:10,color:'#64748b'}}>
+        {Object.entries(NODE_C).map(([t,c])=><div key={t} style={{display:'flex',alignItems:'center',gap:4}}><div style={{width:7,height:7,borderRadius:'50%',background:c,boxShadow:`0 0 5px ${c}`}}/>{t.toUpperCase()}</div>)}
+        <span style={{marginLeft:'auto',color:'#1e3a5f'}}>Drag · Scroll zoom · Click focus</span>
+      </div>
+      <div style={{flex:1,position:'relative',border:'1px solid rgba(0,255,136,.1)',borderRadius:8,overflow:'hidden'}}>
+        <svg ref={svgRef} style={{width:'100%',height:'100%'}}/>
+        {tip&&<div style={{position:'absolute',left:tip.x+10,top:tip.y-8,background:'rgba(5,5,16,.95)',border:'1px solid rgba(0,255,136,.3)',borderRadius:4,padding:'5px 9px',fontSize:11,pointerEvents:'none',color:'#e2e8f0',whiteSpace:'nowrap'}}>
+          <div style={{color:NODE_C[tip.type]||NODE_C.note,fontWeight:700}}>{tip.label}</div>
+          <div style={{color:'#64748b',marginTop:1}}>{tip.type} · {tip.updated?new Date(tip.updated).toLocaleString():'—'}</div>
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+// ── NOTES ─────────────────────────────────────────────────────────────────────
+function Notes() {
+  const {s,d}=use(); const [sel,setSel]=useState(null); const [nt,setNt]=useState('');
+  const note=s.notes.find(n=>n.id===sel);
+  return (
+    <div style={{display:'flex',gap:14,height:'100%'}}>
+      <div style={{width:190,borderRight:'1px solid rgba(245,158,11,.1)',paddingRight:14,display:'flex',flexDirection:'column',gap:7}}>
+        <div style={{color:'#f59e0b',fontSize:11,letterSpacing:2,fontWeight:700}}>▣ NOTES</div>
+        <input value={nt} onChange={e=>setNt(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&nt.trim()){d({type:'ADD_NOTE',title:nt.trim()});setNt('');}}} placeholder="New note (Enter)..." style={{background:'rgba(0,0,0,.3)',border:'1px solid rgba(245,158,11,.2)',borderRadius:4,color:'#e2e8f0',padding:'5px 7px',fontSize:11,outline:'none'}}/>
+        <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:3}}>
+          {s.notes.length===0&&<div style={{color:'#334155',fontSize:11}}>Type title above and press Enter.</div>}
+          {s.notes.map(n=>(
+            <div key={n.id} onClick={()=>setSel(n.id)} style={{padding:'7px 9px',borderRadius:4,cursor:'pointer',border:`1px solid ${sel===n.id?'rgba(245,158,11,.4)':'transparent'}`,background:sel===n.id?'rgba(245,158,11,.08)':'transparent'}}>
+              <div style={{color:sel===n.id?'#f59e0b':'#94a3b8',fontSize:11,fontWeight:600}}>{n.title}</div>
+              <div style={{color:'#334155',fontSize:9,marginTop:1}}>{new Date(n.updated).toLocaleDateString()}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{flex:1,display:'flex',flexDirection:'column',gap:8}}>
+        {note?(
+          <>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <input value={note.title} onChange={e=>d({type:'UPD_NOTE',id:note.id,v:{title:e.target.value}})} style={{flex:1,background:'transparent',border:'none',borderBottom:'1px solid rgba(245,158,11,.2)',color:'#f59e0b',fontSize:15,fontWeight:700,outline:'none',padding:'3px 0'}}/>
+              <button onClick={()=>{d({type:'DEL_NOTE',id:note.id});setSel(null);}} style={{background:'rgba(239,68,68,.1)',border:'1px solid rgba(239,68,68,.2)',borderRadius:4,color:'#ef4444',cursor:'pointer',padding:'3px 9px',fontSize:10}}>DELETE</button>
+            </div>
+            <textarea value={note.body} onChange={e=>d({type:'UPD_NOTE',id:note.id,v:{body:e.target.value}})} placeholder="Write your thoughts... Keywords auto-appear in the Knowledge Graph." style={{flex:1,background:'rgba(0,0,0,.2)',border:'1px solid rgba(245,158,11,.1)',borderRadius:6,color:'#e2e8f0',padding:'11px 13px',fontSize:13,lineHeight:1.8,resize:'none',outline:'none'}}/>
+          </>
+        ):(
+          <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',color:'#1e3a5f',fontSize:13}}>Select or create a note</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── JOURNAL ───────────────────────────────────────────────────────────────────
+const MOODS=[{e:'🔥',v:5},{e:'⚡',v:4},{e:'💧',v:3},{e:'🌧️',v:2},{e:'💀',v:1}];
+function streak(js) {
+  if(!js.length) return 0;
+  const sorted=[...js].sort((a,b)=>b.date.localeCompare(a.date));
+  let s=0, cur=new Date(); cur.setHours(0,0,0,0);
+  for(const j of sorted){const d=new Date(j.date);d.setHours(0,0,0,0);if(Math.round((cur-d)/86400000)<=1){s++;cur=d;}else break;}
+  return s;
+}
+function Journal() {
+  const {s,d}=use(); const [sel,setSel]=useState(null); const [refl,setRefl]=useState(false);
+  const today=new Date().toISOString().slice(0,10);
+  const js=s.journals||[]; const entry=js.find(j=>j.id===sel);
+  useEffect(()=>{if(js.length&&!sel)setSel(js[js.length-1].id);},[js.length]);
+  const addToday=()=>{const ex=js.find(j=>j.date===today);if(ex){setSel(ex.id);return;}d({type:'ADD_J',date:today});};
+  const reflect=async()=>{
+    if(!entry?.body||!s.apiKeys.claude) return; setRefl(true);
+    try{const mood=MOODS.find(m=>m.v===(entry.mood||3))?.e||'💧';const r=await claude(s.apiKeys.claude,`You are a thoughtful journaling coach. The user wrote:\n\n"${entry.body}"\n\nMood: ${mood}.\n\nWrite a warm 3-sentence reflection: mirror what you heard, surface one deeper pattern, offer one question to sit with. Be direct, no bullet points.`);d({type:'UPD_J',id:entry.id,v:{reflection:r}});}
+    catch(e){d({type:'UPD_J',id:entry.id,v:{reflection:`Error: ${e.message}`}});}
+    setRefl(false);
+  };
+  return (
+    <div style={{display:'flex',gap:14,height:'100%'}}>
+      <div style={{width:190,display:'flex',flexDirection:'column',gap:7,borderRight:'1px solid rgba(236,72,153,.1)',paddingRight:14}}>
+        <div style={{color:'#ec4899',fontSize:11,letterSpacing:2,fontWeight:700}}>◉ JOURNAL</div>
+        <div style={{background:'rgba(236,72,153,.08)',border:'1px solid rgba(236,72,153,.2)',borderRadius:6,padding:'9px 10px',textAlign:'center'}}>
+          <div style={{fontSize:24}}>🔥</div>
+          <div style={{color:'#ec4899',fontSize:18,fontWeight:700}}>{streak(js)}</div>
+          <div style={{color:'#64748b',fontSize:9,letterSpacing:1}}>DAY STREAK</div>
+        </div>
+        <button onClick={addToday} style={{background:'rgba(236,72,153,.12)',border:'1px solid rgba(236,72,153,.3)',borderRadius:5,color:'#ec4899',cursor:'pointer',padding:'7px',fontSize:11,letterSpacing:1}}>+ TODAY</button>
+        <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:3}}>
+          {[...js].sort((a,b)=>b.date.localeCompare(a.date)).map(j=>(
+            <div key={j.id} onClick={()=>setSel(j.id)} style={{padding:'7px 9px',borderRadius:4,cursor:'pointer',border:`1px solid ${sel===j.id?'rgba(236,72,153,.4)':'transparent'}`,background:sel===j.id?'rgba(236,72,153,.08)':'transparent',display:'flex',alignItems:'center',gap:7}}>
+              <span style={{fontSize:13}}>{MOODS.find(m=>m.v===(j.mood||3))?.e}</span>
+              <div><div style={{color:sel===j.id?'#ec4899':'#94a3b8',fontSize:11,fontWeight:600}}>{j.date}</div><div style={{color:'#334155',fontSize:9}}>{j.body?.slice(0,16)||'Empty'}...</div></div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{flex:1,display:'flex',flexDirection:'column',gap:10}}>
+        {entry?(
+          <>
+            <div style={{display:'flex',alignItems:'center',gap:7}}>
+              <span style={{color:'#64748b',fontSize:10}}>MOOD:</span>
+              {MOODS.map(m=><button key={m.v} onClick={()=>d({type:'UPD_J',id:entry.id,v:{mood:m.v}})} style={{fontSize:16,background:'none',border:'none',cursor:'pointer',opacity:(entry.mood||3)===m.v?1:.3,transform:(entry.mood||3)===m.v?'scale(1.3)':'scale(1)',transition:'all .2s'}}>{m.e}</button>)}
+              <span style={{color:'#334155',fontSize:9,marginLeft:4}}>{entry.date}</span>
+              <button onClick={()=>d({type:'DEL_J',id:entry.id})} style={{marginLeft:'auto',background:'rgba(239,68,68,.1)',border:'1px solid rgba(239,68,68,.2)',borderRadius:4,color:'#ef4444',cursor:'pointer',padding:'3px 7px',fontSize:9}}>DELETE</button>
+            </div>
+            <textarea value={entry.body||''} onChange={e=>d({type:'UPD_J',id:entry.id,v:{body:e.target.value}})} placeholder="What happened today?..." style={{flex:1,background:'rgba(0,0,0,.2)',border:'1px solid rgba(236,72,153,.1)',borderRadius:6,color:'#e2e8f0',padding:'12px 14px',fontSize:13,lineHeight:2,resize:'none',outline:'none',minHeight:160}}/>
+            <div style={{border:'1px solid rgba(236,72,153,.15)',borderRadius:7,padding:13}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:9}}>
+                <span style={{color:'#ec4899',fontSize:11,letterSpacing:2,fontWeight:700}}>◈ AI REFLECTION</span>
+                <button onClick={reflect} disabled={!entry.body||!s.apiKeys.claude||refl} style={{marginLeft:'auto',padding:'4px 12px',background:s.apiKeys.claude?'rgba(236,72,153,.15)':'rgba(100,116,139,.1)',border:`1px solid ${s.apiKeys.claude?'rgba(236,72,153,.3)':'#334155'}`,borderRadius:4,color:s.apiKeys.claude?'#ec4899':'#475569',cursor:s.apiKeys.claude&&!refl?'pointer':'not-allowed',fontSize:10,letterSpacing:1}}>
+                  {refl?'REFLECTING...':'GENERATE'}
+                </button>
+              </div>
+              {!s.apiKeys.claude&&<div style={{color:'#475569',fontSize:11}}>Add Claude API key in Config to enable reflections.</div>}
+              {entry.reflection?<div style={{color:'#cbd5e1',fontSize:13,lineHeight:1.8,fontStyle:'italic'}}>"{entry.reflection}"</div>:<div style={{color:'#1e3a5f',fontSize:11}}>Write an entry and click Generate.</div>}
+            </div>
+          </>
+        ):(
+          <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12}}>
+            <div style={{fontSize:36}}>📓</div>
+            <div style={{color:'#1e3a5f',fontSize:12}}>Click "Today" to begin journaling</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── GOALS ─────────────────────────────────────────────────────────────────────
+const COLS=[{id:'todo',l:'QUEUED',c:'#64748b'},{id:'active',l:'IN PROGRESS',c:'#f97316'},{id:'done',l:'COMPLETE',c:'#00ff88'}];
+function GoalCard({g,d,cc}) {
+  const [open,setOpen]=useState(false); const [mt,setMt]=useState(''); const [aiLoading,setAi]=useState(false);
+  const done=g.milestones.filter(m=>m.done).length, total=g.milestones.length;
+  const prog=g.progress||(total?Math.round(done/total*100):0);
+  const aiRoadmap=async()=>{
+    const key=window.__orbisState?.apiKeys?.claude; if(!key) return; setAi(true);
+    try{const r=await claude(key,`For goal "${g.title}", give exactly 5 concrete milestones as a numbered list (1. 2. 3. 4. 5.). Each 5-10 words. No extra text.`);r.split('\n').filter(l=>/^\d+\./.test(l.trim())).map(l=>l.replace(/^\d+\.\s*/,'')).filter(Boolean).forEach(text=>d({type:'ADD_M',gid:g.id,text}));}
+    catch{}setAi(false);
+  };
+  return (
+    <div style={{background:'rgba(0,0,0,.2)',border:`1px solid ${cc}22`,borderRadius:7,padding:11,marginBottom:7}}>
+      <div style={{display:'flex',gap:6}}>
+        <div style={{flex:1}}>
+          <div style={{color:'#e2e8f0',fontSize:12,fontWeight:600}}>{g.title}</div>
+          {g.desc&&<div style={{color:'#64748b',fontSize:10,marginTop:1}}>{g.desc}</div>}
+        </div>
+        <div style={{display:'flex',gap:3,alignItems:'flex-start',flexShrink:0}}>
+          {COLS.map(col=><button key={col.id} onClick={()=>d({type:'UPD_G',id:g.id,v:{status:col.id}})} style={{width:7,height:7,borderRadius:'50%',border:'none',cursor:'pointer',background:g.status===col.id?col.c:'#1e293b',boxShadow:g.status===col.id?`0 0 5px ${col.c}`:'none'}} title={col.l}/>)}
+          <button onClick={()=>d({type:'DEL_G',id:g.id})} style={{background:'none',border:'none',color:'#334155',cursor:'pointer',fontSize:11,marginLeft:2}}>×</button>
+        </div>
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',marginTop:7,fontSize:9,color:'#64748b'}}>
+        <span>{total?`${done}/${total} milestones`:'No milestones'}</span><span style={{color:cc}}>{prog}%</span>
+      </div>
+      <div style={{height:2,background:'#1e293b',borderRadius:1,marginTop:3}}><div style={{height:'100%',borderRadius:1,width:`${prog}%`,background:cc,transition:'width .6s',boxShadow:`0 0 4px ${cc}88`}}/></div>
+      <button onClick={()=>setOpen(o=>!o)} style={{background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:9,marginTop:7,padding:0,letterSpacing:1}}>{open?'▲ COLLAPSE':'▼ MILESTONES'}</button>
+      {open&&(
+        <div style={{marginTop:7}}>
+          {g.milestones.map(m=>(
+            <div key={m.id} style={{display:'flex',alignItems:'center',gap:5,marginBottom:3}}>
+              <button onClick={()=>d({type:'TOG_M',gid:g.id,mid:m.id})} style={{width:13,height:13,borderRadius:2,border:`1px solid ${m.done?'#00ff88':'#334155'}`,background:m.done?'#00ff8822':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                {m.done&&<span style={{color:'#00ff88',fontSize:8}}>✓</span>}
+              </button>
+              <span style={{color:m.done?'#334155':'#94a3b8',fontSize:10,textDecoration:m.done?'line-through':'none',flex:1}}>{m.text}</span>
+              <button onClick={()=>d({type:'DEL_M',gid:g.id,mid:m.id})} style={{background:'none',border:'none',color:'#334155',cursor:'pointer',fontSize:10}}>×</button>
+            </div>
+          ))}
+          <div style={{display:'flex',gap:5,marginTop:5}}>
+            <input value={mt} onChange={e=>setMt(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&mt.trim()){d({type:'ADD_M',gid:g.id,text:mt.trim()});setMt('');}}} placeholder="Add milestone (Enter)..." style={{flex:1,background:'rgba(0,0,0,.3)',border:'1px solid #1e293b',borderRadius:3,color:'#94a3b8',padding:'4px 6px',fontSize:9,outline:'none'}}/>
+          </div>
+          {window.__orbisState?.apiKeys?.claude&&<button onClick={aiRoadmap} disabled={aiLoading} style={{marginTop:6,width:'100%',padding:'4px',background:'rgba(249,115,22,.1)',border:'1px solid rgba(249,115,22,.2)',borderRadius:3,color:'#f97316',cursor:'pointer',fontSize:9,letterSpacing:1}}>{aiLoading?'GENERATING...':'◈ AI ROADMAP'}</button>}
+        </div>
+      )}
+    </div>
+  );
+}
+function Goals() {
+  const {s,d}=use(); const [nt,setNt]=useState(''); const [nd,setNd]=useState(''); const [add,setAdd]=useState(false);
+  const gs=s.goals||[];
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%',gap:11}}>
+      <div style={{display:'flex',alignItems:'center',gap:14}}>
+        <span style={{color:'#f97316',fontSize:12,letterSpacing:2,fontWeight:700}}>◇ GOALS & ROADMAP</span>
+        <span style={{color:'#334155',fontSize:11}}>{gs.filter(g=>g.status==='active').length} active · {gs.filter(g=>g.status==='done').length} done</span>
+        <button onClick={()=>setAdd(a=>!a)} style={{marginLeft:'auto',padding:'4px 12px',background:'rgba(249,115,22,.12)',border:'1px solid rgba(249,115,22,.3)',borderRadius:4,color:'#f97316',cursor:'pointer',fontSize:10,letterSpacing:1}}>{add?'CANCEL':'+ ADD GOAL'}</button>
+      </div>
+      {add&&(
+        <div style={{background:'rgba(249,115,22,.06)',border:'1px solid rgba(249,115,22,.2)',borderRadius:7,padding:11,display:'flex',flexDirection:'column',gap:7}}>
+          <input value={nt} onChange={e=>setNt(e.target.value)} placeholder="Goal title..." style={{background:'rgba(0,0,0,.3)',border:'1px solid rgba(249,115,22,.2)',borderRadius:4,color:'#e2e8f0',padding:'7px 9px',fontSize:12,outline:'none'}}/>
+          <input value={nd} onChange={e=>setNd(e.target.value)} placeholder="Description (optional)..." style={{background:'rgba(0,0,0,.3)',border:'1px solid rgba(249,115,22,.1)',borderRadius:4,color:'#94a3b8',padding:'5px 9px',fontSize:11,outline:'none'}}/>
+          <button onClick={()=>{if(!nt.trim())return;d({type:'ADD_G',title:nt.trim(),desc:nd.trim()});setNt('');setNd('');setAdd(false);}} style={{alignSelf:'flex-end',padding:'5px 14px',background:'rgba(249,115,22,.15)',border:'1px solid rgba(249,115,22,.3)',borderRadius:4,color:'#f97316',cursor:'pointer',fontSize:10}}>CREATE</button>
+        </div>
+      )}
+      <div style={{display:'flex',gap:10,flex:1,overflow:'hidden'}}>
+        {COLS.map(col=>(
+          <div key={col.id} style={{flex:1,display:'flex',flexDirection:'column',gap:5,border:`1px solid ${col.c}18`,borderRadius:7,padding:11,background:`${col.c}04`}}>
+            <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:3}}>
+              <div style={{width:5,height:5,borderRadius:'50%',background:col.c,boxShadow:`0 0 5px ${col.c}`}}/> <span style={{color:col.c,fontSize:10,letterSpacing:2,fontWeight:700}}>{col.l}</span>
+              <span style={{color:'#334155',fontSize:9,marginLeft:'auto'}}>{gs.filter(g=>g.status===col.id).length}</span>
+            </div>
+            <div style={{flex:1,overflowY:'auto'}}>
+              {gs.filter(g=>g.status===col.id).length===0&&<div style={{color:'#1e3a5f',fontSize:10,textAlign:'center',marginTop:16}}>Empty</div>}
+              {gs.filter(g=>g.status===col.id).map(g=><GoalCard key={g.id} g={g} d={d} cc={col.c}/>)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── AGENTS ────────────────────────────────────────────────────────────────────
+const DEF_AGENTS=[
+  {id:'socrates',name:'Socrates',icon:'🏛️',c:'#00d4ff',tag:'Question everything',sys:'You are Socrates. Never give direct answers. Use Socratic questioning only. Ask one focused question at a time.'},
+  {id:'edison',  name:'Edison',  icon:'💡',c:'#f59e0b',tag:'Build it today',    sys:'You are Edison. Focus only on what can be built RIGHT NOW. Give concrete steps, materials, effort. Be blunt.'},
+  {id:'cassandra',name:'Cassandra',icon:'⚠️',c:'#ef4444',tag:"Devil's advocate",sys:'You are Cassandra. Surface every risk, flaw, worst-case. Be thorough, specific, unsentimental.'},
+  {id:'tesla',   name:'Tesla',   icon:'⚡',c:'#a855f7',tag:'Think 50 years ahead',sys:'You are Tesla. Think in systems, 50 years ahead. Ignore constraints. Grand visions with technical precision.'},
+];
+function Agents() {
+  const {s,d}=use(); const [aid,setAid]=useState('socrates'); const [inp,setInp]=useState(''); const [load,setLoad]=useState(false); const [showNew,setNew]=useState(false);
+  const [na,setNa]=useState({name:'',icon:'🤖',c:'#00d4ff',tag:'',sys:''});
+  const end=useRef();
+  const all=[...DEF_AGENTS,...(s.customAgents||[])];
+  const agent=all.find(a=>a.id===aid)||all[0];
+  const msgs=(s.agentMessages||{})[aid]||[];
+  useEffect(()=>end.current?.scrollIntoView({behavior:'smooth'}),[msgs.length]);
+  const send=async()=>{
+    if(!inp.trim()||!s.apiKeys.claude||load) return;
+    const um={role:'user',content:inp.trim(),ts:Date.now()};
+    d({type:'AGENT_MSG',aid,msg:um}); setInp(''); setLoad(true);
+    try{const r=await claude(s.apiKeys.claude,inp.trim(),agent.sys);d({type:'AGENT_MSG',aid,msg:{role:'assistant',content:r,ts:Date.now()}});}
+    catch(e){d({type:'AGENT_MSG',aid,msg:{role:'assistant',content:`⚠ ${e.message}`,ts:Date.now()}});}
+    setLoad(false);
+  };
+  return (
+    <div style={{display:'flex',gap:14,height:'100%'}}>
+      <div style={{width:190,display:'flex',flexDirection:'column',gap:5,borderRight:'1px solid rgba(168,85,247,.1)',paddingRight:14}}>
+        <div style={{color:'#a855f7',fontSize:11,letterSpacing:2,fontWeight:700}}>◑ AGENTS</div>
+        {all.map(a=>(
+          <div key={a.id} onClick={()=>setAid(a.id)} style={{padding:'9px 11px',borderRadius:7,cursor:'pointer',border:`1px solid ${aid===a.id?a.c:a.c+'22'}`,background:aid===a.id?`${a.c}12`:'transparent',transition:'all .2s'}}>
+            <div style={{display:'flex',alignItems:'center',gap:7}}>
+              <span style={{fontSize:17}}>{a.icon}</span>
+              <div>
+                <div style={{color:aid===a.id?a.c:'#94a3b8',fontSize:12,fontWeight:700}}>{a.name}</div>
+                <div style={{color:'#475569',fontSize:9}}>{a.tag}</div>
+              </div>
+              {((s.agentMessages||{})[a.id]||[]).length>0&&<div style={{marginLeft:'auto',background:`${a.c}22`,color:a.c,fontSize:8,borderRadius:9,padding:'1px 5px',fontWeight:700}}>{((s.agentMessages||{})[a.id]||[]).length}</div>}
+            </div>
+          </div>
+        ))}
+        <button onClick={()=>setNew(x=>!x)} style={{marginTop:3,padding:'7px',background:'rgba(168,85,247,.08)',border:'1px solid rgba(168,85,247,.2)',borderRadius:5,color:'#a855f7',cursor:'pointer',fontSize:10,letterSpacing:1}}>{showNew?'CANCEL':'+ CUSTOM'}</button>
+        {showNew&&(
+          <div style={{background:'rgba(168,85,247,.06)',border:'1px solid rgba(168,85,247,.2)',borderRadius:7,padding:9,display:'flex',flexDirection:'column',gap:5}}>
+            <div style={{display:'flex',gap:5}}>
+              <input value={na.icon} onChange={e=>setNa(p=>({...p,icon:e.target.value}))} style={{width:32,background:'rgba(0,0,0,.3)',border:'1px solid #1e293b',borderRadius:3,color:'#e2e8f0',padding:'3px',fontSize:14,outline:'none',textAlign:'center'}}/>
+              <input value={na.name} onChange={e=>setNa(p=>({...p,name:e.target.value}))} placeholder="Name" style={{flex:1,background:'rgba(0,0,0,.3)',border:'1px solid #1e293b',borderRadius:3,color:'#e2e8f0',padding:'3px 6px',fontSize:10,outline:'none'}}/>
+            </div>
+            <input value={na.tag} onChange={e=>setNa(p=>({...p,tag:e.target.value}))} placeholder="Tagline" style={{background:'rgba(0,0,0,.3)',border:'1px solid #1e293b',borderRadius:3,color:'#94a3b8',padding:'3px 6px',fontSize:9,outline:'none'}}/>
+            <textarea value={na.sys} onChange={e=>setNa(p=>({...p,sys:e.target.value}))} placeholder="System prompt..." style={{background:'rgba(0,0,0,.3)',border:'1px solid #1e293b',borderRadius:3,color:'#94a3b8',padding:'5px 6px',fontSize:9,outline:'none',resize:'vertical',minHeight:50}}/>
+            <button onClick={()=>{if(!na.name.trim()||!na.sys.trim())return;d({type:'ADD_AGENT',agent:{...na,id:`c_${Date.now()}`}});setNa({name:'',icon:'🤖',c:'#00d4ff',tag:'',sys:''});setNew(false);}} style={{background:'rgba(168,85,247,.15)',border:'1px solid rgba(168,85,247,.3)',borderRadius:3,color:'#a855f7',cursor:'pointer',padding:'4px',fontSize:9}}>CREATE</button>
+          </div>
+        )}
+      </div>
+      <div style={{flex:1,display:'flex',flexDirection:'column',gap:0}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,paddingBottom:11,borderBottom:`1px solid ${agent.c}22`,marginBottom:11}}>
+          <span style={{fontSize:24}}>{agent.icon}</span>
+          <div><div style={{color:agent.c,fontSize:15,fontWeight:700}}>{agent.name}</div><div style={{color:'#475569',fontSize:10}}>{agent.tag}</div></div>
+          {msgs.length>0&&<button onClick={()=>d({type:'CLEAR_AGENT',aid})} style={{marginLeft:'auto',background:'rgba(100,116,139,.1)',border:'1px solid #1e293b',borderRadius:4,color:'#475569',cursor:'pointer',padding:'3px 9px',fontSize:9}}>CLEAR</button>}
+        </div>
+        {msgs.length===0&&<div style={{background:`${agent.c}08`,border:`1px solid ${agent.c}1a`,borderRadius:7,padding:11,marginBottom:11,color:'#475569',fontSize:11,lineHeight:1.6,fontStyle:'italic'}}>"{agent.sys}"</div>}
+        <div style={{flex:1,overflowY:'auto',paddingRight:3}}>
+          {msgs.map((m,i)=>(
+            <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start',marginBottom:10}}>
+              <div style={{maxWidth:'74%',padding:'9px 13px',borderRadius:m.role==='user'?'12px 12px 4px 12px':'12px 12px 12px 4px',background:m.role==='user'?'rgba(100,116,139,.15)':`${agent.c}12`,border:`1px solid ${m.role==='user'?'rgba(100,116,139,.2)':agent.c+'33'}`,color:'#e2e8f0',fontSize:13,lineHeight:1.7}}>{m.content}</div>
+            </div>
+          ))}
+          {load&&<div style={{display:'flex',gap:4,padding:'7px 13px'}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:'50%',background:agent.c,animation:'float .8s ease-in-out infinite',animationDelay:`${i*.15}s`,opacity:.7}}/>)}</div>}
+          <div ref={end}/>
+        </div>
+        {!s.apiKeys.claude&&<div style={{color:'#f59e0b',fontSize:11,marginBottom:7}}>⚠ Add Claude API key in Config.</div>}
+        <div style={{display:'flex',gap:7,paddingTop:8,borderTop:`1px solid ${agent.c}18`}}>
+          <textarea value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}} placeholder={`Message ${agent.name}... (Enter)`} disabled={!s.apiKeys.claude||load} style={{flex:1,background:'rgba(0,0,0,.3)',border:`1px solid ${agent.c}33`,borderRadius:6,color:'#e2e8f0',padding:'7px 11px',fontSize:13,resize:'none',outline:'none',minHeight:40,maxHeight:100}}/>
+          <button onClick={send} disabled={!inp.trim()||!s.apiKeys.claude||load} style={{padding:'0 14px',background:`${agent.c}18`,border:`1px solid ${agent.c}44`,borderRadius:6,color:agent.c,cursor:'pointer',fontSize:17,alignSelf:'flex-end',height:40}}>▶</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 3D ORB ROOM ───────────────────────────────────────────────────────────────
+const ORB3D=[
+  {id:'advisor',l:'ADVISOR',c:0x7c3aed,p:[-3,1.5,0]},{id:'graph',l:'GRAPH',c:0x00ff88,p:[3,1.5,0]},
+  {id:'notes',  l:'NOTES',  c:0xf59e0b,p:[-2,-1.5,1]},{id:'journal',l:'JOURNAL',c:0xec4899,p:[2,-1.5,1]},
+  {id:'goals',  l:'GOALS',  c:0xf97316,p:[0,2.5,-1]}, {id:'agents', l:'AGENTS', c:0xa855f7,p:[0,-2.5,-1]},
+];
+function Room3D() {
+  const mount=useRef(); const {d}=use();
+  useEffect(()=>{
+    const el=mount.current; if(!el) return;
+    const {Scene,PerspectiveCamera,WebGLRenderer,AmbientLight,PointLight,SphereGeometry,MeshPhongMaterial,MeshBasicMaterial,TorusGeometry,Mesh,Points,BufferGeometry,BufferAttribute,PointsMaterial,GridHelper,Raycaster,Vector2,Vector3,FogExp2,Sprite,SpriteMaterial,CanvasTexture,Clock}=THREE;
+    const scene=new Scene(); scene.fog=new FogExp2(0x050510,.12);
+    const cam=new PerspectiveCamera(60,el.clientWidth/el.clientHeight,.1,100); cam.position.set(0,0,8);
+    const ren=new WebGLRenderer({antialias:true,alpha:true}); ren.setPixelRatio(devicePixelRatio); ren.setSize(el.clientWidth,el.clientHeight); ren.setClearColor(0x050510,1); el.appendChild(ren.domElement);
+    scene.add(new AmbientLight(0x111133,2));
+    const pl=new PointLight(0x00d4ff,3,20); scene.add(pl);
+    const core=new Mesh(new SphereGeometry(.7,32,32),new MeshPhongMaterial({color:0x00d4ff,emissive:0x003344,transparent:true,opacity:.85})); scene.add(core);
+    const ring=new Mesh(new TorusGeometry(1.1,.01,8,60),new MeshBasicMaterial({color:0x00d4ff,transparent:true,opacity:.3})); ring.rotation.x=Math.PI/2; scene.add(ring);
+    const meshes=[];
+    ORB3D.forEach(def=>{
+      const m=new Mesh(new SphereGeometry(.4,24,24),new MeshPhongMaterial({color:def.c,emissive:def.c,emissiveIntensity:.3,transparent:true,opacity:.9}));
+      m.position.set(...def.p); m.userData={id:def.id,bp:[...def.p]}; scene.add(m); meshes.push(m);
+      const halo=new Mesh(new SphereGeometry(.55,16,16),new MeshBasicMaterial({color:def.c,transparent:true,opacity:.08,side:THREE.BackSide})); halo.position.set(...def.p); scene.add(halo);
+      const cv=document.createElement('canvas'); cv.width=256;cv.height=64;
+      const cx=cv.getContext('2d'); cx.fillStyle=`#${def.c.toString(16).padStart(6,'0')}`; cx.font='bold 28px monospace'; cx.textAlign='center'; cx.fillText(def.l,128,42);
+      const sp=new Sprite(new SpriteMaterial({map:new CanvasTexture(cv),transparent:true,opacity:.85})); sp.scale.set(1.4,.35,1); sp.position.set(def.p[0],def.p[1]-.65,def.p[2]); scene.add(sp);
+    });
+    const pa=new Float32Array(600*3); for(let i=0;i<600*3;i++) pa[i]=(Math.random()-.5)*20;
+    const pg=new BufferGeometry(); pg.setAttribute('position',new BufferAttribute(pa,3));
+    scene.add(new Points(pg,new PointsMaterial({color:0x00d4ff,size:.03,transparent:true,opacity:.4})));
+    scene.add(new GridHelper(20,30,0x001a2e,0x001a2e));
+    const mouse={x:0,y:0}; const ray=new Raycaster(); const mv=new Vector2();
+    const onMove=e=>{const r=el.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width-.5)*2;mouse.y=-((e.clientY-r.top)/r.height-.5)*2;mv.set(mouse.x,mouse.y);};
+    const onClick=e=>{const r=el.getBoundingClientRect();mv.set(((e.clientX-r.left)/r.width-.5)*2,-((e.clientY-r.top)/r.height-.5)*2);ray.setFromCamera(mv,cam);const h=ray.intersectObjects(meshes);if(h.length)d({type:'NAV',v:h[0].object.userData.id});};
+    const onResize=()=>{cam.aspect=el.clientWidth/el.clientHeight;cam.updateProjectionMatrix();ren.setSize(el.clientWidth,el.clientHeight);};
+    el.addEventListener('mousemove',onMove); el.addEventListener('click',onClick); window.addEventListener('resize',onResize);
+    const clk=new Clock(); let raf;
+    const animate=()=>{
+      raf=requestAnimationFrame(animate); const t=clk.getElapsedTime();
+      cam.position.x+=(mouse.x*2-cam.position.x)*.02; cam.position.y+=(mouse.y*1-cam.position.y)*.02; cam.lookAt(0,0,0);
+      core.scale.setScalar(Math.sin(t*1.5)*.05+1); ring.rotation.z=t*.3; ring.rotation.y=t*.1;
+      ray.setFromCamera(mv,cam); const hits=ray.intersectObjects(meshes); const hov=hits.length?hits[0].object:null;
+      meshes.forEach((o,i)=>{o.position.y=o.userData.bp[1]+Math.sin(t*.8+i*1.2)*.15;const ts=o===hov?1.25:1;o.scale.lerp(new Vector3(ts,ts,ts),.1);o.material.emissiveIntensity+=(o===hov?.6:.3-o.material.emissiveIntensity)*.1;});
+      pl.position.set(Math.sin(t*.5)*2,Math.cos(t*.4)*1,Math.sin(t*.3)*2);
+      ren.render(scene,cam);
+    };
+    animate();
+    return()=>{cancelAnimationFrame(raf);el.removeEventListener('mousemove',onMove);el.removeEventListener('click',onClick);window.removeEventListener('resize',onResize);ren.dispose();if(el.contains(ren.domElement))el.removeChild(ren.domElement);};
+  },[]);
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%',gap:9}}>
+      <div style={{display:'flex',alignItems:'center',gap:14}}>
+        <span style={{color:'#06b6d4',fontSize:12,letterSpacing:2,fontWeight:700}}>⊕ 3D ORB ROOM</span>
+        <span style={{color:'#334155',fontSize:11}}>Mouse to look · Click orb to navigate</span>
+      </div>
+      <div ref={mount} style={{flex:1,borderRadius:8,overflow:'hidden',border:'1px solid rgba(6,182,212,.15)',cursor:'crosshair'}}/>
+    </div>
+  );
+}
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+function Config() {
+  const {s,d}=use(); const [keys,setKeys]=useState(s.apiKeys); const [saved,setSaved]=useState(false);
+  const go=()=>{d({type:'KEYS',v:keys});setSaved(true);setTimeout(()=>setSaved(false),2000);};
+  return (
+    <div style={{maxWidth:500,display:'flex',flexDirection:'column',gap:16}}>
+      <div style={{color:'#ef4444',fontSize:12,letterSpacing:2,fontWeight:700}}>⚙ CONFIGURATION</div>
+      <div style={{background:'rgba(239,68,68,.06)',border:'1px solid rgba(239,68,68,.2)',borderRadius:6,padding:11,fontSize:12,color:'#fca5a5',lineHeight:1.6}}>
+        ⚠ Keys are memory-only. State is AES-256-GCM encrypted before localStorage.
+      </div>
+      {[{k:'claude',l:'Anthropic / Claude',p:'sk-ant-...',c:'#00d4ff'},{k:'gpt',l:'OpenAI / GPT-4',p:'sk-...',c:'#7c3aed'},{k:'gemini',l:'Google / Gemini',p:'AIza...',c:'#00ff88'}].map(({k,l,p,c})=>(
+        <div key={k} style={{display:'flex',flexDirection:'column',gap:5}}>
+          <label style={{color:c,fontSize:10,letterSpacing:2}}>{l}</label>
+          <input type="password" value={keys[k]} onChange={e=>setKeys(prev=>({...prev,[k]:e.target.value}))} placeholder={p} style={{background:'rgba(0,0,0,.3)',border:`1px solid ${c}33`,borderRadius:6,color:'#e2e8f0',padding:'9px 13px',fontSize:13,outline:'none'}}/>
+        </div>
+      ))}
+      <button onClick={go} style={{alignSelf:'flex-start',padding:'9px 22px',background:saved?'rgba(0,255,136,.15)':'rgba(0,212,255,.15)',border:`1px solid ${saved?'#00ff8844':'#00d4ff44'}`,borderRadius:6,color:saved?'#00ff88':'#00d4ff',cursor:'pointer',fontSize:11,letterSpacing:2}}>
+        {saved?'✓ SAVED':'SAVE CONFIG'}
+      </button>
+      <div style={{borderTop:'1px solid rgba(0,212,255,.06)',paddingTop:13,color:'#334155',fontSize:10,lineHeight:1.9}}>
+        <div style={{color:'#00d4ff',marginBottom:7,letterSpacing:2}}>SYSTEM STATUS</div>
+        {[
+          ['Notes',        '#00ff88',`${s.notes.length}`],
+          ['Journal entries','#ec4899',`${(s.journals||[]).length} · ${(()=>{const js=s.journals||[];if(!js.length)return 0;const sorted=[...js].sort((a,b)=>b.date.localeCompare(a.date));let str=0,cur=new Date();cur.setHours(0,0,0,0);for(const j of sorted){const d=new Date(j.date);d.setHours(0,0,0,0);if(Math.round((cur-d)/86400000)<=1){str++;cur=d;}else break;}return str;})()} day streak`],
+          ['Goals',        '#f97316',`${(s.goals||[]).length}`],
+          ['Agent messages','#a855f7',`${Object.values(s.agentMessages||{}).flat().length}`],
+          ['Graph nodes',  '#00ff88',`${s.graphNodes.length}`],
+          ['Claude API',   s.apiKeys.claude?'#00ff88':'#ef4444', s.apiKeys.claude?'KEY PRESENT':'NO KEY'],
+          ['GPT API',      s.apiKeys.gpt?   '#00ff88':'#ef4444', s.apiKeys.gpt?   'KEY PRESENT':'NO KEY'],
+          ['Gemini API',   s.apiKeys.gemini?'#00ff88':'#ef4444', s.apiKeys.gemini?'KEY PRESENT':'NO KEY'],
+        ].map(([l,c,v])=>(
+          <div key={l} style={{display:'flex',justifyContent:'space-between',marginBottom:2}}>
+            <span>{l}</span><span style={{color:c}}>{v}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── APP ───────────────────────────────────────────────────────────────────────
+function App() {
+  const {s,d}=use(); const [booting,setBooting]=useState(true);
+  const onDone=useCallback(()=>{d({type:'BOOT'});setTimeout(()=>setBooting(false),200);},[d]);
+  useEffect(()=>{
+    const h=e=>d({type:'MOUSE',v:{x:e.clientX/window.innerWidth,y:e.clientY/window.innerHeight}});
+    window.addEventListener('mousemove',h,{passive:true}); return()=>window.removeEventListener('mousemove',h);
+  },[d]);
+
+  const pages={home:<Home/>,advisor:<Advisor/>,graph:<Graph/>,notes:<Notes/>,journal:<Journal/>,goals:<Goals/>,agents:<Agents/>,orbs3d:<Room3D/>,config:<Config/>};
+  const nav=NAVS.find(n=>n.id===s.module);
+
+  return (
+    <>
+      {booting&&<Boot onDone={onDone}/>}
+      <Stars/>
+      <div style={{position:'fixed',inset:0,zIndex:1,pointerEvents:'none',background:`radial-gradient(ellipse at ${s.mouse.x*100}% ${s.mouse.y*100}%, rgba(0,212,255,${.04-Math.hypot(s.mouse.x-.5,s.mouse.y-.5)*.04}), rgba(124,58,237,.02) 50%, transparent 80%)`}}/>
+      <Sidebar/>
+      <main style={{position:'relative',zIndex:10,marginLeft:68,height:'100vh',display:'flex',flexDirection:'column'}}>
+        <div style={{height:42,borderBottom:'1px solid rgba(0,212,255,.06)',display:'flex',alignItems:'center',paddingInline:18,gap:11,background:'rgba(5,5,16,.6)',backdropFilter:'blur(8px)',flexShrink:0}}>
+          <span style={{background:'linear-gradient(135deg,#00d4ff,#7c3aed)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontWeight:900,letterSpacing:4,fontSize:12}}>ORBIS</span>
+          <span style={{color:'#1e3a5f',fontSize:10}}>|</span>
+          <span style={{color:nav?.c||'#334155',fontSize:10,letterSpacing:2}}>{nav?.l}</span>
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:14}}>
+            <div style={{width:5,height:5,borderRadius:'50%',background:'#00ff88',boxShadow:'0 0 5px #00ff88'}}/>
+            <span style={{color:'#334155',fontSize:9,letterSpacing:2}}>ALL SYSTEMS NOMINAL</span>
+          </div>
+        </div>
+        <div style={{flex:1,overflow:'auto',padding:20}}>
+          {pages[s.module]||<Home/>}
+        </div>
+      </main>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <Provider><App/></Provider>
+);
+</script>
+</body>
+</html>
