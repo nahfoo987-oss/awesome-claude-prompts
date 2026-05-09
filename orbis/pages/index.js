@@ -472,33 +472,107 @@ function useVoice(onResult) {
 }
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
-const NAVS = [
-  { id: 'home',     label: 'HOME',     icon: '⬡', color: '#00d4ff' },
-  { id: 'advisor',  label: 'ADVISOR',  icon: '◈', color: '#7c3aed' },
-  { id: 'graph',    label: 'GRAPH',    icon: '◎', color: '#00ff88' },
-  { id: 'notes',    label: 'NOTES',    icon: '▣', color: '#f59e0b' },
-  { id: 'journal',  label: 'JOURNAL',  icon: '◉', color: '#ec4899' },
-  { id: 'goals',    label: 'GOALS',    icon: '◇', color: '#f97316' },
-  { id: 'agents',   label: 'AGENTS',   icon: '◑', color: '#a855f7' },
-  { id: 'history',  label: 'HISTORY',  icon: '⊞', color: '#06b6d4' },
-  { id: 'orbs3d',   label: '3D ROOM',  icon: '⊕', color: '#00d4ff' },
-  { id: 'settings', label: 'CONFIG',   icon: '⚙', color: '#ef4444' },
+const NAV_GROUPS = [
+  {
+    items: [
+      { id: 'home',    label: 'Home',      icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+      { id: 'advisor', label: 'Advisor',   icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+    ]
+  },
+  {
+    label: 'Knowledge',
+    items: [
+      { id: 'graph',   label: 'Graph',     icon: 'M7 20l4-16m2 16l4-16M6 9h14M4 15h14' },
+      { id: 'notes',   label: 'Notes',     icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
+      { id: 'journal', label: 'Journal',   icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+      { id: 'goals',   label: 'Goals',     icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z' },
+    ]
+  },
+  {
+    label: 'AI',
+    items: [
+      { id: 'agents',  label: 'Agents',    icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H4a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-1' },
+      { id: 'history', label: 'History',   icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+    ]
+  },
+  {
+    label: 'Space',
+    items: [
+      { id: 'orbs3d',  label: '3D Graph',  icon: 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    ]
+  },
 ]
 
-function Sidebar() {
-  const { s, d } = useOrbis()
+function NavIcon({ path }) {
   return (
-    <nav style={{ position: 'fixed', left: 0, top: 0, bottom: 0, width: 70, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, borderRight: '1px solid rgba(0,212,255,0.08)', background: 'rgba(5,5,16,0.7)', backdropFilter: 'blur(12px)' }}>
-      <div style={{ color: '#00d4ff', fontSize: 18, fontWeight: 900, marginBottom: 12, letterSpacing: 2 }}>⬡</div>
-      {NAVS.map(orb => {
-        const active = s.activeModule === orb.id
-        return (
-          <button key={orb.id} onClick={() => d({ type: 'MOD', v: orb.id })} title={orb.label}
-            style={{ width: 42, height: 42, borderRadius: '50%', border: `1px solid ${active ? orb.color : 'rgba(255,255,255,0.06)'}`, background: active ? `${orb.color}22` : 'transparent', color: active ? orb.color : '#475569', fontSize: 17, cursor: 'pointer', transition: 'all 0.2s', boxShadow: active ? `0 0 16px ${orb.color}66` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {orb.icon}
-          </button>
-        )
-      })}
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d={path} />
+    </svg>
+  )
+}
+
+function Sidebar() {
+  const { s, d, session, supabase } = useOrbis()
+  const { muted, setMuted } = useSpeak()
+
+  const logout = async () => { await supabase.auth.signOut(); window.location.href = '/login' }
+  const initials = session?.user?.email?.[0]?.toUpperCase() || '?'
+
+  return (
+    <nav style={{ position: 'fixed', left: 0, top: 0, bottom: 0, width: 200, zIndex: 100, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', background: 'rgba(8,8,18,0.92)', backdropFilter: 'blur(16px)', padding: '12px 0' }}>
+      {/* Logo */}
+      <div style={{ padding: '8px 16px 20px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 3, background: 'linear-gradient(135deg,#4f8ef7,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ORBIS</div>
+        <div style={{ color: 'var(--text-4)', fontSize: 10, letterSpacing: 1, marginTop: 2 }}>Neural Intelligence</div>
+      </div>
+
+      {/* Nav groups */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
+        {NAV_GROUPS.map((group, gi) => (
+          <div key={gi} style={{ marginBottom: 4 }}>
+            {group.label && (
+              <div style={{ color: 'var(--text-4)', fontSize: 10, fontWeight: 600, letterSpacing: 1.5, padding: '10px 8px 4px', textTransform: 'uppercase' }}>{group.label}</div>
+            )}
+            {group.items.map(item => {
+              const active = s.activeModule === item.id
+              return (
+                <button key={item.id} onClick={() => d({ type: 'MOD', v: item.id })}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 7, border: 'none', background: active ? 'rgba(79,142,247,0.12)' : 'transparent', color: active ? '#4f8ef7' : 'var(--text-3)', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left', fontSize: 13, fontWeight: active ? 500 : 400, fontFamily: 'var(--font-ui)' }}
+                  onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'var(--text-2)' } }}
+                  onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-3)' } }}>
+                  <NavIcon path={item.icon} />
+                  {item.label}
+                </button>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom section */}
+      <div style={{ padding: '8px', borderTop: '1px solid var(--border)' }}>
+        <button onClick={() => d({ type: 'MOD', v: 'settings' })}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 7, border: 'none', background: s.activeModule === 'settings' ? 'rgba(79,142,247,0.12)' : 'transparent', color: s.activeModule === 'settings' ? '#4f8ef7' : 'var(--text-3)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 13, textAlign: 'left' }}>
+          <NavIcon path="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          Settings
+        </button>
+
+        {/* Account */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', marginTop: 4, borderRadius: 7, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#4f8ef7,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0 }}>{initials}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: 'var(--text-2)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.user?.email}</div>
+          </div>
+          <button onClick={logout} title="Sign out" style={{ background: 'none', border: 'none', color: 'var(--text-4)', cursor: 'pointer', padding: 2, fontSize: 14, display: 'flex' }}>↪</button>
+        </div>
+
+        {/* Voice toggle */}
+        <button onClick={() => setMuted(v => !v)}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', marginTop: 4, borderRadius: 7, border: 'none', background: 'transparent', color: muted ? 'var(--text-4)' : '#4f8ef7', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 12 }}>
+          <span>{muted ? '🔇' : '🔊'}</span>
+          <span>{muted ? 'Voice off' : 'Voice on'}</span>
+        </button>
+      </div>
     </nav>
   )
 }
@@ -533,41 +607,110 @@ function VoiceVisualizer({ active, color = '#00d4ff' }) {
 function HomeModule() {
   const { s, d, session } = useOrbis()
   const [time, setTime] = useState('')
+  const [date, setDate] = useState('')
   useEffect(() => {
-    const tick = () => setTime(new Date().toLocaleTimeString('en-GB', { hour12: false }))
+    const tick = () => {
+      const now = new Date()
+      setTime(now.toLocaleTimeString('en-GB', { hour12: false }))
+      setDate(now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }))
+    }
     tick(); const id = setInterval(tick, 1000); return () => clearInterval(id)
   }, [])
+
+  const stats = [
+    { label: 'Notes', value: s.notes.length, color: '#e8a020', mod: 'notes', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
+    { label: 'Journals', value: s.journals.length, color: '#d946a8', mod: 'journal', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+    { label: 'Goals', value: s.goals.length, color: '#f97316', mod: 'goals', icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z' },
+    { label: 'Memories', value: s.memories.length, color: '#38bdf8', mod: 'settings', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+  ]
+
+  const quickActions = [
+    { label: 'Ask ORBIS', desc: 'Multi-model AI advisor', mod: 'advisor', color: '#7c3aed' },
+    { label: 'New Note', desc: 'Add to knowledge base', mod: 'notes', color: '#e8a020' },
+    { label: 'Open Graph', desc: 'Explore 3D knowledge', mod: 'orbs3d', color: '#38bdf8' },
+    { label: 'Today\'s Journal', desc: 'Reflect on your day', mod: 'journal', color: '#d946a8' },
+  ]
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 36 }}>
-      <div style={{ position: 'relative', width: 180, height: 180 }}>
-        <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #00d4ff44, #7c3aed22, #050510)', border: '1px solid rgba(0,212,255,0.3)', boxShadow: '0 0 60px rgba(0,212,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, animation: 'float 4s ease-in-out infinite' }}>
-          <span style={{ background: 'linear-gradient(135deg,#00d4ff,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>⬡</span>
+    <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28, animation: 'fade-in 0.4s ease' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 4 }}>{date}</div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: 'var(--text-1)', letterSpacing: -0.5 }}>
+            Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}.
+          </div>
         </div>
-        <div style={{ position: 'absolute', inset: -20, borderRadius: '50%', border: '1px solid rgba(0,212,255,0.1)', animation: 'spin-slow 8s linear infinite' }}>
-          <div style={{ position: 'absolute', top: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, borderRadius: '50%', background: '#00d4ff', boxShadow: '0 0 10px #00d4ff' }} />
-        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 28, fontWeight: 300, color: 'var(--text-3)', letterSpacing: 2 }}>{time}</div>
       </div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 44, fontWeight: 900, letterSpacing: 12, background: 'linear-gradient(135deg,#00d4ff,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ORBIS</div>
-        <div style={{ color: '#334155', fontSize: 10, letterSpacing: 6, marginTop: 4 }}>NEURAL INTELLIGENCE INTERFACE</div>
-        <div style={{ color: '#00d4ff', fontSize: 26, fontWeight: 300, marginTop: 10, fontFamily: 'monospace' }}>{time}</div>
-        {session && <div style={{ color: '#334155', fontSize: 11, marginTop: 6 }}>{session.user.email}</div>}
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, justifyContent: 'center', maxWidth: 520 }}>
-        {NAVS.filter(o => o.id !== 'home').map(orb => (
-          <button key={orb.id} onClick={() => d({ type: 'MOD', v: orb.id })}
-            style={{ width: 72, height: 72, borderRadius: '50%', border: `1px solid ${orb.color}44`, background: `${orb.color}11`, color: orb.color, cursor: 'pointer', fontSize: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 0 24px ${orb.color}66`; e.currentTarget.style.transform = 'scale(1.12)' }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'scale(1)' }}>
-            {orb.icon}<span style={{ fontSize: 8, letterSpacing: 1 }}>{orb.label}</span>
+
+      {/* Stats grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        {stats.map(stat => (
+          <button key={stat.label} onClick={() => d({ type: 'MOD', v: stat.mod })}
+            style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = `${stat.color}44`; e.currentTarget.style.background = `${stat.color}08` }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-1)' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: `${stat.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={stat.color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d={stat.icon} />
+              </svg>
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-1)', marginBottom: 2, fontVariantNumeric: 'tabular-nums' }}>{stat.value}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 500 }}>{stat.label}</div>
           </button>
         ))}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center', fontSize: 10, color: '#334155', borderTop: '1px solid rgba(0,212,255,0.06)', paddingTop: 14 }}>
-        {[['NOTES', '#f59e0b', s.notes.length], ['JOURNALS', '#ec4899', s.journals.length], ['GOALS', '#f97316', s.goals.length], ['MEMORIES', '#00d4ff', s.memories.length], ['SYNTHESES', '#7c3aed', s.synthHistory.length]].map(([label, col, count]) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: col, boxShadow: `0 0 5px ${col}` }} />
-            {label} ({count})
+
+      {/* Quick actions */}
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Quick Actions</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+          {quickActions.map(a => (
+            <button key={a.label} onClick={() => d({ type: 'MOD', v: a.mod })}
+              style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = `${a.color}44`; e.currentTarget.style.transform = 'translateY(-1px)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: a.color, flexShrink: 0, boxShadow: `0 0 10px ${a.color}88` }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', marginBottom: 2 }}>{a.label}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{a.desc}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent notes */}
+      {s.notes.length > 0 && (
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Recent Notes</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {[...s.notes].sort((a, b) => b.updated - a.updated).slice(0, 4).map(n => (
+              <button key={n.id} onClick={() => d({ type: 'MOD', v: 'notes' })}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <span style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>{n.title}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-4)' }}>{new Date(n.updated).toLocaleDateString('en-GB')}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* System status */}
+      <div style={{ display: 'flex', gap: 20, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+        {[
+          { label: 'Supabase', ok: true },
+          { label: 'Claude', ok: !!s.apiKeys.claude },
+          { label: 'GPT', ok: !!s.apiKeys.gpt },
+          { label: 'Gemini', ok: !!s.apiKeys.gemini },
+          { label: `Graph: ${s.graphNodes.length} nodes`, ok: true },
+        ].map(x => (
+          <div key={x.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text-4)' }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: x.ok ? '#22c55e' : '#475569' }} />
+            {x.label}
           </div>
         ))}
       </div>
@@ -1241,39 +1384,26 @@ function OrbisApp() {
       <NeuralParticles />
       <GlassOverlay mouseX={s.theme.mouseX} mouseY={s.theme.mouseY} />
       <Sidebar />
-      <main style={{ position: 'relative', zIndex: 10, marginLeft: 70, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ height: 46, borderBottom: '1px solid rgba(0,212,255,0.06)', display: 'flex', alignItems: 'center', paddingInline: 20, gap: 12, background: 'rgba(5,5,16,0.7)', backdropFilter: 'blur(8px)', flexShrink: 0 }}>
-          <span style={{ background: 'linear-gradient(135deg,#00d4ff,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 900, letterSpacing: 4, fontSize: 13 }}>ORBIS</span>
-          <span style={{ color: '#1e3a5f', fontSize: 10 }}>|</span>
-          <span style={{ color: activeNav?.color || '#334155', fontSize: 11, letterSpacing: 2 }}>{activeNav?.label}</span>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <span style={{ color: '#334155', fontSize: 10, letterSpacing: 1, cursor: 'pointer' }} onClick={() => setShowPalette(true)}>⌘K</span>
-            <button onClick={() => setMuted(v => !v)}
-              title={muted ? 'Unmute ORBIS voice' : 'Mute ORBIS voice'}
-              style={{ background: 'none', border: `1px solid ${muted ? '#334155' : '#00d4ff44'}`, borderRadius: 4, color: muted ? '#334155' : '#00d4ff', cursor: 'pointer', fontSize: 12, padding: '2px 8px', letterSpacing: 1 }}>
-              {muted ? '🔇' : '🔊'}
+      <main style={{ position: 'relative', zIndex: 10, marginLeft: 200, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Topbar */}
+        <div style={{ height: 48, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', paddingInline: 24, gap: 8, background: 'rgba(8,8,18,0.8)', backdropFilter: 'blur(12px)', flexShrink: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>{activeNav?.label}</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button onClick={() => setShowPalette(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-3)', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-ui)' }}>
+              <span>Search</span>
+              <kbd style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 3, padding: '1px 5px', fontSize: 10, fontFamily: 'var(--font-mono)' }}>⌘K</kbd>
             </button>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ff88', boxShadow: '0 0 6px #00ff88' }} />
-            <span style={{ color: '#334155', fontSize: 10, letterSpacing: 2 }}>ALL SYSTEMS NOMINAL</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+              <span style={{ fontSize: 11, color: 'var(--text-4)' }}>Connected</span>
+            </div>
           </div>
         </div>
-        <div style={{ flex: 1, overflow: 'auto', padding: 22 }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: 28 }}>
           {renderModule()}
         </div>
       </main>
-
-      <style jsx global>{`
-        * { box-sizing: border-box; margin: 0; padding: 0 }
-        body { background: #050510; font-family: 'Courier New', monospace; color: #e2e8f0; overflow: hidden }
-        ::-webkit-scrollbar { width: 4px }
-        ::-webkit-scrollbar-track { background: transparent }
-        ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); border-radius: 2px }
-        @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
-        @keyframes spin-slow { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
-        @keyframes pulse-glow { 0%,100% { filter: brightness(1) } 50% { filter: brightness(1.3) drop-shadow(0 0 20px #00d4ff) } }
-        @keyframes boot-fade { from { opacity: 0; transform: translateX(-8px) } to { opacity: 1; transform: translateX(0) } }
-        input, textarea, button, select { font-family: 'Courier New', monospace }
-      `}</style>
     </>
   )
 }
