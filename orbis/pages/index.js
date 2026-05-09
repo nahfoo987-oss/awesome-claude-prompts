@@ -424,6 +424,36 @@ function CommandPalette({ onClose }) {
   )
 }
 
+// ─── ElevenLabs Speak Hook ────────────────────────────────────────────────────
+const SpeakCtx = createContext({ speak: () => {}, muted: false, setMuted: () => {} })
+const useSpeak = () => useContext(SpeakCtx)
+
+function SpeakProvider({ children }) {
+  const [muted, setMuted] = useState(false)
+  const audioRef = useRef(null)
+
+  const speak = useCallback(async (text) => {
+    if (muted || !text) return
+    try {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+      const res = await fetch('/api/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text.slice(0, 800) }),
+      })
+      if (!res.ok) return
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audioRef.current = audio
+      audio.play()
+      audio.onended = () => URL.revokeObjectURL(url)
+    } catch {}
+  }, [muted])
+
+  return <SpeakCtx.Provider value={{ speak, muted, setMuted }}>{children}</SpeakCtx.Provider>
+}
+
 // ─── Voice Hook ───────────────────────────────────────────────────────────────
 function useVoice(onResult) {
   const [listening, setListening] = useState(false)
@@ -934,6 +964,7 @@ const DEF_AGENTS = [
 
 function AgentsModule() {
   const { s, d } = useOrbis()
+  const { speak } = useSpeak()
   const [selAgent, setSelAgent] = useState('orbis')
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
@@ -960,6 +991,7 @@ function AgentsModule() {
         full += chunk; setStreamBuf(full)
       }
       d({ type: 'AGENT_MSG', id: selAgent, v: { role: 'assistant', text: full, ts: Date.now() } })
+      speak(full)
     } catch (e) {
       d({ type: 'AGENT_MSG', id: selAgent, v: { role: 'error', text: e.message, ts: Date.now() } })
     }
@@ -1161,6 +1193,7 @@ const OrbRoom3D = dynamic(() => import('../components/OrbRoom3D'), { ssr: false 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 function OrbisApp() {
   const { s, d } = useOrbis()
+  const { muted, setMuted } = useSpeak()
   const [booting, setBooting] = useState(true)
   const [showPalette, setShowPalette] = useState(false)
   const onBootComplete = useCallback(() => setTimeout(() => setBooting(false), 100), [])
@@ -1215,6 +1248,11 @@ function OrbisApp() {
           <span style={{ color: activeNav?.color || '#334155', fontSize: 11, letterSpacing: 2 }}>{activeNav?.label}</span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14 }}>
             <span style={{ color: '#334155', fontSize: 10, letterSpacing: 1, cursor: 'pointer' }} onClick={() => setShowPalette(true)}>⌘K</span>
+            <button onClick={() => setMuted(v => !v)}
+              title={muted ? 'Unmute ORBIS voice' : 'Mute ORBIS voice'}
+              style={{ background: 'none', border: `1px solid ${muted ? '#334155' : '#00d4ff44'}`, borderRadius: 4, color: muted ? '#334155' : '#00d4ff', cursor: 'pointer', fontSize: 12, padding: '2px 8px', letterSpacing: 1 }}>
+              {muted ? '🔇' : '🔊'}
+            </button>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ff88', boxShadow: '0 0 6px #00ff88' }} />
             <span style={{ color: '#334155', fontSize: 10, letterSpacing: 2 }}>ALL SYSTEMS NOMINAL</span>
           </div>
@@ -1244,11 +1282,13 @@ function OrbisApp() {
 export default function Page() {
   return (
     <Provider>
-      <Head>
-        <title>ORBIS — Neural Intelligence Interface</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
-      <OrbisApp />
+      <SpeakProvider>
+        <Head>
+          <title>ORBIS — Neural Intelligence Interface</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+        </Head>
+        <OrbisApp />
+      </SpeakProvider>
     </Provider>
   )
 }
