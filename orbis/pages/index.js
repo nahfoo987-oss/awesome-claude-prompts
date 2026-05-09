@@ -84,15 +84,30 @@ function reducer(s, a) {
     }
     case 'UPD_NOTE': {
       const notes = s.notes.map(n => n.id === a.id ? { ...n, ...a.v, updated: Date.now() } : n)
-      const title = notes.find(n => n.id === a.id)?.title
-      let nodes = s.graphNodes.map(nd => nd.id === a.id ? { ...nd, label: title, updated: Date.now() } : nd)
-      let links = s.graphLinks
+      const note = notes.find(n => n.id === a.id)
+      let nodes = s.graphNodes.map(nd => nd.id === a.id ? { ...nd, label: note?.title, updated: Date.now() } : nd)
+      // Remove old links from this note then rebuild
+      let links = s.graphLinks.filter(l => {
+        const src = typeof l.source === 'object' ? l.source.id : l.source
+        return src !== a.id
+      })
       if (a.v.body) {
+        // Keywords → graph
         extractKeywords(a.v.body).forEach(kw => {
           const kwId = `kw_${kw}`
           if (!nodes.find(n => n.id === kwId)) nodes = [...nodes, { id: kwId, label: kw, type: 'keyword', size: 4, updated: Date.now() }]
-          if (!links.find(l => l.source === a.id && l.target === kwId)) links = [...links, { source: a.id, target: kwId }]
+          links = [...links, { source: a.id, target: kwId }]
         })
+        // [[wikilinks]] → note-to-note links
+        const wlRe = /\[\[([^\]]+)\]\]/g; let m
+        while ((m = wlRe.exec(a.v.body)) !== null) {
+          const target = notes.find(n => n.title.toLowerCase() === m[1].toLowerCase())
+          if (target && !links.find(l => (typeof l.source === 'object' ? l.source.id : l.source) === a.id && (typeof l.target === 'object' ? l.target.id : l.target) === target.id))
+            links = [...links, { source: a.id, target: target.id }]
+        }
+        // #tags → update note tags array
+        const tags = [...new Set((a.v.body.match(/#(\w+)/g) || []).map(t => t.slice(1)))]
+        if (tags.length) notes.find(n => n.id === a.id).tags = tags
       }
       return { ...s, notes, graphNodes: nodes, graphLinks: links }
     }
@@ -841,48 +856,216 @@ function AdvisorModule() {
 // ─── Knowledge Graph ──────────────────────────────────────────────────────────
 const KnowledgeGraph = dynamic(() => import('../components/KnowledgeGraph'), { ssr: false })
 
+// ─── Markdown Renderer ────────────────────────────────────────────────────────
+function mdToHtml(text, notes) {
+  if (!text) return ''
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  const inline = raw => {
+    let s = esc(raw)
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text-1);font-weight:600">$1</strong>')
+    s = s.replace(/\*(.+?)\*/g, '<em style="color:var(--text-2)">$1</em>')
+    s = s.replace(/`(.+?)`/g, '<code style="background:rgba(255,255,255,0.07);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);font-size:0.88em;color:#e2e8f0">$1</code>')
+    s = s.replace(/#(\w+)/g, '<span style="color:#4f8ef7;font-size:0.9em">#$1</span>')
+    s = s.replace(/\[\[([^\]]+)\]\]/g, (_, title) => {
+      const found = notes?.find(n => n.title.toLowerCase() === title.toLowerCase())
+      const color = found ? '#7c3aed' : '#475569'
+      return `<span data-wiki="${esc(title)}" style="color:${color};cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:${color}44">${esc(title)}</span>`
+    })
+    return s
+  }
+  const lines = text.split('\n')
+  let html = '', inList = false, inCode = false, codeLines = []
+  for (const line of lines) {
+    if (line.startsWith('```')) {
+      if (inCode) {
+        html += `<pre style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;margin:10px 0"><code style="font-family:var(--font-mono);font-size:13px;line-height:1.6;color:#e2e8f0">${esc(codeLines.join('\n'))}</code></pre>`
+        codeLines = []; inCode = false
+      } else { inCode = true }
+      continue
+    }
+    if (inCode) { codeLines.push(line); continue }
+    if (inList && !line.startsWith('- ') && !line.startsWith('* ')) { html += '</ul>'; inList = false }
+    if (line.startsWith('# '))        html += `<h1 style="font-size:22px;font-weight:700;color:var(--text-1);margin:24px 0 8px;letter-spacing:-0.4px;line-height:1.2">${inline(line.slice(2))}</h1>`
+    else if (line.startsWith('## ')) html += `<h2 style="font-size:17px;font-weight:600;color:var(--text-1);margin:18px 0 6px;letter-spacing:-0.2px">${inline(line.slice(3))}</h2>`
+    else if (line.startsWith('### '))html += `<h3 style="font-size:14px;font-weight:600;color:var(--text-2);margin:14px 0 4px;text-transform:uppercase;letter-spacing:0.5px">${inline(line.slice(4))}</h3>`
+    else if (line.startsWith('> ')) html += `<blockquote style="border-left:2px solid var(--border-md);margin:8px 0;padding:3px 0 3px 14px;color:var(--text-3);font-style:italic">${inline(line.slice(2))}</blockquote>`
+    else if (line.startsWith('- ') || line.startsWith('* ')) {
+      if (!inList) { html += '<ul style="list-style:none;margin:6px 0;padding:0;display:flex;flex-direction:column;gap:3px">'; inList = true }
+      html += `<li style="display:flex;gap:10px;align-items:flex-start;color:var(--text-2);line-height:1.6"><span style="color:var(--text-4);margin-top:8px;width:4px;height:4px;border-radius:50%;background:var(--text-4);flex-shrink:0;display:block"></span><span>${inline(line.slice(2))}</span></li>`
+    }
+    else if (line.trim() === '') html += '<div style="height:6px"></div>'
+    else html += `<p style="color:var(--text-2);line-height:1.75;margin:2px 0">${inline(line)}</p>`
+  }
+  if (inList) html += '</ul>'
+  return html
+}
+
 // ─── Notes Module ─────────────────────────────────────────────────────────────
 function NotesModule() {
   const { s, d } = useOrbis()
   const [selected, setSelected] = useState(null)
   const [newTitle, setNewTitle] = useState('')
+  const [view, setView] = useState('split') // edit | preview | split
+  const [search, setSearch] = useState('')
+  const [tagFilter, setTagFilter] = useState(null)
+  const previewRef = useRef(null)
   const note = s.notes.find(n => n.id === selected)
+
+  // All tags across all notes
+  const allTags = useMemo(() => {
+    const tags = new Set()
+    s.notes.forEach(n => (n.tags || []).forEach(t => tags.add(t)))
+    return [...tags]
+  }, [s.notes])
+
+  // Backlinks: notes that link to current note via [[title]]
+  const backlinks = useMemo(() => {
+    if (!note) return []
+    return s.notes.filter(n => n.id !== note.id && n.body?.includes(`[[${note.title}]]`))
+  }, [note, s.notes])
+
+  // Filtered note list
+  const filtered = useMemo(() => {
+    let list = [...s.notes].sort((a, b) => b.updated - a.updated)
+    if (search) list = list.filter(n => n.title.toLowerCase().includes(search.toLowerCase()) || n.body?.toLowerCase().includes(search.toLowerCase()))
+    if (tagFilter) list = list.filter(n => (n.tags || []).includes(tagFilter))
+    return list
+  }, [s.notes, search, tagFilter])
+
+  // Handle wikilink clicks in preview
+  useEffect(() => {
+    const el = previewRef.current
+    if (!el) return
+    const handler = e => {
+      const wiki = e.target.getAttribute('data-wiki')
+      if (wiki) {
+        const target = s.notes.find(n => n.title.toLowerCase() === wiki.toLowerCase())
+        if (target) setSelected(target.id)
+      }
+    }
+    el.addEventListener('click', handler)
+    return () => el.removeEventListener('click', handler)
+  }, [s.notes, view])
+
+  const exportNote = () => {
+    if (!note) return
+    const blob = new Blob([`# ${note.title}\n\n${note.body}`], { type: 'text/markdown' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
+    a.download = `${note.title.replace(/[^a-z0-9]/gi, '-')}.md`; a.click()
+  }
+
+  const wordCount = note?.body ? note.body.trim().split(/\s+/).filter(Boolean).length : 0
+
+  const sidebarStyle = { width: 220, flexShrink: 0, borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', paddingRight: 0 }
+  const btnStyle = active => ({ padding: '4px 10px', borderRadius: 5, border: 'none', background: active ? 'rgba(255,255,255,0.08)' : 'transparent', color: active ? 'var(--text-1)' : 'var(--text-3)', cursor: 'pointer', fontSize: 12, fontWeight: active ? 500 : 400, fontFamily: 'var(--font-ui)' })
+
   return (
-    <div style={{ display: 'flex', gap: 16, height: '100%' }}>
-      <div style={{ width: 210, borderRight: '1px solid rgba(245,158,11,0.1)', paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ color: '#f59e0b', fontSize: 12, letterSpacing: 2, fontWeight: 700 }}>▣ NOTES ({s.notes.length})</div>
-        <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && newTitle.trim()) { d({ type: 'ADD_NOTE', v: newTitle.trim() }); setNewTitle('') } }}
-          placeholder="New note (Enter)..."
-          style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 4, color: '#e2e8f0', padding: '6px 8px', fontSize: 11, outline: 'none', fontFamily: "'Courier New', monospace" }} />
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {s.notes.length === 0 && <div style={{ color: '#334155', fontSize: 11 }}>Type a title and press Enter.</div>}
-          {s.notes.map(n => (
-            <div key={n.id} onClick={() => setSelected(n.id)}
-              style={{ padding: '8px 10px', borderRadius: 4, cursor: 'pointer', border: `1px solid ${selected === n.id ? 'rgba(245,158,11,0.4)' : 'transparent'}`, background: selected === n.id ? 'rgba(245,158,11,0.08)' : 'transparent' }}>
-              <div style={{ color: selected === n.id ? '#f59e0b' : '#94a3b8', fontSize: 12, fontWeight: 600 }}>{n.title}</div>
-              <div style={{ color: '#334155', fontSize: 10, marginTop: 2 }}>{new Date(n.updated).toLocaleDateString('en-GB')}</div>
-            </div>
+    <div style={{ display: 'flex', height: '100%', gap: 0 }}>
+      {/* Left: file list */}
+      <div style={sidebarStyle}>
+        <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', letterSpacing: 0.5 }}>Notes</span>
+            <span style={{ fontSize: 11, color: 'var(--text-4)' }}>{s.notes.length}</span>
+          </div>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search..."
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-2)', padding: '6px 10px', fontSize: 12, outline: 'none', width: '100%' }} />
+          <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && newTitle.trim()) { d({ type: 'ADD_NOTE', v: newTitle.trim() }); setNewTitle('') } }}
+            placeholder="New note..."
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-2)', padding: '6px 10px', fontSize: 12, outline: 'none', width: '100%' }} />
+        </div>
+
+        {/* Tags */}
+        {allTags.length > 0 && (
+          <div style={{ padding: '6px 12px', display: 'flex', flexWrap: 'wrap', gap: 4, borderTop: '1px solid var(--border)' }}>
+            {allTags.map(t => (
+              <button key={t} onClick={() => setTagFilter(tagFilter === t ? null : t)}
+                style={{ padding: '2px 8px', borderRadius: 20, border: 'none', background: tagFilter === t ? '#4f8ef722' : 'rgba(255,255,255,0.04)', color: tagFilter === t ? '#4f8ef7' : 'var(--text-3)', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--font-ui)' }}>
+                #{t}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* File list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px' }}>
+          {filtered.length === 0 && <div style={{ color: 'var(--text-4)', fontSize: 12, padding: '12px 4px' }}>No notes yet. Type a title above and press Enter.</div>}
+          {filtered.map(n => (
+            <button key={n.id} onClick={() => setSelected(n.id)}
+              style={{ width: '100%', display: 'block', padding: '8px 10px', borderRadius: 7, border: 'none', background: selected === n.id ? 'rgba(255,255,255,0.06)' : 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s' }}
+              onMouseEnter={e => { if (selected !== n.id) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+              onMouseLeave={e => { if (selected !== n.id) e.currentTarget.style.background = 'transparent' }}>
+              <div style={{ fontSize: 13, fontWeight: selected === n.id ? 500 : 400, color: selected === n.id ? 'var(--text-1)' : 'var(--text-2)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-4)', display: 'flex', gap: 6 }}>
+                <span>{new Date(n.updated).toLocaleDateString('en-GB')}</span>
+                {(n.tags || []).slice(0, 2).map(t => <span key={t} style={{ color: '#4f8ef755' }}>#{t}</span>)}
+              </div>
+            </button>
           ))}
         </div>
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {note ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input value={note.title} onChange={e => d({ type: 'UPD_NOTE', id: note.id, v: { title: e.target.value } })}
-                style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid rgba(245,158,11,0.2)', color: '#f59e0b', fontSize: 16, fontWeight: 700, outline: 'none', padding: '4px 0', fontFamily: "'Courier New', monospace" }} />
-              <button onClick={() => { d({ type: 'DEL_NOTE', id: note.id }); setSelected(null) }}
-                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 4, color: '#ef4444', cursor: 'pointer', padding: '4px 10px', fontSize: 11 }}>DELETE</button>
+
+      {/* Main editor area */}
+      {note ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          {/* Toolbar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+            <input value={note.title} onChange={e => d({ type: 'UPD_NOTE', id: note.id, v: { title: e.target.value } })}
+              style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-1)', fontSize: 15, fontWeight: 600, outline: 'none', letterSpacing: -0.2 }} />
+            <div style={{ display: 'flex', gap: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 6, padding: 2 }}>
+              {['edit','split','preview'].map(v => (
+                <button key={v} onClick={() => setView(v)} style={btnStyle(view === v)}>{v.charAt(0).toUpperCase() + v.slice(1)}</button>
+              ))}
             </div>
-            <textarea value={note.body} onChange={e => d({ type: 'UPD_NOTE', id: note.id, v: { body: e.target.value } })}
-              placeholder="Write your thoughts... Keywords are automatically added to the Knowledge Graph."
-              style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(245,158,11,0.1)', borderRadius: 6, color: '#e2e8f0', padding: '12px 14px', fontSize: 13, lineHeight: 1.8, resize: 'none', outline: 'none', fontFamily: "'Courier New', monospace" }} />
-          </>
-        ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1e3a5f', fontSize: 13 }}>Select or create a note to begin.</div>
-        )}
-      </div>
+            <button onClick={exportNote} style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-3)', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-ui)' }}>Export .md</button>
+            <button onClick={() => { d({ type: 'DEL_NOTE', id: note.id }); setSelected(null) }}
+              style={{ padding: '4px 10px', borderRadius: 5, border: 'none', background: 'transparent', color: 'var(--text-4)', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-ui)' }}>Delete</button>
+          </div>
+
+          {/* Editor + Preview */}
+          <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+            {(view === 'edit' || view === 'split') && (
+              <textarea value={note.body} onChange={e => d({ type: 'UPD_NOTE', id: note.id, v: { body: e.target.value } })}
+                placeholder={'# Start writing...\n\nUse [[Note Title]] to link notes.\nUse #tag to add tags.\nUse **bold**, *italic*, `code`.\n\nAll keywords are auto-linked in the knowledge graph.'}
+                style={{ flex: 1, background: 'transparent', border: 'none', borderRight: view === 'split' ? '1px solid var(--border)' : 'none', color: 'var(--text-2)', padding: '20px 24px', fontSize: 14, lineHeight: 1.8, resize: 'none', outline: 'none', fontFamily: 'var(--font-mono)', minWidth: 0 }} />
+            )}
+            {(view === 'preview' || view === 'split') && (
+              <div ref={previewRef}
+                dangerouslySetInnerHTML={{ __html: mdToHtml(note.body, s.notes) || '<p style="color:var(--text-4);font-size:13px">Nothing to preview yet.</p>' }}
+                style={{ flex: 1, padding: '20px 28px', overflowY: 'auto', minWidth: 0 }} />
+            )}
+          </div>
+
+          {/* Status bar */}
+          <div style={{ height: 28, borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', paddingInline: 16, gap: 16, flexShrink: 0 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-4)' }}>{wordCount} words</span>
+            {backlinks.length > 0 && <span style={{ fontSize: 11, color: 'var(--text-4)' }}>{backlinks.length} backlink{backlinks.length > 1 ? 's' : ''}</span>}
+            {(note.tags || []).map(t => <span key={t} style={{ fontSize: 11, color: '#4f8ef766' }}>#{t}</span>)}
+          </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'var(--text-4)' }}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+          <span style={{ fontSize: 13 }}>Select a note or create one</span>
+        </div>
+      )}
+
+      {/* Right: backlinks panel */}
+      {note && backlinks.length > 0 && (
+        <div style={{ width: 200, borderLeft: '1px solid var(--border)', padding: '16px 14px', flexShrink: 0, overflowY: 'auto' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>Backlinks</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {backlinks.map(n => (
+              <button key={n.id} onClick={() => setSelected(n.id)}
+                style={{ width: '100%', textAlign: 'left', padding: '7px 10px', borderRadius: 6, border: 'none', background: 'rgba(255,255,255,0.03)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-ui)' }}>
+                {n.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
