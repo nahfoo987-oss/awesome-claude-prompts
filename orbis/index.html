@@ -28,16 +28,17 @@ input,textarea,button{font-family:inherit}
 @keyframes scan-line{0%{top:-2px}100%{top:100%}}
 @keyframes flicker{0%,95%,100%{opacity:1}96%{opacity:.4}97%{opacity:1}98%{opacity:.6}}
 @keyframes boot-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes slide-in{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback, useReducer, createContext, useContext } = React;
 
 // ── Crypto ────────────────────────────────────────────────────────────────────
-const STORE_KEY = 'orbis_v2';
+const STORE_KEY = 'orbis_v3';
 async function deriveKey() {
   const enc = new TextEncoder();
   const km = await crypto.subtle.importKey('raw', enc.encode('orbis-default'), 'PBKDF2', false, ['deriveKey']);
@@ -65,7 +66,7 @@ const Ctx = createContext(null);
 const init = {
   module:'home', notes:[], journals:[], goals:[], customAgents:[], agentMessages:{},
   apiKeys:{claude:'',gpt:'',gemini:''}, synthHistory:[], graphNodes:[], graphLinks:[],
-  mouse:{x:.5,y:.5}, bootDone:false,
+  mouse:{x:.5,y:.5}, bootDone:false, memories:[],
 };
 
 function kw(text) {
@@ -126,7 +127,9 @@ function reducer(s, a) {
     case 'CLEAR_AGENT': {
       const m={...s.agentMessages}; delete m[a.aid]; return {...s,agentMessages:m};
     }
-    case 'ADD_SYNTH':   return {...s,synthHistory:[a.v,...s.synthHistory].slice(0,20)};
+    case 'ADD_SYNTH':  return {...s,synthHistory:[a.v,...s.synthHistory].slice(0,30)};
+    case 'ADD_MEMORY': return {...s,memories:[a.v,...s.memories].slice(0,10)};
+    case 'DEL_MEMORY': return {...s,memories:s.memories.filter((_,i)=>i!==a.i)};
     default: return s;
   }
 }
@@ -136,8 +139,8 @@ function Provider({children}) {
   useEffect(()=>{ window.__d=d; },[d]);
   useEffect(()=>{
     if(!s.bootDone) return;
-    save({notes:s.notes,journals:s.journals,goals:s.goals,customAgents:s.customAgents,agentMessages:s.agentMessages,synthHistory:s.synthHistory,graphNodes:s.graphNodes,graphLinks:s.graphLinks});
-  },[s.notes,s.journals,s.goals,s.customAgents,s.agentMessages,s.synthHistory,s.graphNodes,s.graphLinks,s.bootDone]);
+    save({notes:s.notes,journals:s.journals,goals:s.goals,customAgents:s.customAgents,agentMessages:s.agentMessages,synthHistory:s.synthHistory,graphNodes:s.graphNodes,graphLinks:s.graphLinks,memories:s.memories});
+  },[s.notes,s.journals,s.goals,s.customAgents,s.agentMessages,s.synthHistory,s.graphNodes,s.graphLinks,s.memories,s.bootDone]);
   useEffect(()=>{ load().then(v=>v&&d({type:'LOAD',v})); },[]);
   return <Ctx.Provider value={{s,d}}>{children}</Ctx.Provider>;
 }
@@ -145,19 +148,21 @@ const use = ()=>useContext(Ctx);
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 const BOOT=[
-  {t:'ORBIS Neural Interface v4.0',ms:0,c:'#00d4ff'},
-  {t:'Initializing quantum memory subsystems...',ms:350},
-  {t:'Neural Net .......................... ONLINE',ms:700,c:'#00ff88'},
-  {t:'Knowledge Graph Engine .............. ONLINE',ms:1000,c:'#00ff88'},
-  {t:'Multi-Model Sync .................... ACTIVE',ms:1250,c:'#00ff88'},
-  {t:'Conflict Analysis Module ............ ARMED', ms:1500,c:'#f59e0b'},
-  {t:'Journal & Reflection Engine ......... ONLINE',ms:1750,c:'#00ff88'},
-  {t:'Goals & Roadmap Tracker ............. ONLINE',ms:2000,c:'#00ff88'},
+  {t:'ORBIS Neural Interface v5.0',ms:0,c:'#00d4ff'},
+  {t:'Initializing quantum memory subsystems...',ms:300},
+  {t:'Neural Particle Field ................ ACTIVE',ms:600,c:'#00ff88'},
+  {t:'Knowledge Graph Engine .............. ONLINE',ms:850,c:'#00ff88'},
+  {t:'Streaming AI Synthesis (SSE) ........ ACTIVE',ms:1050,c:'#00ff88'},
+  {t:'RAG Context Injection Engine ........ ONLINE',ms:1250,c:'#00ff88'},
+  {t:'Memory Extraction System ............ ARMED', ms:1450,c:'#f59e0b'},
+  {t:'Command Palette [Ctrl+K] ............ READY', ms:1650,c:'#00ff88'},
+  {t:'Voice Recognition Interface ......... ONLINE',ms:1850,c:'#00ff88'},
+  {t:'Journal & Mood Analytics ............ ONLINE',ms:2050,c:'#00ff88'},
   {t:'Named AI Agent Framework ............ ONLINE',ms:2250,c:'#00ff88'},
-  {t:'3D Orb Room (Three.js) .............. ONLINE',ms:2500,c:'#00ff88'},
-  {t:'Encrypting local storage vault ...... SECURE',ms:2750,c:'#00ff88'},
-  {t:'────────────────────────────────────────────',ms:3000,c:'#1e3a5f'},
-  {t:'All systems nominal. ORBIS is online.',ms:3200,c:'#00d4ff'},
+  {t:'3D Neural Orb Room .................. ONLINE',ms:2450,c:'#00ff88'},
+  {t:'Encrypting local storage vault ...... SECURE',ms:2650,c:'#00ff88'},
+  {t:'────────────────────────────────────────────',ms:2850,c:'#1e3a5f'},
+  {t:'All systems nominal. ORBIS is online.',ms:3000,c:'#00d4ff'},
 ];
 function Boot({onDone}) {
   const [lines,setLines]=useState([]);
@@ -191,33 +196,54 @@ function Boot({onDone}) {
   );
 }
 
-// ── Starfield ─────────────────────────────────────────────────────────────────
-function Stars() {
-  const ref=useRef(); const raf=useRef();
+// ── Neural Particles ──────────────────────────────────────────────────────────
+function NeuralParticles() {
+  const ref=useRef(); const raf=useRef(); const mouse=useRef({x:-9999,y:-9999});
   useEffect(()=>{
     const c=ref.current; if(!c) return;
-    const ctx=c.getContext('2d'); let stars=[];
-    const resize=()=>{
-      c.width=window.innerWidth; c.height=window.innerHeight;
-      stars=Array.from({length:200},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.2+.2,s:Math.random()*.3+.05,o:Math.random()*.7+.2,t:Math.random()*Math.PI*2}));
-    };
+    const ctx=c.getContext('2d');
+    const resize=()=>{ c.width=window.innerWidth; c.height=window.innerHeight; };
     resize(); window.addEventListener('resize',resize);
+    const N=110;
+    const COLORS=['rgba(0,212,255,','rgba(124,58,237,','rgba(0,255,136,'];
+    const pts=Array.from({length:N},()=>({
+      x:Math.random()*window.innerWidth, y:Math.random()*window.innerHeight,
+      vx:(Math.random()-.5)*.35, vy:(Math.random()-.5)*.35,
+      r:Math.random()*1.4+.4,
+      ci:Math.floor(Math.random()*3),
+    }));
+    const onMove=e=>{mouse.current={x:e.clientX,y:e.clientY};};
+    window.addEventListener('mousemove',onMove,{passive:true});
     const draw=()=>{
       ctx.clearRect(0,0,c.width,c.height);
-      ctx.strokeStyle='rgba(0,212,255,.03)'; ctx.lineWidth=1;
+      ctx.strokeStyle='rgba(0,212,255,.025)'; ctx.lineWidth=1;
       for(let x=0;x<c.width;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke();}
       for(let y=0;y<c.height;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke();}
-      const now=Date.now()/1000;
-      stars.forEach(s=>{
-        const tw=Math.sin(now*1.5+s.t)*.3+.7;
-        ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-        ctx.fillStyle=`rgba(200,220,255,${s.o*tw})`;ctx.fill();
-        s.y-=s.s; if(s.y<0){s.y=c.height;s.x=Math.random()*c.width;}
+      const mx=mouse.current.x, my=mouse.current.y;
+      pts.forEach(p=>{
+        const dx=p.x-mx, dy=p.y-my, dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<160&&dist>0){const f=(160-dist)/160*.9;p.vx+=(dx/dist)*f;p.vy+=(dy/dist)*f;}
+        p.vx*=.97; p.vy*=.97;
+        p.vx=Math.max(-1.8,Math.min(1.8,p.vx)); p.vy=Math.max(-1.8,Math.min(1.8,p.vy));
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0)p.x=c.width; if(p.x>c.width)p.x=0;
+        if(p.y<0)p.y=c.height; if(p.y>c.height)p.y=0;
+      });
+      for(let i=0;i<N;i++) for(let j=i+1;j<N;j++){
+        const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<95){
+          ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
+          ctx.strokeStyle=`rgba(0,212,255,${(1-d/95)*.12})`; ctx.lineWidth=.5; ctx.stroke();
+        }
+      }
+      pts.forEach(p=>{
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle=COLORS[p.ci]+'0.55)'; ctx.fill();
       });
       raf.current=requestAnimationFrame(draw);
     };
     draw();
-    return()=>{cancelAnimationFrame(raf.current);window.removeEventListener('resize',resize);};
+    return()=>{cancelAnimationFrame(raf.current);window.removeEventListener('resize',resize);window.removeEventListener('mousemove',onMove);};
   },[]);
   return <canvas ref={ref} style={{position:'fixed',inset:0,zIndex:0,pointerEvents:'none'}}/>;
 }
@@ -231,18 +257,19 @@ const NAVS=[
   {id:'journal', icon:'◉',c:'#ec4899',l:'JOURNAL'},
   {id:'goals',   icon:'◇',c:'#f97316',l:'GOALS'},
   {id:'agents',  icon:'◑',c:'#a855f7',l:'AGENTS'},
-  {id:'orbs3d',  icon:'⊕',c:'#06b6d4',l:'3D ROOM'},
+  {id:'history', icon:'◷',c:'#06b6d4',l:'HISTORY'},
+  {id:'orbs3d',  icon:'⊕',c:'#38bdf8',l:'3D ROOM'},
   {id:'config',  icon:'⚙',c:'#ef4444',l:'CONFIG'},
 ];
 function Sidebar() {
   const {s,d}=use();
   return (
-    <nav style={{position:'fixed',left:0,top:0,bottom:0,width:68,zIndex:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,borderRight:'1px solid rgba(0,212,255,.08)',background:'rgba(5,5,16,.7)',backdropFilter:'blur(12px)'}}>
-      <div style={{color:'#00d4ff',fontSize:16,fontWeight:900,marginBottom:10}}>⬡</div>
+    <nav style={{position:'fixed',left:0,top:0,bottom:0,width:68,zIndex:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,borderRight:'1px solid rgba(0,212,255,.08)',background:'rgba(5,5,16,.75)',backdropFilter:'blur(12px)'}}>
+      <div style={{color:'#00d4ff',fontSize:16,fontWeight:900,marginBottom:8}}>⬡</div>
       {NAVS.map(n=>{
         const active=s.module===n.id;
         return (
-          <button key={n.id} onClick={()=>d({type:'NAV',v:n.id})} title={n.l} style={{width:42,height:42,borderRadius:'50%',border:`1px solid ${active?n.c:'rgba(255,255,255,.06)'}`,background:active?`${n.c}22`:'transparent',color:active?n.c:'#475569',fontSize:16,cursor:'pointer',transition:'all .2s',boxShadow:active?`0 0 14px ${n.c}66`:'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <button key={n.id} onClick={()=>d({type:'NAV',v:n.id})} title={n.l} style={{width:40,height:40,borderRadius:'50%',border:`1px solid ${active?n.c:'rgba(255,255,255,.05)'}`,background:active?`${n.c}22`:'transparent',color:active?n.c:'#475569',fontSize:15,cursor:'pointer',transition:'all .2s',boxShadow:active?`0 0 14px ${n.c}66`:'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
             {n.icon}
           </button>
         );
@@ -274,8 +301,23 @@ function Viz({active,color='#00d4ff'}) {
 }
 
 // ── API ───────────────────────────────────────────────────────────────────────
+async function* streamClaude(apiKey, prompt, system) {
+  const body={model:'claude-opus-4-7',max_tokens:1024,stream:true,messages:[{role:'user',content:prompt}]};
+  if(system) body.system=system;
+  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error');}
+  const reader=res.body.getReader(); const dec=new TextDecoder();
+  while(true){
+    const {done,value}=await reader.read(); if(done) break;
+    for(const line of dec.decode(value).split('\n')){
+      if(!line.startsWith('data: ')) continue;
+      const data=line.slice(6); if(data==='[DONE]') return;
+      try{const p=JSON.parse(data);if(p.type==='content_block_delta'&&p.delta?.text)yield p.delta.text;}catch{}
+    }
+  }
+}
 async function claude(key,prompt,system) {
-  const body={model:'claude-opus-4-7',max_tokens:1024,messages:[{role:'user',content:prompt}]};
+  const body={model:'claude-opus-4-7',max_tokens:800,messages:[{role:'user',content:prompt}]};
   if(system) body.system=system;
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify(body)});
   const d=await r.json(); if(d.error) throw new Error(d.error.message); return d.content[0].text;
@@ -287,6 +329,69 @@ async function gpt(key,prompt) {
 async function gemini(key,prompt) {
   const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
   const d=await r.json(); if(d.error) throw new Error(d.error.message); return d.candidates[0].content.parts[0].text;
+}
+
+// ── RAG ───────────────────────────────────────────────────────────────────────
+function ragSearch(notes, journals, query) {
+  const qw=query.toLowerCase().split(/\s+/).filter(w=>w.length>3);
+  if(!qw.length) return {ctx:'',count:0};
+  const pool=[
+    ...notes.map(n=>({src:'NOTE',title:n.title,body:n.body||'',text:`${n.title} ${n.body}`})),
+    ...journals.map(j=>({src:'JOURNAL',title:j.date,body:j.body||'',text:`${j.date} ${j.body}`})),
+  ];
+  const scored=pool.map(item=>({...item,score:qw.reduce((s,w)=>s+(item.text.toLowerCase().includes(w)?1:0),0)}))
+    .filter(i=>i.score>0).sort((a,b)=>b.score-a.score).slice(0,3);
+  if(!scored.length) return {ctx:'',count:0};
+  const ctx=`\n\n[KNOWLEDGE BASE — ${scored.length} relevant source(s)]\n${scored.map(i=>`[${i.src}] ${i.title}: ${i.body.slice(0,350)}`).join('\n---\n')}\n[END KNOWLEDGE BASE]`;
+  return {ctx,count:scored.length};
+}
+
+// ── Command Palette ───────────────────────────────────────────────────────────
+function CommandPalette({onClose}) {
+  const {s,d}=use();
+  const [q,setQ]=useState(''); const [sel,setSel]=useState(0);
+  const baseItems=[
+    ...NAVS.map(n=>({type:'nav',label:n.l,icon:n.icon,color:n.c,action:()=>d({type:'NAV',v:n.id})})),
+    ...s.notes.map(n=>({type:'note',label:n.title,icon:'▣',color:'#f59e0b',action:()=>{d({type:'NAV',v:'notes'});}})),
+    ...s.synthHistory.slice(0,8).map(h=>({type:'history',label:h.q.slice(0,50),icon:'◷',color:'#06b6d4',action:()=>d({type:'NAV',v:'history'})})),
+    ...s.memories.map((m,i)=>({type:'memory',label:m,icon:'◈',color:'#a855f7',action:()=>d({type:'NAV',v:'config'})})),
+  ];
+  const items=q?baseItems.filter(i=>i.label.toLowerCase().includes(q.toLowerCase())):baseItems;
+  const go=item=>{item.action();onClose();};
+  useEffect(()=>{
+    const h=e=>{
+      if(e.key==='Escape'){onClose();return;}
+      if(e.key==='ArrowDown'){e.preventDefault();setSel(p=>Math.min(p+1,items.length-1));}
+      if(e.key==='ArrowUp'){e.preventDefault();setSel(p=>Math.max(p-1,0));}
+      if(e.key==='Enter'&&items[sel]){go(items[sel]);}
+    };
+    window.addEventListener('keydown',h); return()=>window.removeEventListener('keydown',h);
+  },[items,sel]);
+  return (
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:9000,background:'rgba(0,0,0,.75)',backdropFilter:'blur(10px)',display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:100,animation:'slide-in .15s ease'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:580,background:'rgba(5,5,22,.98)',border:'1px solid rgba(0,212,255,.3)',borderRadius:12,overflow:'hidden',boxShadow:'0 0 80px rgba(0,212,255,.12),0 24px 60px rgba(0,0,0,.6)'}}>
+        <div style={{padding:'13px 18px',borderBottom:'1px solid rgba(0,212,255,.1)',display:'flex',alignItems:'center',gap:12}}>
+          <span style={{color:'#00d4ff',fontSize:15,fontWeight:700}}>⌘</span>
+          <input autoFocus value={q} onChange={e=>{setQ(e.target.value);setSel(0);}} placeholder="Search modules, notes, history, memories..." style={{flex:1,background:'none',border:'none',color:'#e2e8f0',fontSize:14,outline:'none'}}/>
+          <span style={{color:'#334155',fontSize:9,border:'1px solid #1e293b',borderRadius:3,padding:'2px 6px'}}>ESC</span>
+        </div>
+        <div style={{maxHeight:380,overflowY:'auto'}}>
+          {items.length===0&&<div style={{color:'#334155',fontSize:12,textAlign:'center',padding:28}}>No results</div>}
+          {items.map((item,i)=>(
+            <div key={i} onClick={()=>go(item)} style={{padding:'10px 18px',cursor:'pointer',background:i===sel?`${item.color}15`:'transparent',borderLeft:`2px solid ${i===sel?item.color:'transparent'}`,display:'flex',alignItems:'center',gap:10,transition:'background .08s'}}>
+              <span style={{color:item.color,fontSize:13}}>{item.icon}</span>
+              <span style={{color:i===sel?'#e2e8f0':'#94a3b8',fontSize:13,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.label}</span>
+              <span style={{color:'#1e3a5f',fontSize:9,letterSpacing:1}}>{item.type.toUpperCase()}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{padding:'7px 18px',borderTop:'1px solid rgba(0,212,255,.06)',display:'flex',gap:16,color:'#1e3a5f',fontSize:9}}>
+          <span>↑↓ navigate</span><span>↵ select</span><span>esc close</span>
+          <span style={{marginLeft:'auto'}}>{items.length} items</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── HOME ──────────────────────────────────────────────────────────────────────
@@ -305,10 +410,14 @@ function Home() {
       </div>
       <div style={{textAlign:'center'}}>
         <div style={{fontSize:42,fontWeight:900,letterSpacing:12,background:'linear-gradient(135deg,#00d4ff,#7c3aed)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>ORBIS</div>
-        <div style={{color:'#334155',fontSize:10,letterSpacing:6,marginTop:3}}>NEURAL INTELLIGENCE INTERFACE</div>
+        <div style={{color:'#334155',fontSize:10,letterSpacing:6,marginTop:3}}>NEURAL INTELLIGENCE INTERFACE v5.0</div>
         <div style={{color:'#00d4ff',fontSize:24,fontWeight:300,marginTop:10}}>{t}</div>
+        <div style={{color:'#1e3a5f',fontSize:10,marginTop:6,letterSpacing:2}}>
+          {s.memories.length>0&&<span style={{color:'#f59e0b'}}>{s.memories.length} memories · </span>}
+          {s.notes.length} notes · {(s.journals||[]).length} entries · Ctrl+K to search
+        </div>
       </div>
-      <div style={{display:'flex',flexWrap:'wrap',gap:12,justifyContent:'center',maxWidth:420}}>
+      <div style={{display:'flex',flexWrap:'wrap',gap:12,justifyContent:'center',maxWidth:440}}>
         {NAVS.filter(n=>n.id!=='home').map(n=>(
           <button key={n.id} onClick={()=>d({type:'NAV',v:n.id})} style={{width:64,height:64,borderRadius:'50%',border:`1px solid ${n.c}44`,background:`${n.c}11`,color:n.c,cursor:'pointer',fontSize:18,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,transition:'all .2s'}}
             onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 0 20px ${n.c}66`;e.currentTarget.style.transform='scale(1.12)';}}
@@ -322,79 +431,145 @@ function Home() {
 }
 
 // ── ADVISOR ───────────────────────────────────────────────────────────────────
-const MODELS={claude:{name:'Claude',c:'#00d4ff',icon:'◈'},gpt:{name:'GPT-4',c:'#7c3aed',icon:'◎'},gemini:{name:'Gemini',c:'#00ff88',icon:'◇'}};
+const MODELS={claude:{name:'Claude',c:'#00d4ff',icon:'◈'},gpt:{name:'GPT-4o',c:'#7c3aed',icon:'◎'},gemini:{name:'Gemini',c:'#00ff88',icon:'◇'}};
 function conflicts(res) {
   const pairs=[[/\byes\b/i,/\bno\b/i],[/\bshould\b/i,/\bshouldn't\b/i],[/\bincreas/i,/\bdecreas/i],[/\bsimple\b/i,/\bcomplex\b/i],[/\brecommend\b/i,/\bavoid\b/i]];
   const out=[]; const ks=Object.keys(res);
-  for(let i=0;i<ks.length;i++) for(let j=i+1;j<ks.length;j++) {
+  for(let i=0;i<ks.length;i++) for(let j=i+1;j<ks.length;j++){
     const a=res[ks[i]]||'', b=res[ks[j]]||'';
-    pairs.forEach(([pa,pb])=>{ if((pa.test(a)&&pb.test(b))||(pa.test(b)&&pb.test(a))) out.push(`${MODELS[ks[i]]?.name} vs ${MODELS[ks[j]]?.name}: divergent on "${pa.source.replace(/\\/g,'')}"`) });
+    pairs.forEach(([pa,pb])=>{if((pa.test(a)&&pb.test(b))||(pa.test(b)&&pb.test(a)))out.push(`${MODELS[ks[i]]?.name} vs ${MODELS[ks[j]]?.name}: divergent on "${pa.source.replace(/\\/g,'')}"`)});
   }
   return [...new Set(out)];
 }
+
+function useVoice(onResult) {
+  const SR=typeof window!=='undefined'&&(window.SpeechRecognition||window.webkitSpeechRecognition);
+  const [listening,setListening]=useState(false);
+  const start=useCallback(()=>{
+    if(!SR) return;
+    const r=new SR(); r.lang='en-US'; r.interimResults=false;
+    r.onresult=e=>onResult(e.results[0][0].transcript);
+    r.onend=()=>setListening(false);
+    r.onerror=()=>setListening(false);
+    setListening(true); r.start();
+  },[onResult]);
+  return {listening,start,supported:!!SR};
+}
+
 function Advisor() {
   const {s,d}=use();
-  const [q,setQ]=useState(''); const [load,setLoad]=useState({}); const [resp,setResp]=useState({}); const [errs,setErrs]=useState({}); const [done,setDone]=useState(false);
+  const [q,setQ]=useState('');
+  const [texts,setTexts]=useState({claude:'',gpt:'',gemini:''});
+  const [loading,setLoading]=useState({claude:false,gpt:false,gemini:false});
+  const [streaming,setStreaming]=useState({claude:false,gpt:false,gemini:false});
+  const [errs,setErrs]=useState({});
+  const [done,setDone]=useState(false);
+  const [ragInfo,setRagInfo]=useState({count:0,active:false});
   const hasKey=s.apiKeys.claude||s.apiKeys.gpt||s.apiKeys.gemini;
+  const {listening,start,supported}=useVoice(t=>setQ(p=>p?p+' '+t:t));
+
   const run=async()=>{
     if(!q.trim()||!hasKey) return;
-    setResp({}); setErrs({}); setDone(false);
-    const callers=[];
-    if(s.apiKeys.claude) callers.push(['claude',()=>claude(s.apiKeys.claude,q)]);
-    if(s.apiKeys.gpt)    callers.push(['gpt',   ()=>gpt(s.apiKeys.gpt,q)]);
-    if(s.apiKeys.gemini) callers.push(['gemini',()=>gemini(s.apiKeys.gemini,q)]);
-    setLoad(Object.fromEntries(callers.map(([k])=>[k,true])));
-    const nr={};
-    await Promise.all(callers.map(async([k,fn])=>{
-      try{const t=await fn();nr[k]=t;setResp(p=>({...p,[k]:t}));}
-      catch(e){setErrs(p=>({...p,[k]:e.message}));}
-      finally{setLoad(p=>({...p,[k]:false}));}
-    }));
-    setDone(true); d({type:'ADD_SYNTH',v:{q,responses:nr,ts:Date.now()}});
+    setTexts({claude:'',gpt:'',gemini:''}); setErrs({}); setDone(false);
+    const {ctx,count}=ragSearch(s.notes,s.journals,q);
+    setRagInfo({count,active:count>0});
+    const memCtx=s.memories.length?`\n\n[ORBIS MEMORY — previously learned]\n${s.memories.slice(0,5).map(m=>`• ${m}`).join('\n')}`:'';
+    const fullPrompt=q+ctx+memCtx;
+    const results={};
+    const promises=[];
+
+    if(s.apiKeys.claude){
+      promises.push((async()=>{
+        setLoading(p=>({...p,claude:true})); setStreaming(p=>({...p,claude:true}));
+        try{
+          let text='';
+          for await(const chunk of streamClaude(s.apiKeys.claude,fullPrompt)){
+            text+=chunk; setTexts(p=>({...p,claude:text}));
+          }
+          results.claude=text;
+        }catch(e){setErrs(p=>({...p,claude:e.message}));}
+        finally{setStreaming(p=>({...p,claude:false}));setLoading(p=>({...p,claude:false}));}
+      })());
+    }
+    if(s.apiKeys.gpt){
+      promises.push((async()=>{
+        setLoading(p=>({...p,gpt:true}));
+        try{const t=await gpt(s.apiKeys.gpt,fullPrompt);setTexts(p=>({...p,gpt:t}));results.gpt=t;}
+        catch(e){setErrs(p=>({...p,gpt:e.message}));}
+        finally{setLoading(p=>({...p,gpt:false}));}
+      })());
+    }
+    if(s.apiKeys.gemini){
+      promises.push((async()=>{
+        setLoading(p=>({...p,gemini:true}));
+        try{const t=await gemini(s.apiKeys.gemini,fullPrompt);setTexts(p=>({...p,gemini:t}));results.gemini=t;}
+        catch(e){setErrs(p=>({...p,gemini:e.message}));}
+        finally{setLoading(p=>({...p,gemini:false}));}
+      })());
+    }
+    await Promise.all(promises);
+    setDone(true);
+    d({type:'ADD_SYNTH',v:{q,responses:results,rag:count>0,ts:Date.now()}});
+    if(s.apiKeys.claude&&results.claude&&s.memories.length<10){
+      try{
+        const insight=await claude(s.apiKeys.claude,`Extract one key factual insight (max 15 words) worth remembering from:\n"${results.claude.slice(0,500)}"\nRespond with ONLY the insight.`);
+        if(insight&&insight.length<150) d({type:'ADD_MEMORY',v:insight.trim()});
+      }catch{}
+    }
   };
-  const cf=done?conflicts(resp):[];
+
+  const cf=done?conflicts(texts):[];
   const score=Math.max(0,100-cf.length*15);
   return (
     <div style={{display:'flex',flexDirection:'column',gap:12,height:'100%'}}>
-      <div style={{color:'#7c3aed',fontSize:12,letterSpacing:2,fontWeight:700}}>◈ MULTI-AI ADVISOR</div>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <span style={{color:'#7c3aed',fontSize:12,letterSpacing:2,fontWeight:700}}>◈ MULTI-AI ADVISOR</span>
+        {ragInfo.active&&<span style={{background:'rgba(0,255,136,.12)',color:'#00ff88',fontSize:9,borderRadius:4,padding:'2px 7px',letterSpacing:1}}>RAG · {ragInfo.count} source{ragInfo.count>1?'s':''}</span>}
+        {s.memories.length>0&&<span style={{background:'rgba(168,85,247,.12)',color:'#a855f7',fontSize:9,borderRadius:4,padding:'2px 7px',letterSpacing:1}}>{s.memories.length} memories active</span>}
+      </div>
       <div style={{display:'flex',gap:8}}>
-        <textarea value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&run()} placeholder="Enter query... (Ctrl+Enter)" style={{flex:1,background:'rgba(0,0,0,.3)',border:'1px solid rgba(124,58,237,.2)',borderRadius:6,color:'#e2e8f0',padding:'9px 12px',fontSize:13,resize:'vertical',minHeight:56,outline:'none'}}/>
-        <button onClick={run} style={{padding:'0 16px',background:'rgba(124,58,237,.15)',border:'1px solid #7c3aed44',borderRadius:6,color:'#7c3aed',cursor:'pointer',fontSize:12,alignSelf:'flex-end',height:38}}>QUERY</button>
+        <textarea value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&run()} placeholder="Enter query... (Ctrl+Enter to send)" style={{flex:1,background:'rgba(0,0,0,.3)',border:'1px solid rgba(124,58,237,.2)',borderRadius:6,color:'#e2e8f0',padding:'9px 12px',fontSize:13,resize:'vertical',minHeight:56,outline:'none'}}/>
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          <button onClick={run} style={{padding:'0 16px',background:'rgba(124,58,237,.15)',border:'1px solid #7c3aed44',borderRadius:6,color:'#7c3aed',cursor:'pointer',fontSize:12,height:36}}>QUERY</button>
+          {supported&&<button onClick={start} style={{padding:'0 10px',background:listening?'rgba(239,68,68,.2)':'rgba(0,212,255,.08)',border:`1px solid ${listening?'#ef444466':'rgba(0,212,255,.2)'}`,borderRadius:6,color:listening?'#ef4444':'#475569',cursor:'pointer',fontSize:13,height:36}} title="Voice input">🎤</button>}
+        </div>
       </div>
       {!hasKey&&<div style={{color:'#f59e0b',fontSize:12}}>⚠ Add API keys in Config.</div>}
       <div style={{display:'flex',gap:10,flex:1,overflow:'hidden',minHeight:0}}>
         {Object.entries(MODELS).map(([k,m])=>(
-          <div key={k} style={{flex:1,border:`1px solid ${m.c}22`,borderRadius:8,padding:12,background:`${m.c}08`,display:'flex',flexDirection:'column',gap:7,overflow:'hidden'}}>
+          <div key={k} style={{flex:1,border:`1px solid ${m.c}22`,borderRadius:8,padding:12,background:`${m.c}06`,display:'flex',flexDirection:'column',gap:7,overflow:'hidden'}}>
             <div style={{display:'flex',alignItems:'center',gap:7}}>
               <span style={{color:m.c,fontSize:15}}>{m.icon}</span>
               <span style={{color:m.c,fontSize:11,fontWeight:700,letterSpacing:2}}>{m.name}</span>
-              {load[k]&&<span style={{color:'#64748b',fontSize:9,marginLeft:'auto',animation:'flicker .5s infinite'}}>THINKING...</span>}
+              {loading[k]&&<span style={{color:'#64748b',fontSize:9,marginLeft:'auto',animation:'flicker .5s infinite'}}>{streaming[k]?'STREAMING...':'THINKING...'}</span>}
             </div>
-            <Viz active={!!load[k]} color={m.c}/>
+            <Viz active={!!loading[k]} color={m.c}/>
             {errs[k]&&<div style={{color:'#ef4444',fontSize:12}}>⚠ {errs[k]}</div>}
-            {resp[k]&&<div style={{color:'#cbd5e1',fontSize:12,lineHeight:1.7,flex:1,overflowY:'auto'}}>{resp[k]}</div>}
-            {!load[k]&&!resp[k]&&!errs[k]&&<div style={{color:'#1e3a5f',fontSize:12}}>Awaiting query...</div>}
+            <div style={{color:'#cbd5e1',fontSize:12,lineHeight:1.7,flex:1,overflowY:'auto',whiteSpace:'pre-wrap'}}>
+              {texts[k]||(!loading[k]&&!errs[k]&&<span style={{color:'#1e3a5f'}}>Awaiting query...</span>)}
+              {streaming[k]&&<span style={{animation:'cursor-blink .7s infinite',color:m.c}}>█</span>}
+            </div>
           </div>
         ))}
       </div>
-      {done&&Object.keys(resp).length>0&&(
-        <div style={{border:'1px solid rgba(124,58,237,.2)',borderRadius:8,padding:14,background:'rgba(124,58,237,.04)'}}>
-          <div style={{color:'#7c3aed',fontSize:11,letterSpacing:2,marginBottom:8,fontWeight:700}}>◈ ORBIS-CORE SYNTHESIS</div>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#64748b',marginBottom:3}}>
-            <span>MODEL CONSENSUS</span><span style={{color:score>70?'#00ff88':score>40?'#f59e0b':'#ef4444'}}>{score}%</span>
-          </div>
-          <div style={{height:3,background:'#1e293b',borderRadius:2,marginBottom:10}}>
-            <div style={{height:'100%',borderRadius:2,width:`${score}%`,background:score>70?'#00ff88':score>40?'#f59e0b':'#ef4444',transition:'width 1s'}}/>
+      {done&&Object.values(texts).some(t=>t)&&(
+        <div style={{border:'1px solid rgba(124,58,237,.2)',borderRadius:8,padding:14,background:'rgba(124,58,237,.04)',flexShrink:0}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+            <span style={{color:'#7c3aed',fontSize:11,letterSpacing:2,fontWeight:700}}>◈ ORBIS SYNTHESIS</span>
+            <div style={{flex:1,height:3,background:'#1e293b',borderRadius:2}}>
+              <div style={{height:'100%',borderRadius:2,width:`${score}%`,background:score>70?'#00ff88':score>40?'#f59e0b':'#ef4444',transition:'width 1.2s',boxShadow:`0 0 6px ${score>70?'#00ff88':score>40?'#f59e0b':'#ef4444'}88`}}/>
+            </div>
+            <span style={{color:score>70?'#00ff88':score>40?'#f59e0b':'#ef4444',fontSize:11,fontWeight:700}}>{score}%</span>
           </div>
           {cf.length>0&&(
-            <div style={{background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)',borderRadius:5,padding:9,marginBottom:9}}>
+            <div style={{background:'rgba(239,68,68,.06)',border:'1px solid rgba(239,68,68,.15)',borderRadius:5,padding:9,marginBottom:9}}>
               <div style={{color:'#ef4444',fontSize:10,letterSpacing:2,marginBottom:5}}>⚠ CONFLICT ANALYSIS</div>
               {cf.map((c,i)=><div key={i} style={{color:'#fca5a5',fontSize:11,marginBottom:2}}>• {c}</div>)}
             </div>
           )}
-          <div style={{color:'#cbd5e1',fontSize:12,lineHeight:1.7}}>
-            <strong style={{color:'#7c3aed'}}>Unified advisory:</strong>{' '}
-            {cf.length===0?'All models converge. High confidence.':`${cf.length} conflict(s) detected — review before acting.`}
+          <div style={{color:'#94a3b8',fontSize:12,lineHeight:1.7}}>
+            {cf.length===0?<span style={{color:'#00ff88'}}>✓ All models converge. High confidence recommendation.</span>:`${cf.length} conflict(s) detected — review divergences before acting.`}
+            {ragInfo.active&&<span style={{color:'#475569',fontSize:11}}> · Response informed by {ragInfo.count} knowledge base source(s).</span>}
           </div>
         </div>
       )}
@@ -501,9 +676,46 @@ const MOODS=[{e:'🔥',v:5},{e:'⚡',v:4},{e:'💧',v:3},{e:'🌧️',v:2},{e:'�
 function streak(js) {
   if(!js.length) return 0;
   const sorted=[...js].sort((a,b)=>b.date.localeCompare(a.date));
-  let s=0, cur=new Date(); cur.setHours(0,0,0,0);
-  for(const j of sorted){const d=new Date(j.date);d.setHours(0,0,0,0);if(Math.round((cur-d)/86400000)<=1){s++;cur=d;}else break;}
-  return s;
+  let str=0, cur=new Date(); cur.setHours(0,0,0,0);
+  for(const j of sorted){const dv=new Date(j.date);dv.setHours(0,0,0,0);if(Math.round((cur-dv)/86400000)<=1){str++;cur=dv;}else break;}
+  return str;
+}
+function MoodChart({journals}) {
+  const ref=useRef();
+  useEffect(()=>{
+    const c=ref.current; if(!c) return;
+    const ctx=c.getContext('2d'); const W=c.width, H=c.height;
+    ctx.clearRect(0,0,W,H);
+    const days=[];
+    for(let i=29;i>=0;i--){
+      const dt=new Date(); dt.setDate(dt.getDate()-i);
+      const key=dt.toISOString().slice(0,10);
+      const entry=journals.find(j=>j.date===key);
+      days.push({mood:entry?entry.mood||3:null});
+    }
+    for(let v=1;v<=5;v++){
+      const y=H-(v/5)*(H-8)-4;
+      ctx.strokeStyle='rgba(236,72,153,.08)'; ctx.lineWidth=.5;
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    }
+    const pts=days.map((d,i)=>d.mood!==null?{x:(i/29)*(W-16)+8,y:H-(d.mood/5)*(H-8)-4}:null);
+    const valid=pts.filter(Boolean);
+    if(valid.length<2){
+      ctx.fillStyle='#1e3a5f'; ctx.font='9px monospace'; ctx.textAlign='center';
+      ctx.fillText('No data yet',W/2,H/2); return;
+    }
+    const grad=ctx.createLinearGradient(0,0,W,0);
+    grad.addColorStop(0,'#7c3aed'); grad.addColorStop(1,'#ec4899');
+    ctx.beginPath(); let first=true;
+    pts.forEach(p=>{
+      if(!p){first=true;return;}
+      if(first){ctx.moveTo(p.x,p.y);first=false;}else ctx.lineTo(p.x,p.y);
+    });
+    ctx.strokeStyle=grad; ctx.lineWidth=1.5;
+    ctx.shadowBlur=6; ctx.shadowColor='#ec4899'; ctx.stroke(); ctx.shadowBlur=0;
+    valid.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2);ctx.fillStyle='#ec4899';ctx.fill();});
+  },[journals]);
+  return <canvas ref={ref} width={168} height={56} style={{width:'100%',height:56,borderRadius:4,marginTop:6}}/>;
 }
 function Journal() {
   const {s,d}=use(); const [sel,setSel]=useState(null); const [refl,setRefl]=useState(false);
@@ -513,18 +725,23 @@ function Journal() {
   const addToday=()=>{const ex=js.find(j=>j.date===today);if(ex){setSel(ex.id);return;}d({type:'ADD_J',date:today});};
   const reflect=async()=>{
     if(!entry?.body||!s.apiKeys.claude) return; setRefl(true);
-    try{const mood=MOODS.find(m=>m.v===(entry.mood||3))?.e||'💧';const r=await claude(s.apiKeys.claude,`You are a thoughtful journaling coach. The user wrote:\n\n"${entry.body}"\n\nMood: ${mood}.\n\nWrite a warm 3-sentence reflection: mirror what you heard, surface one deeper pattern, offer one question to sit with. Be direct, no bullet points.`);d({type:'UPD_J',id:entry.id,v:{reflection:r}});}
-    catch(e){d({type:'UPD_J',id:entry.id,v:{reflection:`Error: ${e.message}`}});}
+    try{
+      const mood=MOODS.find(m=>m.v===(entry.mood||3))?.e||'💧';
+      const r=await claude(s.apiKeys.claude,`You are a thoughtful journaling coach. The user wrote:\n\n"${entry.body}"\n\nMood: ${mood}.\n\nWrite a warm 3-sentence reflection: mirror what you heard, surface one deeper pattern, offer one question to sit with. Be direct, no bullet points.`);
+      d({type:'UPD_J',id:entry.id,v:{reflection:r}});
+    }catch(e){d({type:'UPD_J',id:entry.id,v:{reflection:`Error: ${e.message}`}});}
     setRefl(false);
   };
   return (
     <div style={{display:'flex',gap:14,height:'100%'}}>
       <div style={{width:190,display:'flex',flexDirection:'column',gap:7,borderRight:'1px solid rgba(236,72,153,.1)',paddingRight:14}}>
         <div style={{color:'#ec4899',fontSize:11,letterSpacing:2,fontWeight:700}}>◉ JOURNAL</div>
-        <div style={{background:'rgba(236,72,153,.08)',border:'1px solid rgba(236,72,153,.2)',borderRadius:6,padding:'9px 10px',textAlign:'center'}}>
-          <div style={{fontSize:24}}>🔥</div>
+        <div style={{background:'rgba(236,72,153,.08)',border:'1px solid rgba(236,72,153,.2)',borderRadius:6,padding:'8px 10px',textAlign:'center'}}>
+          <div style={{fontSize:20}}>🔥</div>
           <div style={{color:'#ec4899',fontSize:18,fontWeight:700}}>{streak(js)}</div>
           <div style={{color:'#64748b',fontSize:9,letterSpacing:1}}>DAY STREAK</div>
+          <MoodChart journals={js}/>
+          <div style={{color:'#334155',fontSize:8,marginTop:3,letterSpacing:1}}>30-DAY MOOD</div>
         </div>
         <button onClick={addToday} style={{background:'rgba(236,72,153,.12)',border:'1px solid rgba(236,72,153,.3)',borderRadius:5,color:'#ec4899',cursor:'pointer',padding:'7px',fontSize:11,letterSpacing:1}}>+ TODAY</button>
         <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:3}}>
@@ -546,14 +763,14 @@ function Journal() {
               <button onClick={()=>d({type:'DEL_J',id:entry.id})} style={{marginLeft:'auto',background:'rgba(239,68,68,.1)',border:'1px solid rgba(239,68,68,.2)',borderRadius:4,color:'#ef4444',cursor:'pointer',padding:'3px 7px',fontSize:9}}>DELETE</button>
             </div>
             <textarea value={entry.body||''} onChange={e=>d({type:'UPD_J',id:entry.id,v:{body:e.target.value}})} placeholder="What happened today?..." style={{flex:1,background:'rgba(0,0,0,.2)',border:'1px solid rgba(236,72,153,.1)',borderRadius:6,color:'#e2e8f0',padding:'12px 14px',fontSize:13,lineHeight:2,resize:'none',outline:'none',minHeight:160}}/>
-            <div style={{border:'1px solid rgba(236,72,153,.15)',borderRadius:7,padding:13}}>
+            <div style={{border:'1px solid rgba(236,72,153,.15)',borderRadius:7,padding:13,flexShrink:0}}>
               <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:9}}>
                 <span style={{color:'#ec4899',fontSize:11,letterSpacing:2,fontWeight:700}}>◈ AI REFLECTION</span>
                 <button onClick={reflect} disabled={!entry.body||!s.apiKeys.claude||refl} style={{marginLeft:'auto',padding:'4px 12px',background:s.apiKeys.claude?'rgba(236,72,153,.15)':'rgba(100,116,139,.1)',border:`1px solid ${s.apiKeys.claude?'rgba(236,72,153,.3)':'#334155'}`,borderRadius:4,color:s.apiKeys.claude?'#ec4899':'#475569',cursor:s.apiKeys.claude&&!refl?'pointer':'not-allowed',fontSize:10,letterSpacing:1}}>
                   {refl?'REFLECTING...':'GENERATE'}
                 </button>
               </div>
-              {!s.apiKeys.claude&&<div style={{color:'#475569',fontSize:11}}>Add Claude API key in Config to enable reflections.</div>}
+              {!s.apiKeys.claude&&<div style={{color:'#475569',fontSize:11}}>Add Claude API key in Config.</div>}
               {entry.reflection?<div style={{color:'#cbd5e1',fontSize:13,lineHeight:1.8,fontStyle:'italic'}}>"{entry.reflection}"</div>:<div style={{color:'#1e3a5f',fontSize:11}}>Write an entry and click Generate.</div>}
             </div>
           </>
@@ -570,13 +787,13 @@ function Journal() {
 
 // ── GOALS ─────────────────────────────────────────────────────────────────────
 const COLS=[{id:'todo',l:'QUEUED',c:'#64748b'},{id:'active',l:'IN PROGRESS',c:'#f97316'},{id:'done',l:'COMPLETE',c:'#00ff88'}];
-function GoalCard({g,d,cc}) {
+function GoalCard({g,d,cc,claudeKey}) {
   const [open,setOpen]=useState(false); const [mt,setMt]=useState(''); const [aiLoading,setAi]=useState(false);
   const done=g.milestones.filter(m=>m.done).length, total=g.milestones.length;
   const prog=g.progress||(total?Math.round(done/total*100):0);
   const aiRoadmap=async()=>{
-    const key=window.__orbisState?.apiKeys?.claude; if(!key) return; setAi(true);
-    try{const r=await claude(key,`For goal "${g.title}", give exactly 5 concrete milestones as a numbered list (1. 2. 3. 4. 5.). Each 5-10 words. No extra text.`);r.split('\n').filter(l=>/^\d+\./.test(l.trim())).map(l=>l.replace(/^\d+\.\s*/,'')).filter(Boolean).forEach(text=>d({type:'ADD_M',gid:g.id,text}));}
+    if(!claudeKey) return; setAi(true);
+    try{const r=await claude(claudeKey,`For goal "${g.title}", give exactly 5 concrete milestones as a numbered list (1. 2. 3. 4. 5.). Each 5-10 words. No extra text.`);r.split('\n').filter(l=>/^\d+\./.test(l.trim())).map(l=>l.replace(/^\d+\.\s*/,'')).filter(Boolean).forEach(text=>d({type:'ADD_M',gid:g.id,text}));}
     catch{}setAi(false);
   };
   return (
@@ -610,7 +827,7 @@ function GoalCard({g,d,cc}) {
           <div style={{display:'flex',gap:5,marginTop:5}}>
             <input value={mt} onChange={e=>setMt(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&mt.trim()){d({type:'ADD_M',gid:g.id,text:mt.trim()});setMt('');}}} placeholder="Add milestone (Enter)..." style={{flex:1,background:'rgba(0,0,0,.3)',border:'1px solid #1e293b',borderRadius:3,color:'#94a3b8',padding:'4px 6px',fontSize:9,outline:'none'}}/>
           </div>
-          {window.__orbisState?.apiKeys?.claude&&<button onClick={aiRoadmap} disabled={aiLoading} style={{marginTop:6,width:'100%',padding:'4px',background:'rgba(249,115,22,.1)',border:'1px solid rgba(249,115,22,.2)',borderRadius:3,color:'#f97316',cursor:'pointer',fontSize:9,letterSpacing:1}}>{aiLoading?'GENERATING...':'◈ AI ROADMAP'}</button>}
+          {claudeKey&&<button onClick={aiRoadmap} disabled={aiLoading} style={{marginTop:6,width:'100%',padding:'4px',background:'rgba(249,115,22,.1)',border:'1px solid rgba(249,115,22,.2)',borderRadius:3,color:'#f97316',cursor:'pointer',fontSize:9,letterSpacing:1}}>{aiLoading?'GENERATING...':'◈ AI ROADMAP'}</button>}
         </div>
       )}
     </div>
@@ -642,7 +859,7 @@ function Goals() {
             </div>
             <div style={{flex:1,overflowY:'auto'}}>
               {gs.filter(g=>g.status===col.id).length===0&&<div style={{color:'#1e3a5f',fontSize:10,textAlign:'center',marginTop:16}}>Empty</div>}
-              {gs.filter(g=>g.status===col.id).map(g=><GoalCard key={g.id} g={g} d={d} cc={col.c}/>)}
+              {gs.filter(g=>g.status===col.id).map(g=><GoalCard key={g.id} g={g} d={d} cc={col.c} claudeKey={s.apiKeys.claude}/>)}
             </div>
           </div>
         ))}
@@ -653,26 +870,37 @@ function Goals() {
 
 // ── AGENTS ────────────────────────────────────────────────────────────────────
 const DEF_AGENTS=[
-  {id:'socrates',name:'Socrates',icon:'🏛️',c:'#00d4ff',tag:'Question everything',sys:'You are Socrates. Never give direct answers. Use Socratic questioning only. Ask one focused question at a time.'},
-  {id:'edison',  name:'Edison',  icon:'💡',c:'#f59e0b',tag:'Build it today',    sys:'You are Edison. Focus only on what can be built RIGHT NOW. Give concrete steps, materials, effort. Be blunt.'},
-  {id:'cassandra',name:'Cassandra',icon:'⚠️',c:'#ef4444',tag:"Devil's advocate",sys:'You are Cassandra. Surface every risk, flaw, worst-case. Be thorough, specific, unsentimental.'},
+  {id:'socrates',name:'Socrates',icon:'🏛️',c:'#00d4ff',tag:'Question everything',sys:'You are Socrates. Never give direct answers. Use Socratic questioning only. Ask one focused question at a time. Be curious, gentle, relentless.'},
+  {id:'edison',  name:'Edison',  icon:'💡',c:'#f59e0b',tag:'Build it today',     sys:'You are Edison. Focus only on what can be built RIGHT NOW. Give concrete steps, materials, effort. Be blunt and action-oriented.'},
+  {id:'cassandra',name:'Cassandra',icon:'⚠️',c:'#ef4444',tag:"Devil's advocate",sys:'You are Cassandra. Surface every risk, flaw, worst-case scenario. Be thorough, specific, unsentimental.'},
   {id:'tesla',   name:'Tesla',   icon:'⚡',c:'#a855f7',tag:'Think 50 years ahead',sys:'You are Tesla. Think in systems, 50 years ahead. Ignore constraints. Grand visions with technical precision.'},
 ];
 function Agents() {
-  const {s,d}=use(); const [aid,setAid]=useState('socrates'); const [inp,setInp]=useState(''); const [load,setLoad]=useState(false); const [showNew,setNew]=useState(false);
+  const {s,d}=use();
+  const [aid,setAid]=useState('socrates'); const [inp,setInp]=useState('');
+  const [load,setLoad]=useState(false); const [streamText,setStreamText]=useState(''); const [isStreaming,setIsStreaming]=useState(false);
+  const [showNew,setNew]=useState(false);
   const [na,setNa]=useState({name:'',icon:'🤖',c:'#00d4ff',tag:'',sys:''});
   const end=useRef();
   const all=[...DEF_AGENTS,...(s.customAgents||[])];
   const agent=all.find(a=>a.id===aid)||all[0];
   const msgs=(s.agentMessages||{})[aid]||[];
-  useEffect(()=>end.current?.scrollIntoView({behavior:'smooth'}),[msgs.length]);
+  const {listening,start,supported}=useVoice(t=>setInp(p=>p?p+' '+t:t));
+  useEffect(()=>end.current?.scrollIntoView({behavior:'smooth'}),[msgs.length,streamText]);
   const send=async()=>{
     if(!inp.trim()||!s.apiKeys.claude||load) return;
     const um={role:'user',content:inp.trim(),ts:Date.now()};
-    d({type:'AGENT_MSG',aid,msg:um}); setInp(''); setLoad(true);
-    try{const r=await claude(s.apiKeys.claude,inp.trim(),agent.sys);d({type:'AGENT_MSG',aid,msg:{role:'assistant',content:r,ts:Date.now()}});}
-    catch(e){d({type:'AGENT_MSG',aid,msg:{role:'assistant',content:`⚠ ${e.message}`,ts:Date.now()}});}
-    setLoad(false);
+    d({type:'AGENT_MSG',aid,msg:um}); setInp(''); setLoad(true); setStreamText(''); setIsStreaming(true);
+    try{
+      let text='';
+      for await(const chunk of streamClaude(s.apiKeys.claude,um.content,agent.sys)){
+        text+=chunk; setStreamText(text);
+      }
+      d({type:'AGENT_MSG',aid,msg:{role:'assistant',content:text,ts:Date.now()}});
+    }catch(e){
+      d({type:'AGENT_MSG',aid,msg:{role:'assistant',content:`⚠ ${e.message}`,ts:Date.now()}});
+    }
+    setIsStreaming(false); setStreamText(''); setLoad(false);
   };
   return (
     <div style={{display:'flex',gap:14,height:'100%'}}>
@@ -709,21 +937,73 @@ function Agents() {
           <div><div style={{color:agent.c,fontSize:15,fontWeight:700}}>{agent.name}</div><div style={{color:'#475569',fontSize:10}}>{agent.tag}</div></div>
           {msgs.length>0&&<button onClick={()=>d({type:'CLEAR_AGENT',aid})} style={{marginLeft:'auto',background:'rgba(100,116,139,.1)',border:'1px solid #1e293b',borderRadius:4,color:'#475569',cursor:'pointer',padding:'3px 9px',fontSize:9}}>CLEAR</button>}
         </div>
-        {msgs.length===0&&<div style={{background:`${agent.c}08`,border:`1px solid ${agent.c}1a`,borderRadius:7,padding:11,marginBottom:11,color:'#475569',fontSize:11,lineHeight:1.6,fontStyle:'italic'}}>"{agent.sys}"</div>}
+        {msgs.length===0&&!isStreaming&&<div style={{background:`${agent.c}08`,border:`1px solid ${agent.c}1a`,borderRadius:7,padding:11,marginBottom:11,color:'#475569',fontSize:11,lineHeight:1.6,fontStyle:'italic'}}>"{agent.sys}"</div>}
         <div style={{flex:1,overflowY:'auto',paddingRight:3}}>
           {msgs.map((m,i)=>(
             <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start',marginBottom:10}}>
-              <div style={{maxWidth:'74%',padding:'9px 13px',borderRadius:m.role==='user'?'12px 12px 4px 12px':'12px 12px 12px 4px',background:m.role==='user'?'rgba(100,116,139,.15)':`${agent.c}12`,border:`1px solid ${m.role==='user'?'rgba(100,116,139,.2)':agent.c+'33'}`,color:'#e2e8f0',fontSize:13,lineHeight:1.7}}>{m.content}</div>
+              <div style={{maxWidth:'74%',padding:'9px 13px',borderRadius:m.role==='user'?'12px 12px 4px 12px':'12px 12px 12px 4px',background:m.role==='user'?'rgba(100,116,139,.15)':`${agent.c}12`,border:`1px solid ${m.role==='user'?'rgba(100,116,139,.2)':agent.c+'33'}`,color:'#e2e8f0',fontSize:13,lineHeight:1.7,whiteSpace:'pre-wrap'}}>{m.content}</div>
             </div>
           ))}
-          {load&&<div style={{display:'flex',gap:4,padding:'7px 13px'}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:'50%',background:agent.c,animation:'float .8s ease-in-out infinite',animationDelay:`${i*.15}s`,opacity:.7}}/>)}</div>}
+          {isStreaming&&streamText&&(
+            <div style={{display:'flex',justifyContent:'flex-start',marginBottom:10}}>
+              <div style={{maxWidth:'74%',padding:'9px 13px',borderRadius:'12px 12px 12px 4px',background:`${agent.c}12`,border:`1px solid ${agent.c}33`,color:'#e2e8f0',fontSize:13,lineHeight:1.7,whiteSpace:'pre-wrap'}}>
+                {streamText}<span style={{animation:'cursor-blink .7s infinite',color:agent.c}}>█</span>
+              </div>
+            </div>
+          )}
+          {load&&!streamText&&<div style={{display:'flex',gap:4,padding:'7px 13px'}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:'50%',background:agent.c,animation:'float .8s ease-in-out infinite',animationDelay:`${i*.15}s`,opacity:.7}}/>)}</div>}
           <div ref={end}/>
         </div>
         {!s.apiKeys.claude&&<div style={{color:'#f59e0b',fontSize:11,marginBottom:7}}>⚠ Add Claude API key in Config.</div>}
         <div style={{display:'flex',gap:7,paddingTop:8,borderTop:`1px solid ${agent.c}18`}}>
           <textarea value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}} placeholder={`Message ${agent.name}... (Enter)`} disabled={!s.apiKeys.claude||load} style={{flex:1,background:'rgba(0,0,0,.3)',border:`1px solid ${agent.c}33`,borderRadius:6,color:'#e2e8f0',padding:'7px 11px',fontSize:13,resize:'none',outline:'none',minHeight:40,maxHeight:100}}/>
+          {supported&&<button onClick={start} style={{padding:'0 10px',background:listening?'rgba(239,68,68,.2)':'rgba(0,212,255,.08)',border:`1px solid ${listening?'#ef444466':'rgba(0,212,255,.2)'}`,borderRadius:6,color:listening?'#ef4444':'#475569',cursor:'pointer',fontSize:13,alignSelf:'flex-end',height:40}} title="Voice">🎤</button>}
           <button onClick={send} disabled={!inp.trim()||!s.apiKeys.claude||load} style={{padding:'0 14px',background:`${agent.c}18`,border:`1px solid ${agent.c}44`,borderRadius:6,color:agent.c,cursor:'pointer',fontSize:17,alignSelf:'flex-end',height:40}}>▶</button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SYNTHESIS HISTORY ─────────────────────────────────────────────────────────
+function SynthHistory() {
+  const {s}=use(); const [q,setQ]=useState(''); const [open,setOpen]=useState(null);
+  const hist=s.synthHistory||[];
+  const filtered=q?hist.filter(h=>h.q.toLowerCase().includes(q.toLowerCase())):hist;
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%',gap:12}}>
+      <div style={{display:'flex',alignItems:'center',gap:12}}>
+        <span style={{color:'#06b6d4',fontSize:12,letterSpacing:2,fontWeight:700}}>◷ SYNTHESIS HISTORY</span>
+        <span style={{color:'#334155',fontSize:11}}>{hist.length} sessions</span>
+      </div>
+      <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search queries..." style={{background:'rgba(0,0,0,.3)',border:'1px solid rgba(6,182,212,.2)',borderRadius:5,color:'#e2e8f0',padding:'7px 11px',fontSize:12,outline:'none'}}/>
+      {filtered.length===0&&<div style={{color:'#1e3a5f',fontSize:12,textAlign:'center',marginTop:40}}>No synthesis history. Use the Advisor module to generate one.</div>}
+      <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:7}}>
+        {filtered.map(h=>(
+          <div key={h.ts} style={{border:'1px solid rgba(6,182,212,.15)',borderRadius:8,overflow:'hidden',transition:'border-color .2s'}}>
+            <div onClick={()=>setOpen(open===h.ts?null:h.ts)} style={{padding:'11px 14px',cursor:'pointer',display:'flex',alignItems:'center',gap:10,background:open===h.ts?'rgba(6,182,212,.07)':'transparent'}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{color:'#06b6d4',fontSize:9,letterSpacing:1,marginBottom:3}}>{new Date(h.ts).toLocaleString()}</div>
+                <div style={{color:'#e2e8f0',fontSize:12,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{h.q}</div>
+              </div>
+              <div style={{display:'flex',gap:5,flexShrink:0}}>
+                {h.rag&&<span style={{background:'rgba(0,255,136,.1)',color:'#00ff88',fontSize:8,borderRadius:3,padding:'2px 6px'}}>RAG</span>}
+                {Object.keys(h.responses||{}).map(k=><span key={k} style={{background:`${MODELS[k]?.c||'#475569'}18`,color:MODELS[k]?.c||'#475569',fontSize:8,borderRadius:3,padding:'2px 6px'}}>{MODELS[k]?.name||k}</span>)}
+              </div>
+              <span style={{color:'#475569',fontSize:11}}>{open===h.ts?'▲':'▼'}</span>
+            </div>
+            {open===h.ts&&(
+              <div style={{borderTop:'1px solid rgba(6,182,212,.08)'}}>
+                {Object.entries(h.responses||{}).map(([model,text])=>(
+                  <div key={model} style={{padding:'12px 14px',borderBottom:'1px solid rgba(6,182,212,.05)'}}>
+                    <div style={{color:MODELS[model]?.c||'#94a3b8',fontSize:10,letterSpacing:2,marginBottom:6,fontWeight:700}}>{MODELS[model]?.icon} {MODELS[model]?.name||model}</div>
+                    <div style={{color:'#94a3b8',fontSize:12,lineHeight:1.75,maxHeight:140,overflowY:'auto',whiteSpace:'pre-wrap'}}>{text}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -781,10 +1061,10 @@ function Room3D() {
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%',gap:9}}>
       <div style={{display:'flex',alignItems:'center',gap:14}}>
-        <span style={{color:'#06b6d4',fontSize:12,letterSpacing:2,fontWeight:700}}>⊕ 3D ORB ROOM</span>
+        <span style={{color:'#38bdf8',fontSize:12,letterSpacing:2,fontWeight:700}}>⊕ 3D ORB ROOM</span>
         <span style={{color:'#334155',fontSize:11}}>Mouse to look · Click orb to navigate</span>
       </div>
-      <div ref={mount} style={{flex:1,borderRadius:8,overflow:'hidden',border:'1px solid rgba(6,182,212,.15)',cursor:'crosshair'}}/>
+      <div ref={mount} style={{flex:1,borderRadius:8,overflow:'hidden',border:'1px solid rgba(56,189,248,.15)',cursor:'crosshair'}}/>
     </div>
   );
 }
@@ -793,13 +1073,15 @@ function Room3D() {
 function Config() {
   const {s,d}=use(); const [keys,setKeys]=useState(s.apiKeys); const [saved,setSaved]=useState(false);
   const go=()=>{d({type:'KEYS',v:keys});setSaved(true);setTimeout(()=>setSaved(false),2000);};
+  const js=s.journals||[];
+  const streakVal=(()=>{if(!js.length)return 0;const sorted=[...js].sort((a,b)=>b.date.localeCompare(a.date));let str=0,cur=new Date();cur.setHours(0,0,0,0);for(const j of sorted){const dv=new Date(j.date);dv.setHours(0,0,0,0);if(Math.round((cur-dv)/86400000)<=1){str++;cur=dv;}else break;}return str;})();
   return (
-    <div style={{maxWidth:500,display:'flex',flexDirection:'column',gap:16}}>
+    <div style={{maxWidth:520,display:'flex',flexDirection:'column',gap:16}}>
       <div style={{color:'#ef4444',fontSize:12,letterSpacing:2,fontWeight:700}}>⚙ CONFIGURATION</div>
       <div style={{background:'rgba(239,68,68,.06)',border:'1px solid rgba(239,68,68,.2)',borderRadius:6,padding:11,fontSize:12,color:'#fca5a5',lineHeight:1.6}}>
-        ⚠ Keys are memory-only. State is AES-256-GCM encrypted before localStorage.
+        ⚠ API keys are session-only (not stored to disk). All other state is AES-256-GCM encrypted in localStorage.
       </div>
-      {[{k:'claude',l:'Anthropic / Claude',p:'sk-ant-...',c:'#00d4ff'},{k:'gpt',l:'OpenAI / GPT-4',p:'sk-...',c:'#7c3aed'},{k:'gemini',l:'Google / Gemini',p:'AIza...',c:'#00ff88'}].map(({k,l,p,c})=>(
+      {[{k:'claude',l:'Anthropic / Claude (Streaming + RAG)',p:'sk-ant-...',c:'#00d4ff'},{k:'gpt',l:'OpenAI / GPT-4o',p:'sk-...',c:'#7c3aed'},{k:'gemini',l:'Google / Gemini 1.5 Pro',p:'AIza...',c:'#00ff88'}].map(({k,l,p,c})=>(
         <div key={k} style={{display:'flex',flexDirection:'column',gap:5}}>
           <label style={{color:c,fontSize:10,letterSpacing:2}}>{l}</label>
           <input type="password" value={keys[k]} onChange={e=>setKeys(prev=>({...prev,[k]:e.target.value}))} placeholder={p} style={{background:'rgba(0,0,0,.3)',border:`1px solid ${c}33`,borderRadius:6,color:'#e2e8f0',padding:'9px 13px',fontSize:13,outline:'none'}}/>
@@ -808,17 +1090,33 @@ function Config() {
       <button onClick={go} style={{alignSelf:'flex-start',padding:'9px 22px',background:saved?'rgba(0,255,136,.15)':'rgba(0,212,255,.15)',border:`1px solid ${saved?'#00ff8844':'#00d4ff44'}`,borderRadius:6,color:saved?'#00ff88':'#00d4ff',cursor:'pointer',fontSize:11,letterSpacing:2}}>
         {saved?'✓ SAVED':'SAVE CONFIG'}
       </button>
-      <div style={{borderTop:'1px solid rgba(0,212,255,.06)',paddingTop:13,color:'#334155',fontSize:10,lineHeight:1.9}}>
+      {s.memories.length>0&&(
+        <div style={{background:'rgba(168,85,247,.06)',border:'1px solid rgba(168,85,247,.2)',borderRadius:7,padding:13}}>
+          <div style={{color:'#a855f7',fontSize:11,letterSpacing:2,fontWeight:700,marginBottom:9}}>◈ ORBIS MEMORIES ({s.memories.length}/10)</div>
+          <div style={{display:'flex',flexDirection:'column',gap:5}}>
+            {s.memories.map((m,i)=>(
+              <div key={i} style={{display:'flex',gap:7,alignItems:'flex-start'}}>
+                <span style={{color:'#475569',fontSize:9,minWidth:16,marginTop:1}}>{i+1}.</span>
+                <span style={{color:'#94a3b8',fontSize:11,flex:1,lineHeight:1.5}}>{m}</span>
+                <button onClick={()=>d({type:'DEL_MEMORY',i})} style={{background:'none',border:'none',color:'#334155',cursor:'pointer',fontSize:11,flexShrink:0}}>×</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div style={{borderTop:'1px solid rgba(0,212,255,.06)',paddingTop:13,color:'#334155',fontSize:10,lineHeight:2}}>
         <div style={{color:'#00d4ff',marginBottom:7,letterSpacing:2}}>SYSTEM STATUS</div>
         {[
-          ['Notes',        '#00ff88',`${s.notes.length}`],
-          ['Journal entries','#ec4899',`${(s.journals||[]).length} · ${(()=>{const js=s.journals||[];if(!js.length)return 0;const sorted=[...js].sort((a,b)=>b.date.localeCompare(a.date));let str=0,cur=new Date();cur.setHours(0,0,0,0);for(const j of sorted){const d=new Date(j.date);d.setHours(0,0,0,0);if(Math.round((cur-d)/86400000)<=1){str++;cur=d;}else break;}return str;})()} day streak`],
-          ['Goals',        '#f97316',`${(s.goals||[]).length}`],
-          ['Agent messages','#a855f7',`${Object.values(s.agentMessages||{}).flat().length}`],
-          ['Graph nodes',  '#00ff88',`${s.graphNodes.length}`],
-          ['Claude API',   s.apiKeys.claude?'#00ff88':'#ef4444', s.apiKeys.claude?'KEY PRESENT':'NO KEY'],
-          ['GPT API',      s.apiKeys.gpt?   '#00ff88':'#ef4444', s.apiKeys.gpt?   'KEY PRESENT':'NO KEY'],
-          ['Gemini API',   s.apiKeys.gemini?'#00ff88':'#ef4444', s.apiKeys.gemini?'KEY PRESENT':'NO KEY'],
+          ['Notes',          '#00ff88',`${s.notes.length}`],
+          ['Graph nodes',    '#00ff88',`${s.graphNodes.length}`],
+          ['Journal entries','#ec4899',`${js.length} · ${streakVal} day streak`],
+          ['Goals',          '#f97316',`${(s.goals||[]).length}`],
+          ['Agent messages', '#a855f7',`${Object.values(s.agentMessages||{}).flat().length}`],
+          ['Synthesis history','#06b6d4',`${s.synthHistory.length} sessions`],
+          ['Memories',       '#f59e0b',`${s.memories.length}/10`],
+          ['Claude API',     s.apiKeys.claude?'#00ff88':'#ef4444', s.apiKeys.claude?'KEY PRESENT':'NO KEY'],
+          ['GPT API',        s.apiKeys.gpt?   '#00ff88':'#ef4444', s.apiKeys.gpt?   'KEY PRESENT':'NO KEY'],
+          ['Gemini API',     s.apiKeys.gemini?'#00ff88':'#ef4444', s.apiKeys.gemini?'KEY PRESENT':'NO KEY'],
         ].map(([l,c,v])=>(
           <div key={l} style={{display:'flex',justifyContent:'space-between',marginBottom:2}}>
             <span>{l}</span><span style={{color:c}}>{v}</span>
@@ -831,28 +1129,33 @@ function Config() {
 
 // ── APP ───────────────────────────────────────────────────────────────────────
 function App() {
-  const {s,d}=use(); const [booting,setBooting]=useState(true);
+  const {s,d}=use(); const [booting,setBooting]=useState(true); const [palette,setPalette]=useState(false);
   const onDone=useCallback(()=>{d({type:'BOOT'});setTimeout(()=>setBooting(false),200);},[d]);
   useEffect(()=>{
     const h=e=>d({type:'MOUSE',v:{x:e.clientX/window.innerWidth,y:e.clientY/window.innerHeight}});
     window.addEventListener('mousemove',h,{passive:true}); return()=>window.removeEventListener('mousemove',h);
   },[d]);
-
-  const pages={home:<Home/>,advisor:<Advisor/>,graph:<Graph/>,notes:<Notes/>,journal:<Journal/>,goals:<Goals/>,agents:<Agents/>,orbs3d:<Room3D/>,config:<Config/>};
+  useEffect(()=>{
+    const h=e=>{if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();setPalette(p=>!p);}};
+    window.addEventListener('keydown',h); return()=>window.removeEventListener('keydown',h);
+  },[]);
+  const pages={home:<Home/>,advisor:<Advisor/>,graph:<Graph/>,notes:<Notes/>,journal:<Journal/>,goals:<Goals/>,agents:<Agents/>,history:<SynthHistory/>,orbs3d:<Room3D/>,config:<Config/>};
   const nav=NAVS.find(n=>n.id===s.module);
-
   return (
     <>
       {booting&&<Boot onDone={onDone}/>}
-      <Stars/>
+      {palette&&<CommandPalette onClose={()=>setPalette(false)}/>}
+      <NeuralParticles/>
       <div style={{position:'fixed',inset:0,zIndex:1,pointerEvents:'none',background:`radial-gradient(ellipse at ${s.mouse.x*100}% ${s.mouse.y*100}%, rgba(0,212,255,${.04-Math.hypot(s.mouse.x-.5,s.mouse.y-.5)*.04}), rgba(124,58,237,.02) 50%, transparent 80%)`}}/>
       <Sidebar/>
       <main style={{position:'relative',zIndex:10,marginLeft:68,height:'100vh',display:'flex',flexDirection:'column'}}>
-        <div style={{height:42,borderBottom:'1px solid rgba(0,212,255,.06)',display:'flex',alignItems:'center',paddingInline:18,gap:11,background:'rgba(5,5,16,.6)',backdropFilter:'blur(8px)',flexShrink:0}}>
+        <div style={{height:42,borderBottom:'1px solid rgba(0,212,255,.06)',display:'flex',alignItems:'center',paddingInline:18,gap:11,background:'rgba(5,5,16,.7)',backdropFilter:'blur(10px)',flexShrink:0}}>
           <span style={{background:'linear-gradient(135deg,#00d4ff,#7c3aed)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontWeight:900,letterSpacing:4,fontSize:12}}>ORBIS</span>
           <span style={{color:'#1e3a5f',fontSize:10}}>|</span>
           <span style={{color:nav?.c||'#334155',fontSize:10,letterSpacing:2}}>{nav?.l}</span>
-          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:14}}>
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:12}}>
+            <button onClick={()=>setPalette(true)} style={{background:'rgba(0,212,255,.07)',border:'1px solid rgba(0,212,255,.15)',borderRadius:4,color:'#475569',cursor:'pointer',padding:'2px 8px',fontSize:9,letterSpacing:1}}>⌘K</button>
+            {s.memories.length>0&&<span style={{color:'#f59e0b',fontSize:9,letterSpacing:1}}>{s.memories.length} MEM</span>}
             <div style={{width:5,height:5,borderRadius:'50%',background:'#00ff88',boxShadow:'0 0 5px #00ff88'}}/>
             <span style={{color:'#334155',fontSize:9,letterSpacing:2}}>ALL SYSTEMS NOMINAL</span>
           </div>
