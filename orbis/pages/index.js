@@ -1511,6 +1511,98 @@ function SettingsModule() {
   )
 }
 
+// ─── Wake Word Listener ("Hey ORBIS" / "Hey Jarvis") ─────────────────────────
+const WAKE_WORDS = ['hey orbis', 'hey jarvis', 'orbis', 'jarvis']
+
+function WakeWordListener() {
+  const { s } = useOrbis()
+  const { speak, muted } = useSpeak()
+  const [phase, setPhase] = useState('idle') // idle | listening | thinking | speaking
+  const [label, setLabel] = useState('')
+  const activeRef = useRef(true)
+  const wakeRef = useRef(false)
+
+  const getClaudeResponse = useCallback(async (text) => {
+    setPhase('thinking'); setLabel(text.slice(0, 60))
+    try {
+      let full = ''
+      for await (const chunk of streamClaude(text, ORBIS_SYSTEM, s.apiKeys.claude)) full += chunk
+      setPhase('speaking'); setLabel('')
+      await new Promise(resolve => {
+        fetch('/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: full.slice(0, 800) }) })
+          .then(r => r.blob())
+          .then(blob => {
+            const url = URL.createObjectURL(blob)
+            const audio = new Audio(url)
+            audio.play()
+            audio.onended = () => { URL.revokeObjectURL(url); resolve() }
+            audio.onerror = resolve
+          }).catch(resolve)
+      })
+    } catch {}
+    setPhase('idle'); setLabel('')
+  }, [s.apiKeys.claude])
+
+  useEffect(() => {
+    if (muted) return
+    if (typeof window === 'undefined') return
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) return
+
+    activeRef.current = true
+
+    const listenForCommand = () => {
+      const cmd = new SR()
+      cmd.continuous = false; cmd.interimResults = false; cmd.lang = 'en-GB'
+      cmd.onresult = e => {
+        const text = Array.from(e.results).map(r => r[0].transcript).join(' ').trim()
+        wakeRef.current = false
+        if (text) getClaudeResponse(text)
+        else { setPhase('idle'); startLoop() }
+      }
+      cmd.onerror = () => { wakeRef.current = false; setPhase('idle'); startLoop() }
+      cmd.onend = () => { if (wakeRef.current) { wakeRef.current = false; setPhase('idle'); startLoop() } }
+      try { cmd.start() } catch {}
+    }
+
+    const startLoop = () => {
+      if (!activeRef.current || wakeRef.current) return
+      const rec = new SR()
+      rec.continuous = false; rec.interimResults = false; rec.lang = 'en-GB'
+      rec.onresult = e => {
+        const said = Array.from(e.results).map(r => r[0].transcript).join(' ').toLowerCase().trim()
+        const hit = WAKE_WORDS.find(w => said.includes(w))
+        if (!hit) return
+        wakeRef.current = true
+        setPhase('listening')
+        let remainder = said
+        WAKE_WORDS.forEach(w => { remainder = remainder.replace(w, '').trim() })
+        if (remainder.length > 3) { wakeRef.current = false; getClaudeResponse(remainder) }
+        else listenForCommand()
+      }
+      rec.onerror = e => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('SR:', e.error) }
+      rec.onend = () => { if (activeRef.current && !wakeRef.current) setTimeout(startLoop, 400) }
+      try { rec.start() } catch {}
+    }
+
+    startLoop()
+    return () => { activeRef.current = false }
+  }, [muted, getClaudeResponse])
+
+  if (phase === 'idle') return null
+
+  const DOT_COLOR = { listening: '#22c55e', thinking: '#f59e0b', speaking: '#4f8ef7' }[phase]
+  const PHASE_LABEL = { listening: 'Listening…', thinking: 'Thinking…', speaking: 'Speaking…' }[phase]
+
+  return (
+    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'var(--bg-1)', border: '1px solid var(--border-md)', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animation: 'fade-in 0.2s ease' }}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: DOT_COLOR, flexShrink: 0 }} />
+      <span style={{ color: 'var(--text-2)', fontSize: 13, fontWeight: 500 }}>{PHASE_LABEL}</span>
+      {label && <span style={{ color: 'var(--text-4)', fontSize: 11, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>}
+    </div>
+  )
+}
+
 // ─── Dynamic Imports ──────────────────────────────────────────────────────────
 const OrbRoom3D = dynamic(() => import('../components/OrbRoom3D'), { ssr: false })
 
@@ -1551,6 +1643,7 @@ function OrbisApp() {
   return (
     <>
       {showPalette && <CommandPalette onClose={() => setShowPalette(false)} />}
+      <WakeWordListener />
       <Sidebar />
       <main style={{ position: 'relative', zIndex: 10, marginLeft: 200, height: '100vh', display: 'flex', flexDirection: 'column' }}>
         {/* Topbar */}
