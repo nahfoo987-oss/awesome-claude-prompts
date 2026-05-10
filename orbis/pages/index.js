@@ -414,25 +414,24 @@ function CommandPalette({ onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 5000, background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 120 }}
       onClick={onClose}>
-      <div style={{ width: 560, background: 'rgba(5,5,22,0.98)', border: '1px solid rgba(0,212,255,0.25)', borderRadius: 12, overflow: 'hidden', boxShadow: '0 0 80px rgba(0,212,255,0.15)' }}
+      <div style={{ width: 560, background: 'var(--bg-1)', border: '1px solid var(--border-md)', borderRadius: 12, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}
         onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderBottom: '1px solid rgba(0,212,255,0.1)' }}>
-          <span style={{ color: '#00d4ff', fontSize: 16 }}>⌘</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)} onKeyDown={onKey}
             placeholder="Search modules, notes, commands..."
-            style={{ flex: 1, background: 'transparent', border: 'none', color: '#e2e8f0', fontSize: 14, outline: 'none', fontFamily: "'Courier New', monospace" }} />
-          <span style={{ color: '#334155', fontSize: 11 }}>ESC</span>
+            style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-1)', fontSize: 14, outline: 'none', fontFamily: 'var(--font-ui)' }} />
+          <kbd style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 4, padding: '2px 6px', fontSize: 10, color: 'var(--text-4)', fontFamily: 'var(--font-ui)' }}>ESC</kbd>
         </div>
         <div style={{ maxHeight: 340, overflowY: 'auto' }}>
           {items.map((item, i) => (
             <div key={i} onClick={() => run(item)} onMouseEnter={() => setSel(i)}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 18px', cursor: 'pointer', background: sel === i ? 'rgba(0,212,255,0.08)' : 'transparent', borderLeft: sel === i ? '2px solid #00d4ff' : '2px solid transparent' }}>
-              <span style={{ color: '#00d4ff', width: 20, textAlign: 'center' }}>{item.icon}</span>
-              <span style={{ color: '#e2e8f0', fontSize: 13 }}>{item.label}</span>
-              {item.sub && <span style={{ color: '#334155', fontSize: 11, marginLeft: 'auto' }}>{item.sub}</span>}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 18px', cursor: 'pointer', background: sel === i ? 'rgba(255,255,255,0.04)' : 'transparent', borderLeft: sel === i ? '2px solid var(--accent)' : '2px solid transparent' }}>
+              <span style={{ color: 'var(--text-1)', fontSize: 13 }}>{item.label}</span>
+              {item.sub && <span style={{ color: 'var(--text-4)', fontSize: 11, marginLeft: 'auto' }}>{item.sub}</span>}
             </div>
           ))}
-          {!items.length && <div style={{ padding: '20px 18px', color: '#334155', fontSize: 13 }}>No results for "{q}"</div>}
+          {!items.length && <div style={{ padding: '20px 18px', color: 'var(--text-4)', fontSize: 13 }}>No results for "{q}"</div>}
         </div>
       </div>
     </div>
@@ -686,7 +685,7 @@ function HomeModule() {
               style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = `${a.color}44`; e.currentTarget.style.transform = 'translateY(-1px)' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: a.color, flexShrink: 0, boxShadow: `0 0 10px ${a.color}88` }} />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', marginBottom: 2 }}>{a.label}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{a.desc}</div>
@@ -735,9 +734,9 @@ function HomeModule() {
 
 // ─── Multi-AI Advisor ─────────────────────────────────────────────────────────
 const MODEL_CFG = {
-  claude: { name: 'Claude Opus 4', color: '#00d4ff', icon: '◈' },
-  gpt:    { name: 'GPT-4o',        color: '#7c3aed', icon: '◎' },
-  gemini: { name: 'Gemini 1.5 Pro',color: '#00ff88', icon: '◇' },
+  claude: { name: 'Claude Opus 4',  color: '#4f8ef7', icon: '' },
+  gpt:    { name: 'GPT-4o',         color: '#7c3aed', icon: '' },
+  gemini: { name: 'Gemini 1.5 Pro', color: '#22c55e', icon: '' },
 }
 
 function detectConflicts(responses) {
@@ -793,54 +792,53 @@ function AdvisorModule() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, height: '100%' }}>
-      <div style={{ color: '#7c3aed', fontSize: 13, letterSpacing: 2, fontWeight: 700 }}>◈ MULTI-AI ADVISOR</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>Advisor</div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
         <textarea value={prompt} onChange={e => setPrompt(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && e.ctrlKey && run()}
-          placeholder="Enter query... (Ctrl+Enter to submit)"
-          style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 6, color: '#e2e8f0', padding: '10px 14px', fontSize: 13, resize: 'vertical', minHeight: 60, outline: 'none', fontFamily: "'Courier New', monospace" }} />
+          placeholder="Ask anything… (Ctrl+Enter to submit)"
+          style={{ flex: 1, background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-1)', padding: '10px 14px', fontSize: 13, resize: 'vertical', minHeight: 60, outline: 'none', fontFamily: 'var(--font-ui)' }} />
         {voiceSupported && (
           <button onClick={startVoice} style={{ padding: '8px 12px', background: listening ? 'rgba(0,255,136,0.2)' : 'rgba(0,0,0,0.3)', border: `1px solid ${listening ? '#00ff88' : 'rgba(124,58,237,0.2)'}`, borderRadius: 6, color: listening ? '#00ff88' : '#7c3aed', cursor: 'pointer', fontSize: 16, height: 40 }}>
             🎙
           </button>
         )}
         <button onClick={run} disabled={!prompt.trim() || !hasKey || Object.values(loading).some(Boolean)}
-          style={{ padding: '0 18px', background: hasKey ? 'rgba(124,58,237,0.15)' : 'rgba(100,116,139,0.1)', border: `1px solid ${hasKey ? '#7c3aed44' : '#334155'}`, borderRadius: 6, color: hasKey ? '#7c3aed' : '#475569', cursor: hasKey ? 'pointer' : 'not-allowed', fontSize: 12, height: 40 }}>
-          QUERY ◈
+          style={{ padding: '0 18px', background: hasKey ? 'rgba(79,142,247,0.1)' : 'rgba(100,116,139,0.05)', border: `1px solid ${hasKey ? 'rgba(79,142,247,0.3)' : 'var(--border)'}`, borderRadius: 8, color: hasKey ? 'var(--accent)' : 'var(--text-4)', cursor: hasKey ? 'pointer' : 'not-allowed', fontSize: 13, height: 40, fontFamily: 'var(--font-ui)' }}>
+          Query
         </button>
       </div>
       {!hasKey && <div style={{ color: '#f59e0b', fontSize: 12 }}>⚠ Add API keys in Config to enable live responses.</div>}
-      {ragCtx && <div style={{ color: '#00ff88', fontSize: 11 }}>◈ RAG: {ragCtx} context node(s) injected from your knowledge base.</div>}
+      {ragCtx && <div style={{ color: '#22c55e', fontSize: 11 }}>{ragCtx} source(s) from your knowledge base added to context.</div>}
 
       <div style={{ display: 'flex', gap: 12, flex: 1, overflow: 'hidden', minHeight: 0 }}>
         {Object.entries(MODEL_CFG).map(([key, cfg]) => (
           <div key={key} style={{ flex: 1, border: `1px solid ${cfg.color}22`, borderRadius: 8, padding: 14, background: `${cfg.color}08`, display: 'flex', flexDirection: 'column', gap: 8, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: cfg.color, fontSize: 16 }}>{cfg.icon}</span>
-              <span style={{ color: cfg.color, fontSize: 11, fontWeight: 700, letterSpacing: 2 }}>{cfg.name}</span>
-              {loading[key] && <span style={{ color: '#64748b', fontSize: 10, marginLeft: 'auto' }}>THINKING...</span>}
+              <span style={{ fontSize: 12, fontWeight: 600, color: cfg.color }}>{cfg.name}</span>
+              {loading[key] && <span style={{ color: 'var(--text-4)', fontSize: 11, marginLeft: 'auto' }}>Thinking…</span>}
             </div>
             <VoiceVisualizer active={!!loading[key]} color={cfg.color} />
             {errors[key] && <div style={{ color: '#ef4444', fontSize: 12 }}>⚠ {errors[key]}</div>}
             {responses[key] && <div style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.7, flex: 1, overflowY: 'auto' }}>{responses[key]}</div>}
-            {!loading[key] && !responses[key] && !errors[key] && <div style={{ color: '#1e3a5f', fontSize: 12 }}>Awaiting query...</div>}
+            {!loading[key] && !responses[key] && !errors[key] && <div style={{ color: 'var(--text-4)', fontSize: 12 }}>Awaiting query</div>}
           </div>
         ))}
       </div>
 
       {showSynth && Object.keys(responses).length > 0 && (
-        <div style={{ border: '1px solid rgba(124,58,237,0.2)', borderRadius: 8, padding: 16, background: 'rgba(124,58,237,0.05)' }}>
-          <div style={{ color: '#7c3aed', fontSize: 12, letterSpacing: 2, marginBottom: 10, fontWeight: 700 }}>◈ ORBIS SYNTHESIS</div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginBottom: 4 }}>
-            <span>MODEL CONSENSUS</span>
-            <span style={{ color: agreeScore > 70 ? '#00ff88' : agreeScore > 40 ? '#f59e0b' : '#ef4444' }}>{agreeScore}%</span>
+        <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 16, background: 'var(--bg-1)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 10 }}>Consensus</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-4)', marginBottom: 4 }}>
+            <span>Agreement</span>
+            <span style={{ color: agreeScore > 70 ? '#22c55e' : agreeScore > 40 ? '#f59e0b' : '#ef4444' }}>{agreeScore}%</span>
           </div>
-          <div style={{ height: 3, background: '#1e293b', borderRadius: 2, marginBottom: 12 }}>
-            <div style={{ height: '100%', borderRadius: 2, width: `${agreeScore}%`, background: agreeScore > 70 ? '#00ff88' : agreeScore > 40 ? '#f59e0b' : '#ef4444', transition: 'width 1s ease' }} />
+          <div style={{ height: 3, background: 'var(--border)', borderRadius: 2, marginBottom: 12 }}>
+            <div style={{ height: '100%', borderRadius: 2, width: `${agreeScore}%`, background: agreeScore > 70 ? '#22c55e' : agreeScore > 40 ? '#f59e0b' : '#ef4444', transition: 'width 1s ease' }} />
           </div>
           {conflicts.length > 0 && (
-            <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: 10, marginBottom: 10 }}>
-              <div style={{ color: '#ef4444', fontSize: 11, letterSpacing: 2, marginBottom: 6 }}>⚠ CONFLICTS</div>
+            <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 6, padding: 10, marginBottom: 10 }}>
+              <div style={{ color: '#ef4444', fontSize: 11, fontWeight: 600, marginBottom: 6 }}>Conflicts detected</div>
               {conflicts.map((c, i) => <div key={i} style={{ color: '#fca5a5', fontSize: 12, marginBottom: 2 }}>• {c}</div>)}
             </div>
           )}
@@ -1120,11 +1118,11 @@ function JournalModule() {
   const today = new Date().toISOString().split('T')[0]
   return (
     <div style={{ display: 'flex', gap: 16, height: '100%' }}>
-      <div style={{ width: 200, borderRight: '1px solid rgba(236,72,153,0.1)', paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ color: '#ec4899', fontSize: 12, letterSpacing: 2, fontWeight: 700 }}>◉ JOURNAL</div>
+      <div style={{ width: 200, borderRight: '1px solid var(--border)', paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>Journal</div>
         <button onClick={() => { if (!s.journals.find(jj => jj.date === today)) d({ type: 'ADD_JOURNAL', v: today }); setSelected(s.journals.find(jj => jj.date === today)?.id || Date.now()) }}
-          style={{ background: 'rgba(236,72,153,0.12)', border: '1px solid rgba(236,72,153,0.3)', borderRadius: 4, color: '#ec4899', cursor: 'pointer', padding: '7px', fontSize: 11, letterSpacing: 1 }}>
-          + TODAY
+          style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-2)', cursor: 'pointer', padding: '7px 10px', fontSize: 12, fontFamily: 'var(--font-ui)' }}>
+          + New entry
         </button>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {[...s.journals].reverse().map(jj => (
@@ -1140,13 +1138,13 @@ function JournalModule() {
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
-          <div style={{ color: '#ec4899', fontSize: 11, letterSpacing: 2, marginBottom: 6 }}>30-DAY MOOD</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', letterSpacing: 0.3, marginBottom: 6 }}>30-day mood</div>
           <MoodChart journals={s.journals} />
         </div>
         {j ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ color: '#ec4899', fontSize: 13, fontWeight: 700 }}>{j.date}</span>
+              <span style={{ color: 'var(--text-1)', fontSize: 13, fontWeight: 600 }}>{j.date}</span>
               <div style={{ display: 'flex', gap: 4 }}>
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => d({ type: 'UPD_JOURNAL', id: j.id, v: { mood: n } })}
@@ -1158,16 +1156,16 @@ function JournalModule() {
             </div>
             <textarea value={j.body} onChange={e => d({ type: 'UPD_JOURNAL', id: j.id, v: { body: e.target.value } })}
               placeholder="Write your thoughts..."
-              style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(236,72,153,0.1)', borderRadius: 6, color: '#e2e8f0', padding: '12px 14px', fontSize: 13, lineHeight: 1.8, resize: 'none', outline: 'none', fontFamily: "'Courier New', monospace" }} />
+              style={{ flex: 1, background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-1)', padding: '12px 14px', fontSize: 13, lineHeight: 1.8, resize: 'none', outline: 'none', fontFamily: 'var(--font-ui)' }} />
             {s.apiKeys.claude && (
               <button onClick={getReflection} disabled={reflecting || !j.body}
-                style={{ alignSelf: 'flex-end', padding: '7px 16px', background: 'rgba(236,72,153,0.12)', border: '1px solid rgba(236,72,153,0.3)', borderRadius: 6, color: '#ec4899', cursor: reflecting ? 'not-allowed' : 'pointer', fontSize: 11, letterSpacing: 1 }}>
-                {reflecting ? 'REFLECTING...' : '◈ ORBIS REFLECTION'}
+                style={{ alignSelf: 'flex-end', padding: '7px 16px', background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-2)', cursor: reflecting ? 'not-allowed' : 'pointer', fontSize: 12, fontFamily: 'var(--font-ui)' }}>
+                {reflecting ? 'Reflecting…' : 'Get reflection'}
               </button>
             )}
             {j.reflection && (
-              <div style={{ background: 'rgba(236,72,153,0.06)', border: '1px solid rgba(236,72,153,0.2)', borderRadius: 6, padding: 12 }}>
-                <div style={{ color: '#ec4899', fontSize: 10, letterSpacing: 2, marginBottom: 6 }}>ORBIS REFLECTION</div>
+              <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 6 }}>Reflection</div>
                 <div style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.7 }}>{j.reflection}</div>
               </div>
             )}
@@ -1189,7 +1187,7 @@ function GoalsModule() {
   const [roadmap, setRoadmap] = useState('')
   const [loadingRoad, setLoadingRoad] = useState(false)
   const goal = s.goals.find(g => g.id === sel)
-  const STATUS_COLORS = { todo: '#64748b', 'in-progress': '#f59e0b', done: '#00ff88' }
+  const STATUS_COLORS = { todo: '#64748b', 'in-progress': '#f59e0b', done: '#22c55e' }
 
   const getAIRoadmap = async () => {
     if (!goal || !s.apiKeys.claude) return
@@ -1203,21 +1201,21 @@ function GoalsModule() {
 
   return (
     <div style={{ display: 'flex', gap: 16, height: '100%' }}>
-      <div style={{ width: 240, borderRight: '1px solid rgba(249,115,22,0.1)', paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ color: '#f97316', fontSize: 12, letterSpacing: 2, fontWeight: 700 }}>◇ GOALS ({s.goals.length})</div>
+      <div style={{ width: 240, borderRight: '1px solid var(--border)', paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>Goals · {s.goals.length}</div>
         <input value={newGoal} onChange={e => setNewGoal(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && newGoal.trim()) { d({ type: 'ADD_GOAL', v: newGoal.trim() }); setNewGoal('') } }}
           placeholder="New goal (Enter)..."
-          style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 4, color: '#e2e8f0', padding: '6px 8px', fontSize: 11, outline: 'none', fontFamily: "'Courier New', monospace" }} />
+          style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-1)', padding: '6px 8px', fontSize: 12, outline: 'none', fontFamily: 'var(--font-ui)' }} />
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {s.goals.map(g => (
             <div key={g.id} onClick={() => { setSel(g.id); setRoadmap('') }}
-              style={{ padding: '10px', borderRadius: 6, cursor: 'pointer', border: `1px solid ${sel === g.id ? 'rgba(249,115,22,0.4)' : 'transparent'}`, background: sel === g.id ? 'rgba(249,115,22,0.08)' : 'transparent' }}>
-              <div style={{ color: sel === g.id ? '#f97316' : '#94a3b8', fontSize: 12, fontWeight: 600 }}>{g.title}</div>
-              <div style={{ height: 3, background: '#1e293b', borderRadius: 2, marginTop: 6 }}>
-                <div style={{ height: '100%', borderRadius: 2, width: `${g.progress}%`, background: '#f97316' }} />
+              style={{ padding: '10px', borderRadius: 6, cursor: 'pointer', border: `1px solid ${sel === g.id ? 'var(--border-md)' : 'transparent'}`, background: sel === g.id ? 'rgba(255,255,255,0.04)' : 'transparent' }}>
+              <div style={{ color: 'var(--text-1)', fontSize: 13, fontWeight: 500 }}>{g.title}</div>
+              <div style={{ height: 2, background: 'var(--border)', borderRadius: 2, marginTop: 6 }}>
+                <div style={{ height: '100%', borderRadius: 2, width: `${g.progress}%`, background: 'var(--accent)' }} />
               </div>
-              <div style={{ color: STATUS_COLORS[g.status], fontSize: 10, marginTop: 3 }}>{g.status.toUpperCase()} · {g.progress}%</div>
+              <div style={{ color: 'var(--text-4)', fontSize: 11, marginTop: 3 }}>{g.status} · {g.progress}%</div>
             </div>
           ))}
         </div>
@@ -1226,9 +1224,9 @@ function GoalsModule() {
         {goal ? (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#f97316', fontSize: 16, fontWeight: 700 }}>{goal.title}</span>
+              <span style={{ color: 'var(--text-1)', fontSize: 16, fontWeight: 600 }}>{goal.title}</span>
               <select value={goal.status} onChange={e => d({ type: 'UPD_GOAL', id: goal.id, v: { status: e.target.value } })}
-                style={{ marginLeft: 'auto', background: '#0f172a', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 4, color: STATUS_COLORS[goal.status], padding: '3px 8px', fontSize: 11, cursor: 'pointer' }}>
+                style={{ marginLeft: 'auto', background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-2)', padding: '4px 8px', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
                 {['todo', 'in-progress', 'done'].map(st => <option key={st} value={st}>{st}</option>)}
               </select>
               <button onClick={() => { d({ type: 'DEL_GOAL', id: goal.id }); setSel(null) }}
@@ -1236,19 +1234,19 @@ function GoalsModule() {
             </div>
             <textarea value={goal.description} onChange={e => d({ type: 'UPD_GOAL', id: goal.id, v: { description: e.target.value } })}
               placeholder="Add description..."
-              style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(249,115,22,0.1)', borderRadius: 6, color: '#e2e8f0', padding: '10px 14px', fontSize: 13, lineHeight: 1.7, resize: 'none', outline: 'none', minHeight: 70, fontFamily: "'Courier New', monospace" }} />
+              style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-1)', padding: '10px 14px', fontSize: 13, lineHeight: 1.7, resize: 'none', outline: 'none', minHeight: 70, fontFamily: 'var(--font-ui)' }} />
             <div>
-              <div style={{ color: '#f97316', fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>MILESTONES</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 8 }}>Milestones</div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <input value={newMs} onChange={e => setNewMs(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && newMs.trim()) { d({ type: 'ADD_MS', id: goal.id, v: newMs.trim() }); setNewMs('') } }}
                   placeholder="Add milestone (Enter)..."
-                  style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 4, color: '#e2e8f0', padding: '6px 8px', fontSize: 11, outline: 'none', fontFamily: "'Courier New', monospace" }} />
+                  style={{ flex: 1, background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-1)', padding: '6px 8px', fontSize: 12, outline: 'none', fontFamily: 'var(--font-ui)' }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {goal.milestones.map(m => (
-                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: m.done ? 'rgba(0,255,136,0.05)' : 'rgba(0,0,0,0.2)', borderRadius: 4, border: `1px solid ${m.done ? 'rgba(0,255,136,0.2)' : 'rgba(249,115,22,0.08)'}` }}>
-                    <input type="checkbox" checked={m.done} onChange={() => d({ type: 'TOGGLE_MS', id: goal.id, mid: m.id })} style={{ cursor: 'pointer', accentColor: '#f97316' }} />
+                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'transparent', borderRadius: 6, border: '1px solid var(--border)' }}>
+                    <input type="checkbox" checked={m.done} onChange={() => d({ type: 'TOGGLE_MS', id: goal.id, mid: m.id })} style={{ cursor: 'pointer', accentColor: 'var(--accent)' }} />
                     <span style={{ flex: 1, color: m.done ? '#64748b' : '#cbd5e1', fontSize: 13, textDecoration: m.done ? 'line-through' : 'none' }}>{m.text}</span>
                     <button onClick={() => d({ type: 'DEL_MS', id: goal.id, mid: m.id })} style={{ background: 'none', border: 'none', color: '#334155', cursor: 'pointer', fontSize: 12 }}>✕</button>
                   </div>
@@ -1260,13 +1258,13 @@ function GoalsModule() {
             </div>
             {s.apiKeys.claude && (
               <button onClick={getAIRoadmap} disabled={loadingRoad}
-                style={{ alignSelf: 'flex-start', padding: '7px 16px', background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 6, color: '#f97316', cursor: loadingRoad ? 'not-allowed' : 'pointer', fontSize: 11, letterSpacing: 1 }}>
-                {loadingRoad ? 'GENERATING...' : '◈ AI ROADMAP'}
+                style={{ alignSelf: 'flex-start', padding: '7px 16px', background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-2)', cursor: loadingRoad ? 'not-allowed' : 'pointer', fontSize: 12, fontFamily: 'var(--font-ui)' }}>
+                {loadingRoad ? 'Generating…' : 'Generate roadmap'}
               </button>
             )}
             {roadmap && (
-              <div style={{ background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 6, padding: 14 }}>
-                <div style={{ color: '#f97316', fontSize: 10, letterSpacing: 2, marginBottom: 8 }}>ORBIS ROADMAP</div>
+              <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, padding: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 8 }}>Roadmap</div>
                 <div style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{roadmap}</div>
               </div>
             )}
@@ -1281,11 +1279,11 @@ function GoalsModule() {
 
 // ─── Agents Module ────────────────────────────────────────────────────────────
 const DEF_AGENTS = [
-  { id: 'orbis',    name: 'ORBIS',     icon: '⬡', c: '#00d4ff', tag: 'Executive second brain', sys: ORBIS_SYSTEM },
-  { id: 'socrates', name: 'Socrates',  icon: '◎', c: '#7c3aed', tag: 'Dialectical inquiry', sys: 'You are Socrates. Guide through questioning, never state answers directly. Reveal hidden assumptions.' },
-  { id: 'edison',   name: 'Edison',    icon: '◇', c: '#f59e0b', tag: 'Innovation architect', sys: 'You are Thomas Edison. Intensely practical. Focus on experimentation, iteration, and commercial viability.' },
-  { id: 'cassandra',name: 'Cassandra', icon: '◉', c: '#ef4444', tag: 'Risk analyst', sys: 'You are Cassandra. Identify what will go wrong. Be specific, evidence-based, and unflinching about risks.' },
-  { id: 'tesla',    name: 'Tesla',     icon: '⊕', c: '#a855f7', tag: 'Systems visionary', sys: 'You are Nikola Tesla. Think in systems, resonances, and interconnections. Challenge conventional paradigms.' },
+  { id: 'orbis',    name: 'ORBIS',     c: '#4f8ef7', tag: 'Executive second brain', sys: ORBIS_SYSTEM },
+  { id: 'socrates', name: 'Socrates',  c: '#7c3aed', tag: 'Dialectical inquiry', sys: 'You are Socrates. Guide through questioning, never state answers directly. Reveal hidden assumptions.' },
+  { id: 'edison',   name: 'Edison',    c: '#f59e0b', tag: 'Innovation architect', sys: 'You are Thomas Edison. Intensely practical. Focus on experimentation, iteration, and commercial viability.' },
+  { id: 'cassandra',name: 'Cassandra', c: '#ef4444', tag: 'Risk analyst', sys: 'You are Cassandra. Identify what will go wrong. Be specific, evidence-based, and unflinching about risks.' },
+  { id: 'tesla',    name: 'Tesla',     c: '#a855f7', tag: 'Systems visionary', sys: 'You are Nikola Tesla. Think in systems, resonances, and interconnections. Challenge conventional paradigms.' },
 ]
 
 function AgentsModule() {
@@ -1326,35 +1324,35 @@ function AgentsModule() {
 
   return (
     <div style={{ display: 'flex', gap: 16, height: '100%' }}>
-      <div style={{ width: 200, borderRight: '1px solid rgba(168,85,247,0.1)', paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ color: '#a855f7', fontSize: 12, letterSpacing: 2, fontWeight: 700 }}>◑ AGENTS</div>
+      <div style={{ width: 200, borderRight: '1px solid var(--border)', paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 4 }}>Agents</div>
         {allAgents.map(a => (
           <button key={a.id} onClick={() => setSelAgent(a.id)}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 6, cursor: 'pointer', border: `1px solid ${selAgent === a.id ? a.c + '66' : 'transparent'}`, background: selAgent === a.id ? a.c + '12' : 'transparent', textAlign: 'left' }}>
-            <span style={{ color: a.c, fontSize: 16 }}>{a.icon}</span>
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 6, cursor: 'pointer', border: `1px solid ${selAgent === a.id ? 'var(--border-md)' : 'transparent'}`, background: selAgent === a.id ? 'rgba(255,255,255,0.05)' : 'transparent', textAlign: 'left' }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: a.c, flexShrink: 0 }} />
             <div>
-              <div style={{ color: selAgent === a.id ? a.c : '#94a3b8', fontSize: 12, fontWeight: 600 }}>{a.name}</div>
-              <div style={{ color: '#334155', fontSize: 10 }}>{a.tag}</div>
+              <div style={{ color: selAgent === a.id ? 'var(--text-1)' : 'var(--text-2)', fontSize: 13, fontWeight: selAgent === a.id ? 500 : 400 }}>{a.name}</div>
+              <div style={{ color: 'var(--text-4)', fontSize: 11 }}>{a.tag}</div>
             </div>
           </button>
         ))}
         {msgs.length > 0 && (
           <button onClick={() => d({ type: 'CLEAR_AGENT', id: selAgent })}
-            style={{ marginTop: 'auto', padding: '6px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 4, color: '#ef4444', cursor: 'pointer', fontSize: 10 }}>
-            CLEAR CHAT
+            style={{ marginTop: 'auto', padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-3)', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-ui)' }}>
+            Clear chat
           </button>
         )}
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {agent && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: `${agent.c}0c`, border: `1px solid ${agent.c}22`, borderRadius: 6 }}>
-            <span style={{ color: agent.c, fontSize: 22 }}>{agent.icon}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: agent.c, flexShrink: 0 }} />
             <div>
-              <div style={{ color: agent.c, fontSize: 14, fontWeight: 700 }}>{agent.name}</div>
-              <div style={{ color: '#475569', fontSize: 11 }}>{agent.tag}</div>
+              <div style={{ color: 'var(--text-1)', fontSize: 14, fontWeight: 600 }}>{agent.name}</div>
+              <div style={{ color: 'var(--text-3)', fontSize: 11 }}>{agent.tag}</div>
             </div>
-            {!s.apiKeys.claude && <div style={{ marginLeft: 'auto', color: '#f59e0b', fontSize: 11 }}>⚠ Claude key required</div>}
+            {!s.apiKeys.claude && <div style={{ marginLeft: 'auto', color: '#f59e0b', fontSize: 11 }}>Claude key required</div>}
           </div>
         )}
 
@@ -1382,14 +1380,14 @@ function AgentsModule() {
         <div style={{ display: 'flex', gap: 8 }}>
           <textarea value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-            placeholder={`Message ${agent?.name}... (Enter to send, Shift+Enter for newline)`}
-            style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: `1px solid ${agent?.c}33`, borderRadius: 6, color: '#e2e8f0', padding: '10px 14px', fontSize: 13, resize: 'none', outline: 'none', minHeight: 44, maxHeight: 120, fontFamily: "'Courier New', monospace" }} />
+            placeholder={`Message ${agent?.name}… (Enter to send, Shift+Enter for newline)`}
+            style={{ flex: 1, background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-1)', padding: '10px 14px', fontSize: 13, resize: 'none', outline: 'none', minHeight: 44, maxHeight: 120, fontFamily: 'var(--font-ui)' }} />
           {voiceSupported && (
-            <button onClick={startVoice} style={{ padding: '8px 10px', background: listening ? `${agent?.c}22` : 'rgba(0,0,0,0.3)', border: `1px solid ${agent?.c}33`, borderRadius: 6, color: listening ? agent?.c : '#475569', cursor: 'pointer', fontSize: 16 }}>🎙</button>
+            <button onClick={startVoice} style={{ padding: '8px 10px', background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, color: listening ? agent?.c : 'var(--text-3)', cursor: 'pointer', fontSize: 16 }}>🎙</button>
           )}
           <button onClick={send} disabled={!input.trim() || !s.apiKeys.claude || streaming}
-            style={{ padding: '0 16px', background: `${agent?.c}18`, border: `1px solid ${agent?.c}44`, borderRadius: 6, color: agent?.c, cursor: 'pointer', fontSize: 12, letterSpacing: 1 }}>
-            {streaming ? '...' : 'SEND'}
+            style={{ padding: '0 16px', background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.3)', borderRadius: 8, color: 'var(--accent)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-ui)' }}>
+            {streaming ? '…' : 'Send'}
           </button>
         </div>
       </div>
@@ -1404,16 +1402,16 @@ function SynthHistoryModule() {
   const item = s.synthHistory[sel]
   return (
     <div style={{ display: 'flex', gap: 16, height: '100%' }}>
-      <div style={{ width: 260, borderRight: '1px solid rgba(6,182,212,0.1)', paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ color: '#06b6d4', fontSize: 12, letterSpacing: 2, fontWeight: 700 }}>⊞ SYNTHESIS HISTORY ({s.synthHistory.length})</div>
-        {s.synthHistory.length === 0 && <div style={{ color: '#334155', fontSize: 12 }}>No sessions yet. Run an Advisor query.</div>}
+      <div style={{ width: 260, borderRight: '1px solid var(--border)', paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>History · {s.synthHistory.length}</div>
+        {s.synthHistory.length === 0 && <div style={{ color: 'var(--text-4)', fontSize: 12 }}>No sessions yet. Run an Advisor query.</div>}
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {s.synthHistory.map((h, i) => (
             <div key={i} onClick={() => setSel(i)}
-              style={{ padding: '9px 10px', borderRadius: 6, cursor: 'pointer', border: `1px solid ${sel === i ? 'rgba(6,182,212,0.4)' : 'transparent'}`, background: sel === i ? 'rgba(6,182,212,0.08)' : 'transparent' }}>
-              <div style={{ color: sel === i ? '#06b6d4' : '#94a3b8', fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.prompt.slice(0, 50)}{h.prompt.length > 50 ? '...' : ''}</div>
-              <div style={{ color: '#334155', fontSize: 10, marginTop: 2 }}>{new Date(h.ts).toLocaleString('en-GB')} · {Object.keys(h.responses || {}).join(', ')}</div>
-              {h.rag && <div style={{ color: '#00ff88', fontSize: 9, marginTop: 2 }}>RAG</div>}
+              style={{ padding: '9px 10px', borderRadius: 6, cursor: 'pointer', border: `1px solid ${sel === i ? 'var(--border-md)' : 'transparent'}`, background: sel === i ? 'rgba(255,255,255,0.04)' : 'transparent' }}>
+              <div style={{ color: 'var(--text-1)', fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.prompt.slice(0, 50)}{h.prompt.length > 50 ? '…' : ''}</div>
+              <div style={{ color: 'var(--text-4)', fontSize: 10, marginTop: 2 }}>{new Date(h.ts).toLocaleString('en-GB')} · {Object.keys(h.responses || {}).join(', ')}</div>
+              {h.rag && <div style={{ color: '#22c55e', fontSize: 9, marginTop: 2 }}>RAG</div>}
             </div>
           ))}
         </div>
@@ -1421,11 +1419,11 @@ function SynthHistoryModule() {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {item ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ color: '#06b6d4', fontSize: 14, fontWeight: 700, borderBottom: '1px solid rgba(6,182,212,0.15)', paddingBottom: 10 }}>{item.prompt}</div>
-            <div style={{ color: '#334155', fontSize: 11 }}>{new Date(item.ts).toLocaleString('en-GB')}</div>
+            <div style={{ color: 'var(--text-1)', fontSize: 14, fontWeight: 600, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>{item.prompt}</div>
+            <div style={{ color: 'var(--text-4)', fontSize: 11 }}>{new Date(item.ts).toLocaleString('en-GB')}</div>
             {Object.entries(item.responses || {}).map(([model, text]) => (
-              <div key={model} style={{ border: `1px solid ${MODEL_CFG[model]?.color}22`, borderRadius: 8, padding: 14, background: `${MODEL_CFG[model]?.color}08` }}>
-                <div style={{ color: MODEL_CFG[model]?.color, fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 10 }}>{MODEL_CFG[model]?.icon} {MODEL_CFG[model]?.name}</div>
+              <div key={model} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 14, background: 'var(--bg-1)' }}>
+                <div style={{ color: MODEL_CFG[model]?.color, fontSize: 11, fontWeight: 600, marginBottom: 10 }}>{MODEL_CFG[model]?.name}</div>
                 <div style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.7 }}>{text}</div>
               </div>
             ))}
@@ -1448,47 +1446,47 @@ function SettingsModule() {
 
   return (
     <div style={{ maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div style={{ color: '#ef4444', fontSize: 13, letterSpacing: 2, fontWeight: 700 }}>⚙ ORBIS CONFIGURATION</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>Settings</div>
 
-      <div style={{ background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.15)', borderRadius: 6, padding: 12, fontSize: 12, color: '#94a3b8', lineHeight: 1.6 }}>
-        Authenticated as <span style={{ color: '#00d4ff' }}>{session?.user?.email}</span>. Data is stored encrypted per-account in Supabase with Row Level Security.
+      <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6 }}>
+        Signed in as <span style={{ color: 'var(--text-1)' }}>{session?.user?.email}</span>. Data is stored per-account in Supabase with Row Level Security.
       </div>
 
       {[
-        { key: 'claude', label: 'Anthropic / Claude', placeholder: 'sk-ant-...', color: '#00d4ff' },
-        { key: 'gpt',    label: 'OpenAI / GPT-4o',    placeholder: 'sk-...',     color: '#7c3aed' },
-        { key: 'gemini', label: 'Google / Gemini',     placeholder: 'AIza...',    color: '#00ff88' },
-      ].map(({ key, label, placeholder, color }) => (
+        { key: 'claude', label: 'Anthropic / Claude', placeholder: 'sk-ant-...' },
+        { key: 'gpt',    label: 'OpenAI / GPT-4o',    placeholder: 'sk-...' },
+        { key: 'gemini', label: 'Google / Gemini',     placeholder: 'AIza...' },
+      ].map(({ key, label, placeholder }) => (
         <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <label style={{ color, fontSize: 11, letterSpacing: 2 }}>{label}</label>
+          <label style={{ color: 'var(--text-3)', fontSize: 11, fontWeight: 500 }}>{label}</label>
           <input type="password" value={keys[key]} onChange={e => setKeys(p => ({ ...p, [key]: e.target.value }))}
             placeholder={placeholder}
-            style={{ background: 'rgba(0,0,0,0.3)', border: `1px solid ${color}33`, borderRadius: 6, color: '#e2e8f0', padding: '10px 14px', fontSize: 13, outline: 'none', fontFamily: "'Courier New', monospace" }} />
+            style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-1)', padding: '10px 14px', fontSize: 13, outline: 'none', fontFamily: 'var(--font-ui)' }} />
         </div>
       ))}
 
       <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={save} style={{ padding: '10px 24px', background: saved ? 'rgba(0,255,136,0.15)' : 'rgba(0,212,255,0.15)', border: `1px solid ${saved ? '#00ff8844' : '#00d4ff44'}`, borderRadius: 6, color: saved ? '#00ff88' : '#00d4ff', cursor: 'pointer', fontSize: 12, letterSpacing: 2 }}>
-          {saved ? '✓ SAVED' : 'SAVE KEYS'}
+        <button onClick={save} style={{ padding: '9px 20px', background: saved ? 'rgba(34,197,94,0.1)' : 'rgba(79,142,247,0.1)', border: `1px solid ${saved ? 'rgba(34,197,94,0.3)' : 'rgba(79,142,247,0.3)'}`, borderRadius: 6, color: saved ? '#22c55e' : 'var(--accent)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-ui)' }}>
+          {saved ? 'Saved' : 'Save keys'}
         </button>
-        <button onClick={logout} style={{ padding: '10px 24px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#ef4444', cursor: 'pointer', fontSize: 12, letterSpacing: 2 }}>
-          SIGN OUT
+        <button onClick={logout} style={{ padding: '9px 20px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-3)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-ui)' }}>
+          Sign out
         </button>
       </div>
 
-      <div style={{ borderTop: '1px solid rgba(0,212,255,0.06)', paddingTop: 14, color: '#334155', fontSize: 11, lineHeight: 2 }}>
-        <div style={{ color: '#00d4ff', marginBottom: 8, letterSpacing: 2 }}>SYSTEM STATUS</div>
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, color: 'var(--text-4)', fontSize: 11, lineHeight: 2 }}>
+        <div style={{ color: 'var(--text-3)', fontWeight: 600, marginBottom: 8 }}>System status</div>
         {[
-          ['Supabase Auth',   '#00ff88', 'AUTHENTICATED'],
-          ['RLS Vault',       '#00ff88', 'SECURE'],
-          ['Notes',          '#f59e0b', `${s.notes.length} node(s)`],
-          ['Journals',       '#ec4899', `${s.journals.length} entry/entries`],
-          ['Goals',          '#f97316', `${s.goals.length} goal(s)`],
-          ['Memories',       '#00d4ff', `${s.memories.length}/10`],
-          ['Synth History',  '#7c3aed', `${s.synthHistory.length} session(s)`],
-          ['Claude API',     s.apiKeys.claude ? '#00ff88' : '#ef4444', s.apiKeys.claude ? 'KEY SET' : 'NO KEY'],
-          ['GPT API',        s.apiKeys.gpt    ? '#00ff88' : '#ef4444', s.apiKeys.gpt    ? 'KEY SET' : 'NO KEY'],
-          ['Gemini API',     s.apiKeys.gemini ? '#00ff88' : '#ef4444', s.apiKeys.gemini ? 'KEY SET' : 'NO KEY'],
+          ['Supabase Auth',   '#22c55e', 'Authenticated'],
+          ['RLS Vault',       '#22c55e', 'Secure'],
+          ['Notes',          'var(--text-3)', `${s.notes.length}`],
+          ['Journals',       'var(--text-3)', `${s.journals.length}`],
+          ['Goals',          'var(--text-3)', `${s.goals.length}`],
+          ['Memories',       'var(--text-3)', `${s.memories.length}/10`],
+          ['Synth History',  'var(--text-3)', `${s.synthHistory.length}`],
+          ['Claude API',     s.apiKeys.claude ? '#22c55e' : '#ef4444', s.apiKeys.claude ? 'Set' : 'Not set'],
+          ['GPT API',        s.apiKeys.gpt    ? '#22c55e' : 'var(--text-4)', s.apiKeys.gpt    ? 'Set' : 'Not set'],
+          ['Gemini API',     s.apiKeys.gemini ? '#22c55e' : 'var(--text-4)', s.apiKeys.gemini ? 'Set' : 'Not set'],
         ].map(([label, color, status]) => (
           <div key={label} style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>{label}</span><span style={{ color }}>{status}</span>
@@ -1497,11 +1495,11 @@ function SettingsModule() {
       </div>
 
       {s.memories.length > 0 && (
-        <div style={{ borderTop: '1px solid rgba(0,212,255,0.06)', paddingTop: 14 }}>
-          <div style={{ color: '#00d4ff', fontSize: 11, letterSpacing: 2, marginBottom: 10 }}>EXTRACTED MEMORIES ({s.memories.length}/10)</div>
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 10 }}>Memories ({s.memories.length}/10)</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {s.memories.map((m, i) => (
-              <div key={i} style={{ display: 'flex', gap: 8, padding: '8px 10px', background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.1)', borderRadius: 5 }}>
+              <div key={i} style={{ display: 'flex', gap: 8, padding: '8px 10px', background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 6 }}>
                 <span style={{ color: '#cbd5e1', fontSize: 12, flex: 1 }}>{m}</span>
                 <button onClick={() => d({ type: 'DEL_MEMORY', i })} style={{ background: 'none', border: 'none', color: '#334155', cursor: 'pointer', fontSize: 12 }}>✕</button>
               </div>
@@ -1520,17 +1518,7 @@ const OrbRoom3D = dynamic(() => import('../components/OrbRoom3D'), { ssr: false 
 function OrbisApp() {
   const { s, d } = useOrbis()
   const { muted, setMuted } = useSpeak()
-  const [booting, setBooting] = useState(true)
   const [showPalette, setShowPalette] = useState(false)
-  const onBootComplete = useCallback(() => setTimeout(() => setBooting(false), 100), [])
-
-  useEffect(() => {
-    const h = e => {
-      d({ type: 'THEME', v: { mouseX: e.clientX / window.innerWidth, mouseY: e.clientY / window.innerHeight } })
-    }
-    window.addEventListener('mousemove', h, { passive: true })
-    return () => window.removeEventListener('mousemove', h)
-  }, [d])
 
   useEffect(() => {
     const h = e => {
@@ -1562,11 +1550,7 @@ function OrbisApp() {
 
   return (
     <>
-      {booting && <BootSequence onComplete={onBootComplete} />}
       {showPalette && <CommandPalette onClose={() => setShowPalette(false)} />}
-      <Starfield />
-      <NeuralParticles />
-      <GlassOverlay mouseX={s.theme.mouseX} mouseY={s.theme.mouseY} />
       <Sidebar />
       <main style={{ position: 'relative', zIndex: 10, marginLeft: 200, height: '100vh', display: 'flex', flexDirection: 'column' }}>
         {/* Topbar */}
