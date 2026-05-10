@@ -1,0 +1,37 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream font-sans text-warm-brown antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-block bg-warm-brown text-cream px-8 py-3 rounded-full text-sm tracking-widest uppercase font-medium transition-opacity duration-200 hover:opacity-75;
+  }
+
+  .btn-outline {
+    @apply inline-block border border-warm-brown text-warm-brown px-8 py-3 rounded-full text-sm tracking-widest uppercase font-medium transition-colors duration-200 hover:bg-warm-brown hover:text-cream;
+  }
+
+  .section-label {
+    @apply text-xs tracking-[0.2em] uppercase text-rose-muted font-medium;
+  }
+
+  .section-title {
+    @apply font-serif text-3xl md:text-4xl text-warm-brown leading-snug;
+  }
+
+  .input-field {
+    @apply w-full border border-rose-blush bg-white px-4 py-3 rounded-lg text-sm text-warm-brown placeholder-warm-tan focus:outline-none focus:border-warm-tan transition-colors duration-150;
+  }
+}
