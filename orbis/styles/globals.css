@@ -1,86 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --bg:        #080812;
-  --bg-1:      #0d0d1f;
-  --bg-2:      #12122a;
-  --border:    rgba(255,255,255,0.06);
-  --border-md: rgba(255,255,255,0.1);
-  --text-1:    #f8fafc;
-  --text-2:    #94a3b8;
-  --text-3:    #475569;
-  --text-4:    #1e293b;
-  --accent:    #4f8ef7;
-  --accent-2:  #7c3aed;
-  --green:     #22c55e;
-  --amber:     #f59e0b;
-  --red:       #ef4444;
-  --pink:      #ec4899;
-  --cyan:      #06b6d4;
-  --font-ui:   'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
-  --radius:    10px;
-  --radius-sm: 6px;
-}
-
-html, body {
+html, body, #__next {
   height: 100%;
-  background: var(--bg);
-  color: var(--text-1);
-  font-family: var(--font-ui);
+  background: #000;
+  color: #e6edf3;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
 }
 
-#__next { height: 100%; }
-
-::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+::-webkit-scrollbar-thumb { background: #21262d; border-radius: 2px; }
 
-::selection { background: rgba(79,142,247,0.25); }
+::selection { background: rgba(47,129,247,0.3); }
 
-input, textarea, button, select { font-family: var(--font-ui); }
-
-/* Mono class for data/code */
-.mono { font-family: var(--font-mono); }
-
-/* Animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-10px); }
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-@keyframes pulse-ring {
-  0%   { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(1.8); opacity: 0; }
-}
-
-@keyframes boot-fade {
-  from { opacity: 0; transform: translateX(-6px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
+input, textarea, select, button { font-family: inherit; }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
-@keyframes shimmer {
-  from { background-position: -200% 0; }
-  to   { background-position: 200% 0; }
-}
+.fade-in { animation: fade-in 0.18s ease; }
