@@ -10,28 +10,28 @@
   }
 
   body {
-    @apply bg-cream font-sans text-warm-brown antialiased;
+    @apply bg-petal font-sans text-plum antialiased;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-block bg-warm-brown text-cream px-8 py-3 rounded-full text-sm tracking-widest uppercase font-medium transition-opacity duration-200 hover:opacity-75;
+    @apply inline-block bg-pink-600 text-white px-8 py-3 rounded-full text-sm tracking-widest uppercase font-medium transition-colors duration-200 hover:bg-pink-700;
   }
 
   .btn-outline {
-    @apply inline-block border border-warm-brown text-warm-brown px-8 py-3 rounded-full text-sm tracking-widest uppercase font-medium transition-colors duration-200 hover:bg-warm-brown hover:text-cream;
+    @apply inline-block border border-pink-600 text-pink-600 px-8 py-3 rounded-full text-sm tracking-widest uppercase font-medium transition-colors duration-200 hover:bg-pink-600 hover:text-white;
   }
 
   .section-label {
-    @apply text-xs tracking-[0.2em] uppercase text-rose-muted font-medium;
+    @apply text-xs tracking-[0.2em] uppercase text-sky-500 font-medium;
   }
 
   .section-title {
-    @apply font-serif text-3xl md:text-4xl text-warm-brown leading-snug;
+    @apply font-serif text-3xl md:text-4xl text-plum leading-snug;
   }
 
   .input-field {
-    @apply w-full border border-rose-blush bg-white px-4 py-3 rounded-lg text-sm text-warm-brown placeholder-warm-tan focus:outline-none focus:border-warm-tan transition-colors duration-150;
+    @apply w-full border border-blush bg-white px-4 py-3 rounded-lg text-sm text-plum placeholder-pink-300 focus:outline-none focus:border-pink-300 transition-colors duration-150;
   }
 }

@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+// TODO: Replace images with real photos of Jenny's actual products.
+// Download them from her Instagram (@jennysugarshack) or phone and add to /public/images/
 const items = [
   {
     name: "Custom Celebration Cakes",
@@ -8,7 +10,7 @@ const items = [
       "Designed entirely around your event — flavors, colors, size, and decorations. Every detail is yours to choose.",
     price: "From $65",
     img: "https://images.unsplash.com/photo-1558636508-e0db3814bd1d?w=600&q=80",
-    alt: "A two-tiered birthday cake with floral decorations",
+    alt: "Custom celebration cake — replace with Jenny's photo",
   },
   {
     name: "Cupcake Boxes",
@@ -16,15 +18,15 @@ const items = [
       "A dozen freshly baked cupcakes in your choice of flavor. Perfect for parties, gifts, or a quiet Tuesday.",
     price: "From $32",
     img: "https://images.unsplash.com/photo-1486427944299-d1955d23e34d?w=600&q=80",
-    alt: "A box of assorted decorated cupcakes",
+    alt: "Cupcake box — replace with Jenny's photo",
   },
   {
     name: "Seasonal Pastries",
     description:
-      "Scones, croissants, danishes, and more — rotating with the seasons and whatever&apos;s looking good at the market.",
+      "Scones, croissants, danishes, and more — rotating with the seasons and whatever looks good at the market.",
     price: "From $4 each",
     img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&q=80",
-    alt: "Freshly baked pastries on a wooden board",
+    alt: "Seasonal pastries — replace with Jenny's photo",
   },
   {
     name: "Wedding Cakes",
@@ -32,13 +34,13 @@ const items = [
       "Tiered cakes built for your most important day. Consultations available — reach out early, as spots fill quickly.",
     price: "Inquire for pricing",
     img: "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=600&q=80",
-    alt: "An elegant white wedding cake with greenery",
+    alt: "Wedding cake — replace with Jenny's photo",
   },
 ];
 
 export default function Menu() {
   return (
-    <section id="menu" className="py-24 bg-rose-blush/30">
+    <section id="menu" className="py-24 bg-blush/30">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
           <p className="section-label mb-3">What we make</p>
@@ -61,20 +63,20 @@ export default function Menu() {
               </div>
               <div className="p-6 flex flex-col justify-between">
                 <div>
-                  <h3 className="font-serif text-xl text-warm-brown mb-2">
+                  <h3 className="font-serif text-xl text-plum mb-2">
                     {item.name}
                   </h3>
-                  <p className="text-sm text-warm-brown/60 leading-relaxed mb-4">
+                  <p className="text-sm text-plum/60 leading-relaxed mb-4">
                     {item.description}
                   </p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-rose-deep">
+                  <span className="text-sm font-medium text-pink-600">
                     {item.price}
                   </span>
                   <Link
                     href="/order"
-                    className="text-xs tracking-widest uppercase text-warm-brown/50 hover:text-warm-brown transition-colors duration-150"
+                    className="text-xs tracking-widest uppercase text-sky-500 hover:text-sky-600 transition-colors duration-150"
                   >
                     Order →
                   </Link>

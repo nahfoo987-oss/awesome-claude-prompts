@@ -11,16 +11,9 @@ module.exports = {
         sans: ["'DM Sans'", "system-ui", "sans-serif"],
       },
       colors: {
-        cream: "#fdf8f3",
-        rose: {
-          blush: "#f5e6e0",
-          muted: "#d4a5a0",
-          deep: "#b5706a",
-        },
-        warm: {
-          brown: "#5c3d2e",
-          tan: "#c9a882",
-        },
+        petal: "#fff0f7",
+        blush: "#fce7f3",
+        plum: "#3b1a47",
       },
     },
   },

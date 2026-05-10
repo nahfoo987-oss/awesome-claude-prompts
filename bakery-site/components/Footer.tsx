@@ -2,13 +2,13 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="bg-cream border-t border-rose-blush/60 py-12 px-6">
+    <footer className="bg-white border-t border-blush py-12 px-6">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start gap-8">
         <div>
-          <p className="font-serif text-lg text-warm-brown mb-2">
+          <p className="font-serif text-lg text-plum mb-2">
             Jenny&apos;s Sugar Shack
           </p>
-          <p className="text-sm text-warm-brown/40 max-w-xs leading-relaxed">
+          <p className="text-sm text-plum/40 max-w-xs leading-relaxed">
             Handcrafted cakes and pastries, made to order. Pickup available —
             local delivery on select dates.
           </p>
@@ -18,23 +18,23 @@ export default function Footer() {
           <p className="section-label mb-1">Get in touch</p>
           <a
             href="mailto:hello@jennysugarshack.com"
-            className="text-sm text-warm-brown/60 hover:text-warm-brown transition-colors"
+            className="text-sm text-plum/60 hover:text-plum transition-colors"
           >
             hello@jennysugarshack.com
           </a>
           <a
-            href="https://instagram.com/jennysugatshack"
+            href="https://instagram.com/jennysugarshack"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-warm-brown/60 hover:text-warm-brown transition-colors"
+            className="text-sm text-plum/60 hover:text-pink-600 transition-colors"
           >
-            @jennysugatshack on Instagram
+            @jennysugarshack on Instagram
           </a>
           <a
-            href="https://facebook.com/jennysugatshack"
+            href="https://facebook.com/jennysugarshack"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-warm-brown/60 hover:text-warm-brown transition-colors"
+            className="text-sm text-plum/60 hover:text-sky-500 transition-colors"
           >
             Facebook Page
           </a>
@@ -51,7 +51,7 @@ export default function Footer() {
             <Link
               key={l.href}
               href={l.href}
-              className="text-sm text-warm-brown/60 hover:text-warm-brown transition-colors"
+              className="text-sm text-plum/60 hover:text-plum transition-colors"
             >
               {l.label}
             </Link>
@@ -59,8 +59,8 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto mt-10 pt-6 border-t border-rose-blush/40">
-        <p className="text-xs text-warm-brown/30">
+      <div className="max-w-6xl mx-auto mt-10 pt-6 border-t border-blush">
+        <p className="text-xs text-plum/30">
           © {new Date().getFullYear()} Jenny&apos;s Sugar Shack. All rights
           reserved.
         </p>

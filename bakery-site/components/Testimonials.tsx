@@ -1,27 +1,26 @@
+// TODO: Replace with real reviews from Jenny's actual customers.
+// Good sources: Google reviews, Facebook recommendations, DMs she's received.
 const reviews = [
   {
-    name: "Sarah M.",
-    event: "Baby shower",
-    quote:
-      "Jenny made our cake and it was honestly the most beautiful thing on the table. Everyone was asking who made it. Will order again and again.",
+    name: "[Customer name]",
+    event: "[Event type]",
+    quote: "[Add a real review from a customer here.]",
   },
   {
-    name: "David & Ana",
-    event: "Wedding",
-    quote:
-      "We were nervous about ordering our wedding cake without a tasting, but Jenny walked us through everything. The cake was perfect — and tasted even better than it looked.",
+    name: "[Customer name]",
+    event: "[Event type]",
+    quote: "[Add a real review from a customer here.]",
   },
   {
-    name: "The Kowalski Family",
-    event: "Birthday",
-    quote:
-      "My daughter specifically requested 'the pink one from Jenny's.' We've ordered three times now. It never disappoints.",
+    name: "[Customer name]",
+    event: "[Event type]",
+    quote: "[Add a real review from a customer here.]",
   },
 ];
 
 export default function Testimonials() {
   return (
-    <section className="py-24 px-6 bg-cream">
+    <section className="py-24 px-6 bg-petal">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-16">
           <p className="section-label mb-3">Kind words</p>
@@ -29,17 +28,17 @@ export default function Testimonials() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {reviews.map((r) => (
+          {reviews.map((r, i) => (
             <div
-              key={r.name}
-              className="bg-white rounded-2xl p-8 border border-rose-blush/60"
+              key={i}
+              className="bg-white rounded-2xl p-8 border border-blush"
             >
-              <p className="text-warm-brown/70 leading-relaxed mb-6 italic font-serif">
+              <p className="text-plum/70 leading-relaxed mb-6 italic font-serif">
                 &ldquo;{r.quote}&rdquo;
               </p>
               <div>
-                <p className="font-medium text-warm-brown text-sm">{r.name}</p>
-                <p className="text-xs text-warm-brown/40 mt-0.5">{r.event}</p>
+                <p className="font-medium text-plum text-sm">{r.name}</p>
+                <p className="text-xs text-plum/40 mt-0.5">{r.event}</p>
               </div>
             </div>
           ))}

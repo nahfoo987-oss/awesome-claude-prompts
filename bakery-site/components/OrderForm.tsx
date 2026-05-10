@@ -7,11 +7,11 @@ export default function OrderForm() {
 
   if (state.succeeded) {
     return (
-      <div className="bg-rose-blush/40 rounded-2xl p-10 text-center">
-        <p className="font-serif text-2xl text-warm-brown mb-3">
+      <div className="bg-blush rounded-2xl p-10 text-center">
+        <p className="font-serif text-2xl text-plum mb-3">
           Request received!
         </p>
-        <p className="text-warm-brown/60 leading-relaxed">
+        <p className="text-plum/60 leading-relaxed">
           Thank you for reaching out. I&apos;ll be in touch within 24 hours to
           chat through the details.
         </p>
@@ -22,13 +22,13 @@ export default function OrderForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white rounded-2xl border border-rose-blush/60 p-8 flex flex-col gap-5"
+      className="bg-white rounded-2xl border border-blush p-8 flex flex-col gap-5"
     >
       {/* Contact */}
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs tracking-wide text-warm-brown/60 uppercase">
-            Your Name <span className="text-rose-deep">*</span>
+          <label className="text-xs tracking-wide text-plum/60 uppercase">
+            Your Name <span className="text-pink-500">*</span>
           </label>
           <input
             name="name"
@@ -36,11 +36,11 @@ export default function OrderForm() {
             placeholder="Sarah Johnson"
             className="input-field"
           />
-          <ValidationError field="name" errors={state.errors} className="text-xs text-rose-deep" />
+          <ValidationError field="name" errors={state.errors} className="text-xs text-pink-500" />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs tracking-wide text-warm-brown/60 uppercase">
-            Phone or Email <span className="text-rose-deep">*</span>
+          <label className="text-xs tracking-wide text-plum/60 uppercase">
+            Phone or Email <span className="text-pink-500">*</span>
           </label>
           <input
             name="contact"
@@ -48,14 +48,14 @@ export default function OrderForm() {
             placeholder="sarah@email.com or 555-0100"
             className="input-field"
           />
-          <ValidationError field="contact" errors={state.errors} className="text-xs text-rose-deep" />
+          <ValidationError field="contact" errors={state.errors} className="text-xs text-pink-500" />
         </div>
       </div>
 
       {/* Event */}
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs tracking-wide text-warm-brown/60 uppercase">
+          <label className="text-xs tracking-wide text-plum/60 uppercase">
             Event Type
           </label>
           <select name="event_type" className="input-field">
@@ -70,8 +70,8 @@ export default function OrderForm() {
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs tracking-wide text-warm-brown/60 uppercase">
-            Date Needed <span className="text-rose-deep">*</span>
+          <label className="text-xs tracking-wide text-plum/60 uppercase">
+            Date Needed <span className="text-pink-500">*</span>
           </label>
           <input
             name="event_date"
@@ -79,14 +79,14 @@ export default function OrderForm() {
             required
             className="input-field"
           />
-          <ValidationError field="event_date" errors={state.errors} className="text-xs text-rose-deep" />
+          <ValidationError field="event_date" errors={state.errors} className="text-xs text-pink-500" />
         </div>
       </div>
 
       {/* Cake details */}
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs tracking-wide text-warm-brown/60 uppercase">
+          <label className="text-xs tracking-wide text-plum/60 uppercase">
             Cake Size
           </label>
           <select name="size" className="input-field">
@@ -98,7 +98,7 @@ export default function OrderForm() {
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs tracking-wide text-warm-brown/60 uppercase">
+          <label className="text-xs tracking-wide text-plum/60 uppercase">
             Flavor
           </label>
           <select name="flavor" className="input-field">
@@ -116,7 +116,7 @@ export default function OrderForm() {
 
       {/* Design description */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs tracking-wide text-warm-brown/60 uppercase">
+        <label className="text-xs tracking-wide text-plum/60 uppercase">
           Design Ideas
         </label>
         <textarea
@@ -129,7 +129,7 @@ export default function OrderForm() {
 
       {/* Budget */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs tracking-wide text-warm-brown/60 uppercase">
+        <label className="text-xs tracking-wide text-plum/60 uppercase">
           Approximate Budget
         </label>
         <select name="budget" className="input-field">
@@ -143,7 +143,7 @@ export default function OrderForm() {
 
       {/* Anything else */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs tracking-wide text-warm-brown/60 uppercase">
+        <label className="text-xs tracking-wide text-plum/60 uppercase">
           Anything else?
         </label>
         <textarea
@@ -154,8 +154,7 @@ export default function OrderForm() {
         />
       </div>
 
-      {/* Form-level errors (e.g. spam, network) */}
-      <ValidationError errors={state.errors} className="text-sm text-rose-deep text-center" />
+      <ValidationError errors={state.errors} className="text-sm text-pink-500 text-center" />
 
       <button
         type="submit"
@@ -165,7 +164,7 @@ export default function OrderForm() {
         {state.submitting ? "Sending…" : "Submit Order Request"}
       </button>
 
-      <p className="text-xs text-center text-warm-brown/40">
+      <p className="text-xs text-center text-plum/40">
         No payment is collected here — this is just to start the conversation.
       </p>
     </form>
