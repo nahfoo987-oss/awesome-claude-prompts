@@ -1,40 +1,11 @@
 "use client";
 
-import { useState, FormEvent } from "react";
-
-type Status = "idle" | "sending" | "success" | "error";
+import { useForm, ValidationError } from "@formspree/react";
 
 export default function OrderForm() {
-  const [status, setStatus] = useState<Status>("idle");
+  const [state, handleSubmit] = useForm("xgodpkag");
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setStatus("sending");
-
-    const form = e.currentTarget;
-    const data = new FormData(form);
-
-    try {
-      // Replace YOUR_FORM_ID with your actual Formspree form ID.
-      // Sign up free at https://formspree.io — takes 2 minutes.
-      const res = await fetch("https://formspree.io/f/YOUR_FORM_ID", {
-        method: "POST",
-        body: data,
-        headers: { Accept: "application/json" },
-      });
-
-      if (res.ok) {
-        setStatus("success");
-        form.reset();
-      } else {
-        setStatus("error");
-      }
-    } catch {
-      setStatus("error");
-    }
-  }
-
-  if (status === "success") {
+  if (state.succeeded) {
     return (
       <div className="bg-rose-blush/40 rounded-2xl p-10 text-center">
         <p className="font-serif text-2xl text-warm-brown mb-3">
@@ -65,6 +36,7 @@ export default function OrderForm() {
             placeholder="Sarah Johnson"
             className="input-field"
           />
+          <ValidationError field="name" errors={state.errors} className="text-xs text-rose-deep" />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs tracking-wide text-warm-brown/60 uppercase">
@@ -76,6 +48,7 @@ export default function OrderForm() {
             placeholder="sarah@email.com or 555-0100"
             className="input-field"
           />
+          <ValidationError field="contact" errors={state.errors} className="text-xs text-rose-deep" />
         </div>
       </div>
 
@@ -106,6 +79,7 @@ export default function OrderForm() {
             required
             className="input-field"
           />
+          <ValidationError field="event_date" errors={state.errors} className="text-xs text-rose-deep" />
         </div>
       </div>
 
@@ -180,19 +154,15 @@ export default function OrderForm() {
         />
       </div>
 
-      {status === "error" && (
-        <p className="text-sm text-rose-deep text-center">
-          Something went wrong. Please email us directly at
-          hello@jennysugarshack.com.
-        </p>
-      )}
+      {/* Form-level errors (e.g. spam, network) */}
+      <ValidationError errors={state.errors} className="text-sm text-rose-deep text-center" />
 
       <button
         type="submit"
-        disabled={status === "sending"}
+        disabled={state.submitting}
         className="btn-primary self-center mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {status === "sending" ? "Sending…" : "Submit Order Request"}
+        {state.submitting ? "Sending…" : "Submit Order Request"}
       </button>
 
       <p className="text-xs text-center text-warm-brown/40">
