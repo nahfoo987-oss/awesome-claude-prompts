@@ -1,37 +1,28 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    @apply bg-petal font-sans text-plum antialiased;
-  }
+  html { scroll-behavior: smooth; }
+  body { @apply bg-white font-sans text-plum antialiased; }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-block bg-pink-600 text-white px-8 py-3 rounded-full text-sm tracking-widest uppercase font-medium transition-colors duration-200 hover:bg-pink-700;
+    @apply inline-block bg-pink-600 text-white px-8 py-3 rounded-full text-sm tracking-widest uppercase font-semibold transition-colors duration-200 hover:bg-pink-700;
   }
-
   .btn-outline {
-    @apply inline-block border border-pink-600 text-pink-600 px-8 py-3 rounded-full text-sm tracking-widest uppercase font-medium transition-colors duration-200 hover:bg-pink-600 hover:text-white;
+    @apply inline-block border-2 border-pink-600 text-pink-600 px-8 py-3 rounded-full text-sm tracking-widest uppercase font-semibold transition-colors duration-200 hover:bg-pink-600 hover:text-white;
   }
-
   .section-label {
-    @apply text-xs tracking-[0.2em] uppercase text-sky-500 font-medium;
+    @apply text-xs tracking-[0.25em] uppercase text-sky-500 font-semibold;
   }
-
   .section-title {
     @apply font-serif text-3xl md:text-4xl text-plum leading-snug;
   }
-
   .input-field {
-    @apply w-full border border-blush bg-white px-4 py-3 rounded-lg text-sm text-plum placeholder-pink-300 focus:outline-none focus:border-pink-300 transition-colors duration-150;
+    @apply w-full border border-pink-200 bg-white px-4 py-3 rounded-xl text-sm text-plum placeholder-pink-300 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition duration-150;
   }
 }

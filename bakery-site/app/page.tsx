@@ -1,7 +1,8 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import Categories from "@/components/Categories";
+import WhyUs from "@/components/WhyUs";
 import About from "@/components/About";
-import Menu from "@/components/Menu";
 import SocialFeed from "@/components/SocialFeed";
 import Reviews from "@/components/Reviews";
 import Merch from "@/components/Merch";
@@ -14,8 +15,9 @@ export default function Home() {
       <Header />
       <main>
         <Hero />
+        <Categories />
+        <WhyUs />
         <About />
-        <Menu />
         <SocialFeed />
         <Reviews />
         <Merch />

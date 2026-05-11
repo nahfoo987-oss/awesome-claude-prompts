@@ -2,9 +2,6 @@
 
 import { useEffect } from "react";
 
-// Official Instagram embeds — real posts from @jennysugarshack.
-// Captions, photos, and engagement show exactly as on Instagram.
-// DMmLAAYOQbB appears once (it's a carousel; img_index variants are the same post).
 const posts = [
   { type: "p",    id: "DXhgErumRK0" },
   { type: "reel", id: "DXNlNLsjs3V" },
@@ -21,7 +18,6 @@ const posts = [
 ];
 
 export default function SocialFeed() {
-  // Re-process any embeds after mount (handles client-side navigation)
   useEffect(() => {
     if (typeof window !== "undefined" && (window as any).instgrm) {
       (window as any).instgrm.Embeds.process();
@@ -33,31 +29,26 @@ export default function SocialFeed() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <p className="section-label mb-3">@jennysugarshack</p>
-          <h2 className="section-title">Latest from our kitchen</h2>
-          <p className="text-plum/50 mt-3 text-sm">
-            Real posts, straight from Instagram — follow along for daily bakes
-            and limited drops.
+          <h2 className="section-title">Fresh from our kitchen</h2>
+          <p className="text-plum/50 mt-3 text-sm max-w-sm mx-auto">
+            Follow along for daily bakes, seasonal drops, and behind-the-scenes
+            sweetness.
           </p>
         </div>
 
-        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+        {/* Iframe embeds — SSR safe, no hydration mismatch */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {posts.map((post) => (
-            <div key={post.id} className="break-inside-avoid">
-              <blockquote
-                className="instagram-media rounded-2xl overflow-hidden"
-                data-instgrm-captioned
-                data-instgrm-permalink={`https://www.instagram.com/${post.type}/${post.id}/`}
-                data-instgrm-version="14"
-                style={{
-                  background: "#FFF",
-                  border: "1px solid #e8d5e8",
-                  borderRadius: "16px",
-                  margin: 0,
-                  maxWidth: "100%",
-                  minWidth: "326px",
-                  padding: 0,
-                  width: "100%",
-                }}
+            <div key={post.id} className="rounded-2xl overflow-hidden border border-blush">
+              <iframe
+                src={`https://www.instagram.com/${post.type}/${post.id}/embed/`}
+                width="100%"
+                height="480"
+                frameBorder="0"
+                scrolling="no"
+                allowTransparency
+                loading="lazy"
+                className="w-full"
               />
             </div>
           ))}
@@ -68,15 +59,12 @@ export default function SocialFeed() {
             href="https://instagram.com/jennysugarshack"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-sky-500 hover:text-sky-600 transition-colors tracking-wide underline underline-offset-4"
+            className="btn-outline"
           >
-            Follow @jennysugarshack on Instagram →
+            Follow @jennysugarshack
           </a>
         </div>
       </div>
-
-      {/* Instagram embed script — loads once per page */}
-      <script async src="https://www.instagram.com/embed.js" />
     </section>
   );
 }
