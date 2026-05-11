@@ -5,7 +5,7 @@ import { urlFor } from "@/sanity/lib/image";
 import { merchQuery } from "@/sanity/lib/queries";
 
 export default async function Merch() {
-  const items = await client.fetch(merchQuery);
+  const items = client ? await client.fetch(merchQuery) : [];
   if (!items?.length) return <section id="merch" className="py-4 bg-white" />;
   return (
     <section id="merch" className="py-24 bg-white">

@@ -4,7 +4,7 @@ import { urlFor } from "@/sanity/lib/image";
 import { aboutQuery } from "@/sanity/lib/queries";
 
 export default async function About() {
-  const data = await client.fetch(aboutQuery);
+  const data = client ? await client.fetch(aboutQuery) : null;
   return (
     <section id="about" className="py-24 px-6 max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
       <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-blush">

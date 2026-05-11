@@ -22,7 +22,7 @@ function PlatformBadge({ platform }: { platform: string }) {
 }
 
 export default async function Reviews() {
-  const reviews = await client.fetch(reviewsQuery);
+  const reviews = client ? await client.fetch(reviewsQuery) : [];
   if (!reviews?.length) return <section className="py-12 bg-pink-50" />;
   const yelpAndOthers = reviews.filter((r: any) => r.platform !== "instagram");
   const instaReviews = reviews.filter((r: any) => r.platform === "instagram");
