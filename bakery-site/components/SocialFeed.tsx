@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-
 const posts = [
   { type: "p",    id: "DXhgErumRK0" },
   { type: "reel", id: "DXNlNLsjs3V" },
@@ -18,28 +16,38 @@ const posts = [
 ];
 
 export default function SocialFeed() {
-  useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).instgrm) {
-      (window as any).instgrm.Embeds.process();
-    }
-  }, []);
-
   return (
-    <section id="gallery" className="py-24 px-6 bg-white">
+    <section
+      id="gallery"
+      className="py-28 px-6 relative"
+      style={{ background: "linear-gradient(180deg, #0d0616 0%, #11071e 100%)" }}
+    >
+      <div className="divider-glow mb-28 mx-0" />
+
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <p className="section-label mb-3">@jennysugarshack</p>
-          <h2 className="section-title">Fresh from our kitchen</h2>
-          <p className="text-plum/50 mt-3 text-sm max-w-sm mx-auto">
+        <div className="text-center mb-16" data-animate>
+          <p className="section-label mb-4">@jennysugarshack</p>
+          <h2 className="section-title text-white mb-4">
+            Fresh from our kitchen
+          </h2>
+          <p className="text-white/35 mt-3 text-sm max-w-sm mx-auto">
             Follow along for daily bakes, seasonal drops, and behind-the-scenes
             sweetness.
           </p>
         </div>
 
-        {/* Iframe embeds — SSR safe, no hydration mismatch */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post) => (
-            <div key={post.id} className="rounded-2xl overflow-hidden border border-blush">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {posts.map((post, i) => (
+            <div
+              key={post.id}
+              className="rounded-2xl overflow-hidden transition-transform duration-300 hover:scale-[1.01]"
+              style={{
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.03)",
+              }}
+              data-animate
+              data-animate-delay={String((i % 3) + 1)}
+            >
               <iframe
                 src={`https://www.instagram.com/${post.type}/${post.id}/embed/`}
                 width="100%"
@@ -54,7 +62,7 @@ export default function SocialFeed() {
           ))}
         </div>
 
-        <div className="text-center mt-10">
+        <div className="text-center mt-14" data-animate>
           <a
             href="https://instagram.com/jennysugarshack"
             target="_blank"

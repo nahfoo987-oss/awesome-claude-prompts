@@ -9,18 +9,25 @@
   },
   "dependencies": {
     "@formspree/react": "^2",
+    "@react-three/drei": "^9",
+    "@react-three/fiber": "^8",
     "@sanity/image-url": "^1",
     "@sanity/vision": "^3",
+    "framer-motion": "^11",
+    "gsap": "^3",
+    "lenis": "^1",
     "next": "14.2.3",
     "next-sanity": "^9",
     "react": "^18",
     "react-dom": "^18",
-    "sanity": "^3"
+    "sanity": "^3",
+    "three": "^0.165.0"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/three": "^0.165.0",
     "autoprefixer": "^10",
     "postcss": "^8",
     "tailwindcss": "^3",
