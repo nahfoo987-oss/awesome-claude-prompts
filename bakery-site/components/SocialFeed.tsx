@@ -1,42 +1,33 @@
-import Image from "next/image";
+"use client";
 
-// TODO: Replace ALL of these with real photos saved from @jennysugarshack on Instagram.
-// Save them to /public/images/ and update the src to "/images/post1.jpg" etc.
-// Caption text should match what Jenny actually wrote on each post.
+import { useEffect } from "react";
+
+// Official Instagram embeds — real posts from @jennysugarshack.
+// Captions, photos, and engagement show exactly as on Instagram.
+// DMmLAAYOQbB appears once (it's a carousel; img_index variants are the same post).
 const posts = [
-  {
-    src: "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=600&q=80",
-    alt: "Replace with Jenny's actual Instagram photo",
-    caption: "Add Jenny's real caption here",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1551404973-761cae4a3b6c?w=600&q=80",
-    alt: "Replace with Jenny's actual Instagram photo",
-    caption: "Add Jenny's real caption here",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=600&q=80",
-    alt: "Replace with Jenny's actual Instagram photo",
-    caption: "Add Jenny's real caption here",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&q=80",
-    alt: "Replace with Jenny's actual Instagram photo",
-    caption: "Add Jenny's real caption here",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1571115177098-24ec42ed204d?w=600&q=80",
-    alt: "Replace with Jenny's actual Instagram photo",
-    caption: "Add Jenny's real caption here",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1587668178277-295251f900ce?w=600&q=80",
-    alt: "Replace with Jenny's actual Instagram photo",
-    caption: "Add Jenny's real caption here",
-  },
+  { type: "p",    id: "DXhgErumRK0" },
+  { type: "reel", id: "DXNlNLsjs3V" },
+  { type: "p",    id: "DOYs0KaETH3" },
+  { type: "p",    id: "DNgztuvyXJi" },
+  { type: "p",    id: "DNRPnBjysjD" },
+  { type: "p",    id: "DMmLAAYOQbB" },
+  { type: "p",    id: "DGTjmIuyTZ8" },
+  { type: "p",    id: "DFlC28DSaIi" },
+  { type: "p",    id: "DEp4-U0Sq6x" },
+  { type: "p",    id: "C-0Yv5UPIEQ" },
+  { type: "p",    id: "C-a7gKDyQD0" },
+  { type: "p",    id: "C4i8WigvakN" },
 ];
 
 export default function SocialFeed() {
+  // Re-process any embeds after mount (handles client-side navigation)
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).instgrm) {
+      (window as any).instgrm.Embeds.process();
+    }
+  }, []);
+
   return (
     <section id="gallery" className="py-24 px-6 bg-white">
       <div className="max-w-6xl mx-auto">
@@ -44,46 +35,48 @@ export default function SocialFeed() {
           <p className="section-label mb-3">@jennysugarshack</p>
           <h2 className="section-title">Latest from our kitchen</h2>
           <p className="text-plum/50 mt-3 text-sm">
-            Follow along on Instagram for daily bakes, behind-the-scenes, and
-            limited drops.
+            Real posts, straight from Instagram — follow along for daily bakes
+            and limited drops.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {posts.map((post, i) => (
-            <a
-              key={i}
-              href="https://instagram.com/jennysugarshack"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative aspect-square rounded-xl overflow-hidden block"
-            >
-              <Image
-                src={post.src}
-                alt={post.alt}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+          {posts.map((post) => (
+            <div key={post.id} className="break-inside-avoid">
+              <blockquote
+                className="instagram-media rounded-2xl overflow-hidden"
+                data-instgrm-captioned
+                data-instgrm-permalink={`https://www.instagram.com/${post.type}/${post.id}/`}
+                data-instgrm-version="14"
+                style={{
+                  background: "#FFF",
+                  border: "1px solid #e8d5e8",
+                  borderRadius: "16px",
+                  margin: 0,
+                  maxWidth: "100%",
+                  minWidth: "326px",
+                  padding: 0,
+                  width: "100%",
+                }}
               />
-              <div className="absolute inset-0 bg-pink-900/0 group-hover:bg-pink-900/50 transition-colors duration-200 flex items-end p-4">
-                <p className="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 leading-snug">
-                  {post.caption}
-                </p>
-              </div>
-            </a>
+            </div>
           ))}
         </div>
 
-        <div className="text-center mt-8">
+        <div className="text-center mt-10">
           <a
             href="https://instagram.com/jennysugarshack"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-sky-500 hover:text-sky-600 transition-colors duration-150 tracking-wide underline underline-offset-4"
+            className="text-sm text-sky-500 hover:text-sky-600 transition-colors tracking-wide underline underline-offset-4"
           >
-            View more on Instagram →
+            Follow @jennysugarshack on Instagram →
           </a>
         </div>
       </div>
+
+      {/* Instagram embed script — loads once per page */}
+      <script async src="https://www.instagram.com/embed.js" />
     </section>
   );
 }
