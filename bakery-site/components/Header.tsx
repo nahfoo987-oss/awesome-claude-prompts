@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useState } from "react";
 
 const navLinks = [
-  { href: "#menu", label: "Our Menu" },
+  { href: "#menu", label: "Menu" },
   { href: "#about", label: "About" },
   { href: "#gallery", label: "Gallery" },
+  { href: "#merch", label: "Merch" },
   { href: "/order", label: "Order a Cake" },
 ];
 
@@ -16,10 +17,7 @@ export default function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-blush">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link
-          href="/"
-          className="font-serif text-xl text-plum tracking-tight"
-        >
+        <Link href="/" className="font-serif text-xl text-plum tracking-tight">
           Jenny&apos;s Sugar Shack
         </Link>
 
@@ -46,15 +44,9 @@ export default function Header() {
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
         >
-          <span
-            className={`block w-5 h-0.5 bg-plum transition-transform duration-200 ${open ? "translate-y-2 rotate-45" : ""}`}
-          />
-          <span
-            className={`block w-5 h-0.5 bg-plum transition-opacity duration-200 ${open ? "opacity-0" : ""}`}
-          />
-          <span
-            className={`block w-5 h-0.5 bg-plum transition-transform duration-200 ${open ? "-translate-y-2 -rotate-45" : ""}`}
-          />
+          <span className={`block w-5 h-0.5 bg-plum transition-transform duration-200 ${open ? "translate-y-2 rotate-45" : ""}`} />
+          <span className={`block w-5 h-0.5 bg-plum transition-opacity duration-200 ${open ? "opacity-0" : ""}`} />
+          <span className={`block w-5 h-0.5 bg-plum transition-transform duration-200 ${open ? "-translate-y-2 -rotate-45" : ""}`} />
         </button>
       </div>
 
