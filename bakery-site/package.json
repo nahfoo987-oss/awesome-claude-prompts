@@ -1,0 +1,29 @@
+{
+  "name": "jennysugatshack",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@formspree/react": "^2",
+    "@sanity/image-url": "^1",
+    "@sanity/vision": "^3",
+    "next": "14.2.3",
+    "next-sanity": "^9",
+    "react": "^18",
+    "react-dom": "^18",
+    "sanity": "^3"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10",
+    "postcss": "^8",
+    "tailwindcss": "^3",
+    "typescript": "^5"
+  }
+}
