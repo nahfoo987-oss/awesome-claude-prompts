@@ -1,379 +1,514 @@
-# SPRINT_PLAN.md — GLITCHED REALITY
-## 7-Day Production Build Plan
-
-This is a studio-style execution roadmap. Each day has a clear goal, exact Claude commands
-to run, deliverables to ship, and a done condition. Do not move to the next day until
-the current day's done condition is met.
-
-Use this alongside CLAUDE_WORKFLOW.md for the exact prompts.
+# SPRINT_PLAN.md
+# GLITCHED REALITY — 7-Day Build Plan
+# Each day has exact Claude commands, what to build, and how to know it's done.
+# Do not move to the next day until every checkbox is checked.
 
 ---
 
-## PRE-SPRINT CHECKLIST
+## HOW TO USE THIS
 
-Before Day 1, confirm:
-
-- [ ] Roblox Studio installed and project place file created
-- [ ] Rojo or file-sync tool configured (recommended: Rojo with VS Code)
-- [ ] Git repo initialized for version control
-- [ ] CLAUDE_RULES.md, CLAUDE_WORKFLOW.md, GAME_BUILD_PROMPT.md in repo
-- [ ] ProfileService and GoodSignal installed as packages
-- [ ] `.luaurc` configured for strict type checking
+1. Start each day by pasting SESSION START from CLAUDE_WORKFLOW.md
+2. Add: "Current build status: Day X" and "Today's goal: [paste this day's goal]"
+3. Work through each task using the phase commands from CLAUDE_WORKFLOW.md
+4. End each day by pasting END OF SESSION command
+5. Save the session summary — paste it at the start of the next session
 
 ---
 
-## DAY 1 — ARCHITECTURE + SHARED FOUNDATION
+## DAY 1 — Foundation & Shared Libraries
+**Goal:** Server boots. Client connects. All shared constants exist. No gameplay yet.
 
-**Goal:** Full architecture approved. Shared modules built and tested.
+### Tasks
 
-**Morning — Architecture (2–3 hours)**
+**Task 1.1 — Folder structure**
+Create every folder in Studio exactly as specified in GAME_BUILD_PROMPT.md Section 1.
+Do NOT create any scripts yet — just folders.
 
-1. Paste SECTION A from `GAME_BUILD_PROMPT.md`
-2. Review the output:
-   - Does the folder hierarchy match the system list?
-   - Is the dependency graph acyclic? (no circular dependencies)
-   - Does data flow start at Client Input and end at Client Rendering Only?
-3. Request corrections on anything wrong before proceeding
-4. Paste SECTION B from `GAME_BUILD_PROMPT.md` (skeleton phase)
+Done when:
+- [ ] ServerScriptService has: Services/, Systems/, Middleware/, Data/
+- [ ] ReplicatedStorage has: Remotes/RoundEvents/, Remotes/GameplayEvents/, Remotes/UIEvents/, Remotes/MetaEvents/, Shared/Constants/, Shared/Types/, Shared/Utility/
+- [ ] StarterPlayerScripts has: Controllers/, Systems/
+- [ ] StarterGui has: MainMenuGui, HUDGui, RevealGui, GhostGui, ShopGui, BattlePassGui
 
-**Afternoon — Shared Modules (3–4 hours)**
+**Task 1.2 — Create all RemoteEvents in Studio**
+Every remote in the REMOTEEVENTS table in CLAUDE_RULES.md must be created as a RemoteEvent instance inside the correct Remotes subfolder.
 
-Run these in order using `/implement` from `CLAUDE_WORKFLOW.md`:
+Done when:
+- [ ] All 13 RemoteEvents exist in correct locations in Studio
 
+**Task 1.3 — GameConfig**
 ```
-/implement GameConfig
-/implement Enums
-/implement Signal
-/implement Maid
-/implement TableUtils
-/implement RoleDefinitions
-/implement CorruptionConfig
-/implement NetworkConfig
+/design GameConfig
+Then: /build GameConfig
 ```
+This is a ModuleScript in ReplicatedStorage/Shared/Constants/.
+Contains ALL values from GAME_BUILD_PROMPT.md Section 2.
 
-For each: implement → paste into Studio → verify no errors in Output
+Done when:
+- [ ] GameConfig.lua exists with all values
+- [ ] No magic numbers anywhere else in the codebase
 
-**Done condition:**
-- [ ] All shared modules load without errors
-- [ ] `require(GameConfig).MinPlayers` returns a number
-- [ ] `Signal.new()` creates a working signal
-- [ ] `Maid.new()` creates a working maid
-
----
-
-## DAY 2 — STATE + NETWORK LAYER
-
-**Goal:** StateService and NetworkService fully working. These two systems unblock everything else.
-
-**StateService (3–4 hours)**
-
+**Task 1.4 — StateService**
 ```
 /design StateService
-/skeleton StateService
-/implement StateService
-/audit StateService
-/patch StateService
+Then: /build StateService
+Then: /exploit StateService
 ```
 
-Key things to verify:
-- `StateService:GetState(key)` returns correct value
-- `StateService:SetState(key, value)` fires change events
-- No module other than StateService writes to the state table
-- State resets cleanly between rounds (test by calling reset twice)
+Done when:
+- [ ] StateService.lua complete with all methods from SYSTEMS_REFERENCE.md
+- [ ] Internal _state is never accessible from outside
+- [ ] Event bus (StateService:On) working
+- [ ] All getters and setters implemented
+- [ ] ResetRound() clears all state correctly
 
-**NetworkService (2–3 hours)**
+**Task 1.5 — Main.server.lua skeleton**
+Build Main.server.lua with all requires and initialize calls in correct boot order.
+No systems are built yet — comment out what doesn't exist.
 
-```
-/design NetworkService
-/skeleton NetworkService
-/implement NetworkService
-/audit NetworkService
-/patch NetworkService
-```
+Done when:
+- [ ] Main.server.lua has correct require order (Services before Systems)
+- [ ] PlayerAdded and PlayerRemoving connected
+- [ ] Print statements confirm server boot completes without errors
 
-Key things to verify:
-- All RemoteEvent objects created and named from NetworkConfig
-- Rate limiter correctly blocks a simulated spam call
-- Input validation rejects nil, wrong types, and out-of-range values
-- No other server script can fire a RemoteEvent directly
+**Task 1.6 — ClientMain skeleton**
+Build ClientMain.client.lua with all system/controller requires.
+Comment out anything not yet built.
 
-**Done condition:**
-- [ ] StateService passes `/stress StateService`
-- [ ] NetworkService rate limiter blocks >10 calls/second from one player
-- [ ] Both modules load with zero Output errors
+Done when:
+- [ ] ClientMain runs without errors
+- [ ] Remote listeners connected (even if handlers are empty)
+- [ ] Print confirms client boots successfully
 
 ---
 
-## DAY 3 — ROUND LOOP + ROLES
+## DAY 2 — Role Assignment & Round Loop
+**Goal:** Rounds start. Roles are assigned privately. Timer runs. Lobby works.
 
-**Goal:** A complete round can start, run one phase, and end. Roles are assigned and win conditions are checked.
+### Tasks
 
-**RoundService (3–4 hours)**
-
-```
-/design RoundService
-/skeleton RoundService
-/implement RoundService
-/audit RoundService
-/patch RoundService
-```
-
-Test manually:
-- Start a local server with 2 players (Studio Play mode)
-- Trigger `RoundService:StartRound()` from the console
-- Confirm the round advances through: LOBBY → PREP → MAIN PHASE → RESULT → END
-- Confirm the round resets cleanly
-
-**RoleService (2–3 hours)**
-
+**Task 2.1 — RoleService**
 ```
 /design RoleService
-/skeleton RoleService
-/implement RoleService
-/audit RoleService
-/patch RoleService
+Then: /build RoleService
+Then: /exploit RoleService
 ```
 
-Test manually:
-- With 6 players, verify role distribution matches `GameConfig` ratios
-- Verify no player receives another player's role via RemoteEvent
-- Verify `RoleService:CheckWinCondition()` returns correct result for each win state
+Done when:
+- [ ] Fisher-Yates shuffle implemented correctly
+- [ ] Glitched count respects ratio + min/max from GameConfig
+- [ ] Each player receives only their own role (not others')
+- [ ] Glitched players receive their teammates list
+- [ ] CheckWinConditions() returns "Glitched", "Normal", or nil correctly
 
-**Done condition:**
-- [ ] Full round loop runs without errors
-- [ ] Roles assigned correctly for 6 and 12 player counts
-- [ ] Win conditions detected correctly for all three outcomes
-- [ ] No role data transmitted to wrong clients (verify with a spy RemoteEvent listener)
-
----
-
-## DAY 4 — TRUTH DISTORTION ENGINE
-
-**Goal:** TruthService fully working across all corruption tiers. This is the core mechanic.
-
-**TruthService (full day — 5–6 hours)**
-
+**Task 2.2 — RoundSystem**
 ```
-/design TruthService
-/skeleton TruthService
-/implement TruthService
-/audit TruthService
-/patch TruthService
-/stress TruthService
+/design RoundSystem
+Then: /build RoundSystem
+Then: /stress RoundSystem
 ```
 
-This system is the hardest to get right. Spend the extra time.
+Done when:
+- [ ] Full phase loop: Lobby → Countdown → InProgress → Voting → Reveal → Lobby
+- [ ] Each phase broadcasts via RemoteEvent
+- [ ] Timer decrements and broadcasts every second
+- [ ] Win condition checked every tick during InProgress
+- [ ] Early exit if corruption hits 100 or win condition met
+- [ ] Cleanup runs between rounds (StateService:ResetRound called)
 
-Test for each corruption tier (0–25, 26–50, 51–75, 76–99, 100):
-
-| Tier | Test |
-|---|---|
-| 0–25 | Player names match real names exactly |
-| 26–50 | 20% of names are replaced, vote counts differ by ≤1 |
-| 51–75 | Name replacements are consistent within a phase, reset next phase |
-| 76–99 | Names fully reshuffled — same fake name never maps to two real players |
-| 100 | All distortion removed, true names and roles shown |
-
-Archivist test:
-- Trigger Archivist ability
-- Confirm undistorted snapshot arrives via RemoteEvent
-- Confirm snapshot is not re-sent after 8 seconds
-- Confirm server does NOT broadcast this to other players
-
-**Done condition:**
-- [ ] All 5 corruption tiers produce correct output (verified via console prints)
-- [ ] Archivist snapshot has correct 8-second expiry
-- [ ] TruthService never modifies StateService (read-only verified)
-- [ ] `/audit TruthService` returns no Critical or High severity findings
-
----
-
-## DAY 5 — VOTING + GHOST SYSTEMS
-
-**Goal:** Voting resolves correctly. Ghosts can interfere. Both are exploit-resistant.
-
-**VotingService (2–3 hours)**
-
-```
-/design VotingService
-/skeleton VotingService
-/implement VotingService
-/audit VotingService
-/patch VotingService
-```
-
-Test:
-- Player votes for a target → vote registered server-side
-- Player tries to vote twice → second vote rejected
-- Player tries to vote for themselves → rejected
-- Dead player tries to vote → rejected
-- Vote resolves correctly on timer expiry AND on all-votes-in
-
-**GhostService (2–3 hours)**
-
-```
-/design GhostService
-/skeleton GhostService
-/implement GhostService
-/audit GhostService
-/patch GhostService
-```
-
-Test:
-- Only Phantom role converts to Ghost on death
-- Ghost interference action fires → affected player receives distorted data
-- Living player tries to call Ghost action → rejected
-- Ghost tries to interfere twice in one phase → second action rejected
-
-**Done condition:**
-- [ ] Vote manipulation attempts (double vote, self vote, dead vote) all rejected
-- [ ] Ghost interference correctly distorts one player's perceived state
-- [ ] GhostService `/stress` test shows no state corruption under simultaneous calls
-
----
-
-## DAY 6 — REVEAL SEQUENCES + CLIENT SYSTEMS
-
-**Goal:** All five cinematic reveal sequences working. Core client systems render game state correctly.
-
-**RevealService (2 hours)**
-
-```
-/design RevealService
-/implement RevealService
-```
-
-Build all five sequences:
-- ROLE REVEAL — per-player, fires at round start
-- VOTE COLLAPSE — broadcast, timed increments
-- CORRUPTION SPIKE — broadcast on threshold cross
-- GHOST INTERFERENCE — targeted, fires to affected player only
-- REALITY COLLAPSE — broadcast, 8-second full sequence
-
-**Client Systems (3–4 hours)**
-
-Implement in this order (each depends on the previous):
-
-```
-/implement UIController
-/implement CorruptionRenderer
-/implement AbilityController
-/implement GhostController
-/implement SpectatorController
-/implement ScreenEffects
-```
-
-For each client system: implement → test in Studio Play → verify no errors and correct visual output
-
-**Done condition:**
-- [ ] Role reveal animation plays for each player at round start
-- [ ] Vote collapse sequence shows votes one-by-one with correct timing
-- [ ] Corruption spike visual escalates correctly at each tier boundary
-- [ ] Ghost interference causes visible glitch effect on targeted player's screen
-- [ ] Reality collapse sequence plays on Corrupted team win
-
----
-
-## DAY 7 — ECONOMY + ANTI-EXPLOIT + FINAL AUDIT
-
-**Goal:** Progression system works. Anti-exploit blocks all known attack vectors. Full system audit passed.
-
-**EconomyService (2 hours)**
-
-```
-/design EconomyService
-/implement EconomyService
-/audit EconomyService
-```
-
-Test:
-- XP and currency awarded correctly at round end
-- EconomyService called twice for same round → second call rejected (idempotency check)
-- ProfileService saves data correctly on server close
-
-**AntiExploitService (2 hours)**
-
+**Task 2.3 — AntiExploitService (core)**
 ```
 /design AntiExploitService
-/implement AntiExploitService
+Then: /build AntiExploitService
 ```
+Build CheckRate() and Flag() and the three suspicion tiers.
+Position validation comes on Day 7.
 
-Stress test manually:
-- Simulate remote spam → player kicked after threshold
-- Simulate position teleport → flagged or kicked
-- Simulate impossible state transition → rejected silently
+Done when:
+- [ ] CheckRate(player, remoteName) works and returns bool
+- [ ] Flag() increments suspicion silently
+- [ ] Shadow pool flag set at threshold 4
+- [ ] Kick fires at threshold 8 with vague message
 
-**Full System Audit (2 hours)**
-
-Run `/audit` on every system that handles RemoteEvents:
+**Task 2.4 — UIController (phase routing only)**
 ```
-/audit NetworkService
-/audit VotingService
-/audit AbilityService
-/audit GhostService
-/audit TruthService
+/build UIController
 ```
+Build only the phase routing (OnPhaseChanged → show correct GUI).
+No voting UI, no reveal UI yet.
 
-For any Critical or High finding: patch before shipping.
+Done when:
+- [ ] Lobby → MainMenuGui
+- [ ] Countdown → MainMenuGui (status text changes)
+- [ ] InProgress → HUDGui
+- [ ] Phase changes broadcast and client reacts correctly
 
-**Polish pass (1 hour)**
-
-Run `/polish` on:
-```
-/polish RoundService
-/polish RevealService
-/polish TruthService
-```
-
-Focus: timing feels right, tension curve is correct, clip moments are present.
-
-**Done condition:**
-- [ ] EconomyService cannot double-reward a round
-- [ ] AntiExploitService kicks a simulated spammer within 5 seconds
-- [ ] Zero Critical security findings across all audited systems
-- [ ] All five reveal sequences play correctly in a full 6-player test round
-- [ ] Game runs stable for 3 consecutive rounds without errors
+**Test Day 2:**
+- Start a round with 4 players in Studio
+- Confirm roles are assigned (check output logs)
+- Confirm timer counts down
+- Confirm phase changes fire and client receives them
+- Confirm round resets and restarts
 
 ---
 
-## POST-SPRINT CHECKLIST
+## DAY 3 — Corruption & TruthService (The Core)
+**Goal:** Corruption rises. Reality distorts. Each player sees something different.
+This is the hardest day. Do not rush it.
 
-- [ ] All systems pass their `/stress` test
-- [ ] Full round tested with 6 players minimum
-- [ ] All five viral sequences recorded as reference clips
-- [ ] ProfileService verified saving data across server restarts
-- [ ] Place file published to Roblox (private, for testing)
-- [ ] Git repo has a clean commit history per system
+### Tasks
+
+**Task 3.1 — CorruptionSystem**
+```
+/design CorruptionSystem
+Then: /build CorruptionSystem
+Then: /stress CorruptionSystem
+```
+
+Done when:
+- [ ] Tick fires every BASE_TICK_RATE seconds during InProgress only
+- [ ] Tick amount scales with active Glitched count
+- [ ] OnKill() and OnAbilityUsed() add correct amounts
+- [ ] Stops at 100, fires win condition
+- [ ] BroadcastCorruption() fires CorruptionUpdate to all clients
+- [ ] Reset() clears to 0
+
+**Task 3.2 — TruthService**
+```
+/truthcheck
+Then: /design TruthService
+Then: /build TruthService
+Then: /exploit TruthService
+```
+This is the most important system in the game. Spend the most time here.
+
+Done when:
+- [ ] GetPlayerReality() returns correct packet for all 4 corruption levels
+- [ ] Glitched override: always sees truth
+- [ ] Ghost override: sees true roles + true corruption + no fake positions
+- [ ] FakePositions generated for 30% of players at Critical+
+- [ ] CorruptionDisplay lies at Collapse (±30 random, clamped)
+- [ ] PushRealityToAll() fires UpdateHUD to every player
+- [ ] Periodic sync runs every 2 seconds during InProgress
+- [ ] Reacts to CorruptionChanged and PlayerEliminated events
+
+**Task 3.3 — CorruptionRenderer (client)**
+```
+/build CorruptionRenderer
+```
+
+Done when:
+- [ ] ApplyReality(packet) switches visual effects by MapState
+- [ ] Clean: no effects
+- [ ] Fractured: slight blur, occasional glitch flash
+- [ ] Critical: stronger blur, color shift, more frequent glitch
+- [ ] Collapse: heavy blur, aggressive glitch, vignette
+- [ ] Corruption bar updates from packet (may show fake value)
+- [ ] Ghost vision: all effects cleared immediately
+
+**Task 3.4 — ScreenEffects (client)**
+```
+/build ScreenEffects
+```
+
+Done when:
+- [ ] PlayGlitch(duration) creates convincing screen distortion
+- [ ] Flash(color, duration) works
+- [ ] Shake(intensity, duration) works
+- [ ] PlayRevealEffect(wasGlitched) calls both
+
+**Test Day 3:**
+```
+/stress TruthService
+```
+- Manually set corruption to 25, 60, 90 in Studio
+- Verify each player's visual state matches their expected reality
+- Verify Glitched player sees clean state regardless
+- Verify ghost player sees all true roles
 
 ---
 
-## TIME ESTIMATES
+## DAY 4 — Voting & Reveal (The Emotional Peak)
+**Goal:** Players vote. Someone gets ejected. The reveal lands.
 
-| Day | Focus | Estimated Hours |
-|---|---|---|
-| 1 | Architecture + Shared | 5–7 |
-| 2 | StateService + NetworkService | 5–7 |
-| 3 | RoundService + RoleService | 5–7 |
-| 4 | TruthService | 5–6 |
-| 5 | VotingService + GhostService | 4–6 |
-| 6 | RevealService + Client systems | 5–6 |
-| 7 | Economy + AntiExploit + Audit | 5–6 |
-| **Total** | | **34–45 hours** |
+### Tasks
 
-Realistic pace: 5–6 hours of focused work per day.
-This is a production sprint, not a marathon session.
-Rest between days. Review each day's work before starting the next.
+**Task 4.1 — VotingSystem**
+```
+/design VotingSystem
+Then: /build VotingSystem
+Then: /exploit VotingSystem
+```
+
+Done when:
+- [ ] OpenVoting() clears old votes, counts eligible voters, sends player list to clients
+- [ ] ReceiveVote() validates: phase, not eliminated, not self-vote, one vote per player
+- [ ] Rate limit applied to every vote received
+- [ ] AllVotesIn() returns true when all eligible players have voted
+- [ ] CloseVoting() stops accepting new votes
+- [ ] Vote counts broadcast to all clients in real time
+
+**Task 4.2 — RevealSystem**
+```
+/design RevealSystem
+Then: /build RevealSystem
+Then: /moment Ejection
+```
+
+Done when:
+- [ ] BuildRevealData() builds correct payload (ejected player, role, vote count, winner)
+- [ ] HasConsensus check: needs majority (ceil(players/2))
+- [ ] If no consensus: "Nobody" reveal (no ejection)
+- [ ] Fires ShowRevealSequence to all clients
+- [ ] ApplyResult() eliminates the ejected player
+- [ ] Winner detection triggers correct win state
+
+**Task 4.3 — Voting UI (client)**
+Build voting buttons in HUDGui that appear during Voting phase.
+Each button shows player name + vote count.
+One vote per player — button disabled after voting.
+
+Done when:
+- [ ] Voting panel appears when phase = Voting
+- [ ] Player buttons built dynamically from server's player list
+- [ ] Clicking a button fires PlayerInteracted remote with vote data
+- [ ] Vote counts update in real time as UpdateHUD packets arrive
+- [ ] Own button is not shown (can't vote for yourself)
+- [ ] All buttons disabled after voting
+
+**Task 4.4 — Reveal UI (client)**
+Build the reveal sequence in RevealGui.
+
+Done when:
+- [ ] Freeze beat: screen goes dark, sound stops
+- [ ] Reveal beat: ejected player name and role flash with animation
+- [ ] Shock beat: "GLITCHED WINS" or "NORMALS WIN" or "Round continues"
+- [ ] ScreenEffects:PlayRevealEffect(wasGlitched) fires at correct moment
+
+**Test Day 4:**
+```
+/stress VotingSystem
+```
+- Run a full round to voting phase
+- Vote for a Glitched player — confirm correct reveal
+- Vote for a Normal player — confirm incorrect reveal (with different reaction)
+- Let timer expire without all votes — confirm partial vote result
 
 ---
 
-## IF YOU GET STUCK
+## DAY 5 — Ghost System & Abilities
+**Goal:** Death means something. Abilities change the game.
 
-**Claude gave bad architecture:** Re-run `/design` with the specific contradiction listed explicitly.
+### Tasks
 
-**System is too large:** It needs to be split. Run `/design` again and ask Claude to identify the split point.
+**Task 5.1 — GhostSystem**
+```
+/design GhostSystem
+Then: /build GhostSystem
+Then: /stress GhostSystem
+```
 
-**Audit found Critical issues:** Do not proceed to the next system. Patch first.
+Done when:
+- [ ] PlayerEliminated event triggers ConvertToGhost immediately
+- [ ] ApplyGhostPhysics: transparency 0.7, no collision, speed 18
+- [ ] Ghost tools removed
+- [ ] SpectatorModeEnabled fires to ghost player
+- [ ] CharacterAdded re-applies ghost physics if player is eliminated
+- [ ] OnGhostInterference() drains 2 corruption server-side
 
-**Two systems have overlapping logic:** One of them is wrong. Refer to CLAUDE_RULES.md Section 2 (Single Responsibility). One system must give up the logic.
+**Task 5.2 — AbilityService**
+```
+/design AbilityService
+Then: /build AbilityService
+Then: /exploit AbilityService
+```
 
-**Client is doing server work:** Revert it. The client is a rendering layer. Move the logic to the server and send the result via RemoteEvent.
+Done when:
+- [ ] HandleRequest validates: phase, elimination, role match, rate limit, cooldown
+- [ ] GlitchDash: moves character 20 studs forward (server-side)
+- [ ] SignalJam: fires ShowNotification to players within 30 studs
+- [ ] ScanPulse: returns true positions (roles within 20 studs, otherwise "?")
+- [ ] EmergencyBroadcast: counts alive Glitched, fires to all clients
+- [ ] Each Glitched ability triggers CorruptionSystem:OnAbilityUsed()
+- [ ] Cooldowns tracked server-side
+
+**Task 5.3 — AbilityController (client)**
+```
+/build AbilityController
+```
+
+Done when:
+- [ ] Q fires first ability for current role, E fires second
+- [ ] Optimistic cooldown UI updates immediately on fire
+- [ ] Cannot fire while on cooldown (visual flash only — server enforces)
+- [ ] Cooldown bars update correctly in HUDGui
+
+**Task 5.4 — SpectatorController (client)**
+```
+/build SpectatorController
+```
+
+Done when:
+- [ ] Activates on SpectatorModeEnabled remote
+- [ ] Left/Right arrows cycle through alive players
+- [ ] F key fires ghost interference remote
+- [ ] GhostGui shows who is being spectated
+- [ ] GhostGui shows true corruption value
+
+**Test Day 5:**
+- Get eliminated and confirm ghost physics apply immediately
+- Spectate other players, cycle through them
+- Use ghost interference, confirm corruption drops on server
+- Use GlitchDash as Glitched, confirm position changes server-side
+- Use SignalJam, confirm targeted players receive glitch effect
+- Use ScanPulse, confirm position + role data returns correctly
+
+---
+
+## DAY 6 — Economy & UI Polish
+**Goal:** Progression works. Shop exists. UI feels finished.
+
+### Tasks
+
+**Task 6.1 — EconomyService**
+```
+/design EconomyService
+Then: /build EconomyService
+Then: /stress EconomyService
+```
+
+Done when:
+- [ ] Load with schema merge + 3-attempt retry
+- [ ] Save with UpdateAsync (not SetAsync)
+- [ ] Auto-save every 60 seconds
+- [ ] Save on PlayerRemoving (critical)
+- [ ] AddCoins, SpendCoins, GetData all work
+- [ ] RecordRoundResult: updates wins, XP, tier correctly
+- [ ] XP per tier = 500, tiers uncapped
+
+**Task 6.2 — End-of-round economy flow**
+Wire EconomyService to RoundSystem:
+
+Done when:
+- [ ] RoundSystem calls EconomyService:RecordRoundResult for all players at end of Reveal phase
+- [ ] Coins added to each player based on outcome + role
+- [ ] XP added, tier calculated
+- [ ] Results shown in a post-round UI screen (basic: coins earned, XP earned, new tier if changed)
+
+**Task 6.3 — ShopGui (basic)**
+Build a working shop with at least 3 placeholder items.
+
+Done when:
+- [ ] Shop opens/closes with a button
+- [ ] Shows player's current coin balance (from EconomyService)
+- [ ] Items show name, cost, preview
+- [ ] Purchase deducts coins server-side (SpendCoins + validation)
+- [ ] Can't buy if insufficient coins (UI disables button)
+- [ ] Owned items show "Owned" instead of price
+
+**Task 6.4 — BattlePassGui (basic)**
+Build a working battle pass tier display.
+
+Done when:
+- [ ] Shows current tier and XP progress bar
+- [ ] Shows next 3 upcoming rewards (placeholder icons OK)
+- [ ] XP progress accurate from EconomyService data
+
+**Task 6.5 — HUD polish**
+Ensure HUD has all required elements wired and styled:
+
+Done when:
+- [ ] Timer displays correctly (MM:SS format)
+- [ ] Corruption bar animates smoothly (tween on update)
+- [ ] Ability slots show cooldown fill + number
+- [ ] Player count shown (alive / total)
+- [ ] Role display shown (YOUR ROLE: NORMAL / GLITCHED)
+
+---
+
+## DAY 7 — Anti-Exploit, Hardening & Full Audit
+**Goal:** The game is secure, stable, and ready for real players.
+
+### Tasks
+
+**Task 7.1 — AntiExploitService (complete)**
+```
+/exploit AntiExploitService
+```
+Add position validation to the existing AntiExploitService.
+
+Done when:
+- [ ] Position sampled every 0.5 seconds per player
+- [ ] Speed calculation: distance / time elapsed
+- [ ] Speed > 32 studs/sec → Flag(player, "speed_hack", speed)
+- [ ] Rate limiting confirmed working on all 13 remotes
+- [ ] Shadow pool confirmed working (flag threshold 4)
+- [ ] Kick confirmed working (flag threshold 8)
+
+**Task 7.2 — Full security audit**
+For each of these systems, run /exploit:
+```
+/exploit RoundSystem
+/exploit VotingSystem
+/exploit AbilityService
+/exploit TruthService
+```
+
+Done when:
+- [ ] Every RemoteEvent handler has rate limit as first line
+- [ ] Every handler validates phase, elimination status, and role
+- [ ] All argument types validated before use
+- [ ] No server logic can be triggered from wrong phase
+- [ ] No ability can fire with wrong role
+
+**Task 7.3 — Stress test full round**
+```
+/stress RoundSystem
+```
+
+Done when:
+- [ ] 4-player round completes correctly start to finish
+- [ ] 12-player round completes correctly
+- [ ] Player disconnect mid-round handled gracefully
+- [ ] DataStore unavailable: game continues with in-memory data, no crash
+- [ ] Round loop restarts after error without server restart
+- [ ] Late joiner handled (joins during InProgress, goes to lobby for next round)
+
+**Task 7.4 — MetaService**
+```
+/build MetaService
+```
+
+Done when:
+- [ ] All key events logged (phase changes, eliminations, corruption milestones)
+- [ ] GlitchedCaught triggers clip capture remote
+- [ ] Session log doesn't grow unbounded (capped at 500 entries)
+
+**Task 7.5 — Final checklist**
+
+- [ ] No script over 400 lines (split any that are)
+- [ ] No TODOs or placeholder comments in any script
+- [ ] All 13 RemoteEvents exist in Studio
+- [ ] BlurEffect and ColorCorrectionEffect in Lighting
+- [ ] All GUI elements referenced in code exist in Studio
+- [ ] Server boots cleanly with 0 errors in output
+- [ ] Client boots cleanly with 0 errors in output
+- [ ] Full round (Lobby → Reveal → Lobby) completes without errors
+- [ ] Ghost mode works end to end
+- [ ] Economy saves and loads correctly
+- [ ] Anti-exploit flags speed hackers silently
+
+**SHIP CONDITION:**
+All 39 checkboxes above checked. Zero errors on server boot. Zero errors on client boot. Full round completes.
+
+---
+
+## CARRY-FORWARD NOTES
+> Fill this in at the end of each day. Paste into the next session's start.
+
+**End of Day ___:**
+- Systems built: 
+- Systems wired: 
+- Known issues: 
+- Blockers for next day: 
+- Next session starts with: 

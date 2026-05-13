@@ -162,26 +162,20 @@ We hope you find these prompts useful and have fun using Claude!
 
 ## Glitched Reality — Roblox Game Development System
 
-A complete Claude Code prompt system for building a production-grade, server-authoritative,
-exploit-resistant Roblox multiplayer deception game. Includes role-switching modes,
-per-phase workflow commands, a full game build prompt, a 7-day sprint plan, and a
-quick-reference card for all 23 game systems.
+A complete Claude prompt system for building a production-grade, server-authoritative,
+exploit-resistant Roblox multiplayer deception game. 6 files, 2,061 lines, zero gaps.
+
+See [`glitched-reality/README.md`](glitched-reality/README.md) for full usage guide.
 
 **Files** (in [`glitched-reality/`](glitched-reality/)):
 
-| File | Purpose |
-|---|---|
-| [`CLAUDE_RULES.md`](glitched-reality/CLAUDE_RULES.md) | Non-negotiable architecture rules Claude must follow at all times |
-| [`CLAUDE_WORKFLOW.md`](glitched-reality/CLAUDE_WORKFLOW.md) | Seven paste-ready phase commands: `/design` `/skeleton` `/implement` `/audit` `/patch` `/polish` `/stress` |
-| [`GAME_BUILD_PROMPT.md`](glitched-reality/GAME_BUILD_PROMPT.md) | Full opening prompt with concrete game mechanics, role definitions, corruption system, and 8 structural error fixes vs. generic game prompts |
-| [`SPRINT_PLAN.md`](glitched-reality/SPRINT_PLAN.md) | Day-by-day 7-day studio execution plan with done conditions, test cases, and build order |
-| [`SYSTEMS_REFERENCE.md`](glitched-reality/SYSTEMS_REFERENCE.md) | Quick-reference API, ownership rules, and dependency graph for all 23 systems |
-
-**How to use:**
-1. Start with `CLAUDE_RULES.md` — paste as your Claude Code project context
-2. Paste Section A of `GAME_BUILD_PROMPT.md` to get architecture output
-3. Use `CLAUDE_WORKFLOW.md` commands per system
-4. Follow `SPRINT_PLAN.md` day by day for structured execution
+| File | Purpose | When to use |
+|---|---|---|
+| [`CLAUDE_RULES.md`](glitched-reality/CLAUDE_RULES.md) | 10 laws + architecture layers + naming conventions + state ownership table | Paste at start of every session |
+| [`CLAUDE_WORKFLOW.md`](glitched-reality/CLAUDE_WORKFLOW.md) | 7 phase commands: `/design` `/build` `/wire` `/truthcheck` `/exploit` `/moment` `/stress` + SESSION START/RESET/END | Reference during building |
+| [`GAME_BUILD_PROMPT.md`](glitched-reality/GAME_BUILD_PROMPT.md) | Full game brief (4 sections: game design, all GameConfig values, TruthService spec with packet structure, 8 error fixes with code) | Paste Section 1 to start |
+| [`SPRINT_PLAN.md`](glitched-reality/SPRINT_PLAN.md) | 7-day execution plan — 39 checkboxes, exact Claude commands, unfakeable done conditions per day | Track progress daily |
+| [`SYSTEMS_REFERENCE.md`](glitched-reality/SYSTEMS_REFERENCE.md) | All 23 systems: OWNS/NEVER TOUCHES/API/Events, full dependency graph, complete RemoteEvent table, Studio setup checklist | Keep open while building |
 
 ---
 

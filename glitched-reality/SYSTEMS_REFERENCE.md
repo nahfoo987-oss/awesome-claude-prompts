@@ -1,301 +1,621 @@
-# SYSTEMS_REFERENCE.md — GLITCHED REALITY
-## Quick-Reference Card for All 23 Systems
-
-Use this when: you need to know what a system owns, what it connects to,
-or what API it exposes — without reading the full module.
+# SYSTEMS_REFERENCE.md
+# GLITCHED REALITY — Complete Systems Reference
+# Keep this open while building. Every system, every method, every dependency.
 
 ---
 
-## SERVER SYSTEMS
+## READING THIS DOCUMENT
 
-### StateService
-**Owns:** All authoritative game state  
-**Never touches:** RemoteEvents, client data, ProfileService  
-**Used by:** Every server system (read), RoundService + RoleService + TruthService (write)  
-**Key API:**
-```lua
-StateService:GetState(key: string): any
-StateService:SetState(key: string, value: any): void
-StateService:UpdateState(key: string, updater: (any) -> any): void
-StateService:Subscribe(key: string, callback: (any) -> void): RBXScriptConnection
-StateService:Reset(): void
-```
+Each system card shows:
+- **OWNS** — what data/behavior this system is solely responsible for
+- **NEVER TOUCHES** — explicit out-of-scope (prevents scope creep)
+- **DEPENDS ON** — what must exist before this initializes
+- **API** — every public method with signatures
+- **Events fired / Events received**
 
----
-
-### NetworkService
-**Owns:** All RemoteEvent objects, all rate limiting, all input validation  
-**Never touches:** Game state, role data, round logic  
-**Used by:** All server systems (to listen), all client controllers (to fire)  
-**Key API:**
-```lua
-NetworkService:GetRemote(name: string): RemoteEvent
-NetworkService:OnServer(name: string, handler: (Player, ...any) -> void): void
-NetworkService:FireClient(player: Player, name: string, ...any): void
-NetworkService:FireAllClients(name: string, ...any): void
-NetworkService:FireFilteredClients(filter: (Player) -> boolean, name: string, ...any): void
-```
-**Rate limits:** Defined in `NetworkConfig` — default 10 calls/second/player
-
----
-
-### RoundService
-**Owns:** Match lifecycle state machine (LOBBY → PREP → PHASE → VOTE → RESULT → END)  
-**Never touches:** Role data, truth distortion, economy  
-**Depends on:** StateService, RoleService, TruthService, VotingService, RevealService  
-**Key API:**
-```lua
-RoundService:StartRound(): void
-RoundService:EndRound(reason: string): void
-RoundService:GetPhase(): string        -- returns current GamePhase enum value
-RoundService:AdvancePhase(): void
-```
-
----
-
-### RoleService
-**Owns:** Role assignment, role reveal logic, win condition evaluation  
-**Never touches:** Corruption state, UI, vote collection  
-**Depends on:** StateService, NetworkService  
-**Key API:**
-```lua
-RoleService:AssignRoles(players: {Player}): void
-RoleService:GetRole(player: Player): RoleDefinition   -- server only
-RoleService:RevealRoleToPlayer(player: Player): void  -- fires filtered RemoteEvent
-RoleService:CheckWinCondition(): WinResult | nil
-RoleService:ConvertToGhost(player: Player): void
-```
-
----
-
-### TruthService
-**Owns:** Per-player perceived reality generation (filtered/distorted state)  
-**Never touches:** StateService writes, RemoteEvents, role assignment  
-**Depends on:** StateService (read only)  
-**Key API:**
-```lua
-TruthService:GetPerceivedState(player: Player): PerceivedState
-TruthService:GetPerceivedPlayerList(player: Player): {PerceivedPlayer}
-TruthService:GetPerceivedVoteCount(player: Player, target: Player): number
-TruthService:ActivateArchivistWindow(player: Player): void
-TruthService:InvalidateCache(): void   -- call at phase start
-```
-**Note:** Never modifies state. All output is a filtered copy.
-
----
-
-### VotingService
-**Owns:** Vote collection, validation, and resolution  
-**Never touches:** Role assignment, corruption, economy  
-**Depends on:** StateService, NetworkService, RoleService (read)  
-**Key API:**
-```lua
-VotingService:OpenVoting(): void
-VotingService:CloseVoting(): VoteResult
-VotingService:CastVote(player: Player, targetId: number): boolean
-VotingService:GetVoteCount(target: Player): number  -- server only, undistorted
-```
-**Validation:** Dead players, self-votes, duplicate votes all rejected server-side
-
----
-
-### AbilityService
-**Owns:** Ability activation, cooldown tracking, server-side ability effect application  
-**Never touches:** UI cooldown display, role assignment, vote logic  
-**Depends on:** StateService, NetworkService, RoleService (read)  
-**Key API:**
-```lua
-AbilityService:UseAbility(player: Player, abilityId: string): boolean
-AbilityService:GetCooldown(player: Player, abilityId: string): number
-AbilityService:ResetAbilities(player: Player): void
-AbilityService:IsOnCooldown(player: Player, abilityId: string): boolean
-```
-
----
-
-### GhostService
-**Owns:** Ghost player registry, interference action validation, interference effect application  
-**Never touches:** Living player logic, vote collection, economy  
-**Depends on:** StateService, NetworkService, TruthService  
-**Key API:**
-```lua
-GhostService:RegisterGhost(player: Player): void
-GhostService:IsGhost(player: Player): boolean
-GhostService:UseInterference(ghost: Player, targetId: number): boolean
-GhostService:GetInterferenceUsed(ghost: Player): boolean
-GhostService:ResetPhase(): void
-```
-**Constraint:** Each Ghost gets one interference action per phase
-
----
-
-### RevealService
-**Owns:** Cinematic reveal sequence orchestration (server-side timing + client firing)  
-**Never touches:** State writes, vote logic, role assignment  
-**Depends on:** StateService, NetworkService, RoleService (read)  
-**Key API:**
-```lua
-RevealService:PlayRoleReveal(): void           -- fires per-player at round start
-RevealService:PlayVoteCollapse(result: VoteResult): void
-RevealService:PlayCorruptionSpike(level: number): void
-RevealService:PlayGhostInterference(target: Player): void
-RevealService:PlayRealityCollapse(): void      -- round end, Corrupted win
-```
-
----
-
-### EconomyService
-**Owns:** XP and currency calculation, ProfileService writes, reward distribution  
-**Never touches:** Game state, roles, round logic  
-**Depends on:** StateService (read), NetworkService, ProfileService  
-**Key API:**
-```lua
-EconomyService:AwardRound(player: Player, result: RoundResult): void
-EconomyService:GetBalance(player: Player): EconomyData
-EconomyService:LoadProfile(player: Player): void
-EconomyService:SaveProfile(player: Player): void
-```
-**Idempotency:** AwardRound is a no-op if called twice for the same round ID
-
----
-
-### AntiExploitService
-**Owns:** Remote fire rate monitoring, impossible state detection, position validation  
-**Never touches:** Game logic, role data, economy  
-**Depends on:** NetworkService (intercepts), StateService (read)  
-**Key API:**
-```lua
-AntiExploitService:RecordAction(player: Player, actionType: string): boolean
-AntiExploitService:CheckPosition(player: Player, claimedPos: Vector3): boolean
-AntiExploitService:FlagPlayer(player: Player, reason: string): void
-AntiExploitService:KickPlayer(player: Player, reason: string): void
-```
-**Thresholds:** Defined in `GameConfig.AntiExploit`
-
----
-
-## CLIENT SYSTEMS
-
-### UIController
-**Owns:** UI component mounting/unmounting per game phase  
-**Never touches:** Game logic, server state  
-**Listens to:** NetworkService remotes for phase change events  
-**Key behavior:** Shows correct UI for each phase (lobby, prep, main, vote, result, spectator)
-
----
-
-### CorruptionRenderer
-**Owns:** Visual distortion effects scaled to current Corruption Level  
-**Never touches:** Game logic, player names directly  
-**Listens to:** Corruption level updates from NetworkService  
-**Effects:** Name flicker, scan lines, chromatic aberration, geometry shimmer
-
----
-
-### AbilityController
-**Owns:** Ability input capture, cooldown UI, ability fire to NetworkService  
-**Never touches:** Cooldown enforcement (server-side only), role logic  
-**Key behavior:** Input captured → fired to NetworkService → server validates → response updates UI
-
----
-
-### GhostController
-**Owns:** Ghost interference input and UI  
-**Never touches:** Living player UI, vote logic  
-**Active only when:** `GhostService:IsGhost(localPlayer)` is true (confirmed by server)
-
----
-
-### SpectatorController
-**Owns:** Camera behavior and UI for eliminated players before Ghost conversion  
-**Never touches:** Game logic, other players' state
-
----
-
-### ScreenEffects
-**Owns:** Camera shake, glitch VX, post-processing effect intensity  
-**Never touches:** Game logic  
-**Called by:** CorruptionRenderer, UIController (for reveal sequences)
-
----
-
-## SHARED MODULES
-
-| Module | Contains |
-|---|---|
-| `GameConfig` | All tunable numbers: player counts, timers, corruption thresholds, AntiExploit limits |
-| `Enums` | String-enum constants: `GamePhase`, `RoleCategory`, `WinCondition`, `AbilityId` |
-| `RoleDefinitions` | Role names, categories, ability IDs, description strings |
-| `CorruptionConfig` | Per-tier distortion rules (name replacement %, vote drift, etc.) |
-| `NetworkConfig` | RemoteEvent name constants, rate limit values per remote |
-| `Signal` | GoodSignal-pattern bindable event — `Signal.new()`, `:Connect()`, `:Fire()`, `:Destroy()` |
-| `Maid` | Connection/instance cleanup — `Maid.new()`, `:GiveTask()`, `:DoCleaning()` |
-| `TableUtils` | `DeepCopy(t)`, `Merge(a, b)`, `Shuffle(t)`, `Contains(t, v)` |
+Arrows in the dependency graph flow downward only. No upward arrows. No cycles.
 
 ---
 
 ## DEPENDENCY GRAPH
 
 ```
-                    ┌─────────────┐
-                    │ Shared Libs │
-                    │ (no deps)   │
-                    └──────┬──────┘
-                           │
-                    ┌──────▼──────┐
-                    │ StateService│
-                    │ (read/write)│
-                    └──────┬──────┘
-                           │
-              ┌────────────▼────────────┐
-              │      NetworkService     │
-              │   (owns all remotes)    │
-              └──┬──────┬──────┬───────┘
-                 │      │      │
-        ┌────────▼──┐ ┌─▼────┐ ┌▼──────────┐
-        │RoundService│ │Role  │ │TruthService│
-        └────────┬──┘ │Service│ └─────┬─────┘
-                 │    └──┬───┘        │
-        ┌────────▼──┐    │     ┌──────▼──────┐
-        │VotingService   │     │ GhostService │
-        └────────┬──┘    │     └─────────────┘
-                 │       │
-        ┌────────▼───────▼──┐
-        │   RevealService   │
-        └────────┬──────────┘
-                 │
-        ┌────────▼──────────┐
-        │  Client Rendering │
-        │  (no server calls)│
-        └───────────────────┘
-```
+GameConfig (no deps)
+     │
+     ▼
+StateService (no deps)
+     │
+     ├──────────────────────────┐
+     ▼                          ▼
+EconomyService            AntiExploitService
+     │                          │
+     ▼                          ▼
+RoleService              AbilityService ──────┐
+     │                          │              │
+     ▼                          ▼              ▼
+TruthService          CorruptionSystem   CombatService
+     │                          │
+     └──────────┬───────────────┘
+                ▼
+           RoundSystem
+                │
+     ┌──────────┼──────────────┐
+     ▼          ▼              ▼
+VotingSystem GhostSystem  RevealSystem
+                               │
+                               ▼
+                          MetaService
 
-**Rules enforced by this graph:**
-- Arrows point downward only (no circular dependencies)
-- Client systems have no upward arrows (they only receive)
-- StateService has no outgoing dependencies (it is a pure data store)
-- NetworkService is the only path between server and client
+CLIENT (reads server state, never writes):
+     ▼
+UIStateManager ← CorruptionRenderer ← ScreenEffects ← AudioController
+     │
+     ▼
+UIController ← AbilityController ← SpectatorController
+```
 
 ---
 
-## REMOTEVENT REFERENCE
+## SERVER SERVICES
 
-All names defined in `NetworkConfig`. Full list:
+---
 
-| Remote Name | Direction | Owner | Rate Limit |
-|---|---|---|---|
-| `PhaseChanged` | Server → Client | NetworkService | broadcast |
-| `RoleAssigned` | Server → Client (filtered) | RoleService | once per round |
-| `PerceivedStateUpdate` | Server → Client (per-player) | TruthService | 1/phase |
-| `CastVote` | Client → Server | VotingService | 1/vote window |
-| `VoteResult` | Server → Client | RevealService | broadcast |
-| `UseAbility` | Client → Server | AbilityService | per GameConfig cooldown |
-| `AbilityCooldownSync` | Server → Client | AbilityService | on use |
-| `GhostInterfere` | Client → Server | GhostService | 1/phase |
-| `GhostEffect` | Server → Client (targeted) | GhostService | 1/phase |
-| `CorruptionUpdate` | Server → Client | RoundService | broadcast |
-| `RevealSequence` | Server → Client | RevealService | broadcast |
-| `ArchivistSnapshot` | Server → Client (targeted) | TruthService | 1/round |
-| `EconomyUpdate` | Server → Client | EconomyService | on award |
+### StateService
+**OWNS:** Phase, Corruption, Roles, Elimination status, Votes, Timer, Round number
 
-**Hard rule:** No script outside NetworkService creates or fires a RemoteEvent.
+**NEVER TOUCHES:** Character instances, GUI, DataStore, RemoteEvents
+
+**DEPENDS ON:** Nothing (initialize first)
+
+**API:**
+```lua
+StateService:Initialize()
+StateService:OnPlayerAdded(player: Player)
+StateService:OnPlayerRemoving(player: Player)
+
+-- Phase
+StateService:GetPhase() → string
+StateService:SetPhase(phase: string)
+  -- fires "PhaseChanged" event with (newPhase, oldPhase)
+
+-- Round
+StateService:GetRound() → number
+StateService:IncrementRound() → number
+
+-- Corruption
+StateService:GetCorruption() → number
+StateService:SetCorruption(value: number)  -- clamps 0–100
+  -- fires "CorruptionChanged" event with (newValue)
+StateService:AddCorruption(amount: number)
+
+-- Roles
+StateService:GetRole(userId: number) → "Normal" | "Glitched"
+StateService:SetRole(userId: number, role: string)
+  -- fires "RoleAssigned" event with (userId, role)
+StateService:GetAllRoles() → {[userId]: string}
+StateService:IsGlitched(userId: number) → boolean
+
+-- Elimination
+StateService:IsEliminated(userId: number) → boolean
+StateService:EliminatePlayer(userId: number)
+  -- fires "PlayerEliminated" event with (userId)
+StateService:GetAliveCount() → number
+
+-- Votes
+StateService:AddVote(targetUserId: number)
+  -- fires "VoteAdded" event with (targetUserId, newCount)
+StateService:GetVotes() → {[userId]: number}
+StateService:GetTopVoted() → (userId: number, count: number)
+StateService:ClearVotes()
+
+-- Timer
+StateService:GetTimeLeft() → number
+StateService:SetTimeLeft(seconds: number)
+  -- fires "TimerUpdated" event with (seconds)
+
+-- Reset
+StateService:ResetRound()
+  -- resets: Corruption, Roles, Eliminated, Votes, TimeLeft
+  -- fires "RoundReset"
+
+-- Event bus
+StateService:On(event: string, fn: function)
+
+-- Debug
+StateService:Snapshot() → table
+```
+
+**Events fired:**
+- `PhaseChanged(newPhase, oldPhase)`
+- `CorruptionChanged(value)`
+- `RoleAssigned(userId, role)`
+- `PlayerEliminated(userId)`
+- `VoteAdded(targetUserId, count)`
+- `TimerUpdated(seconds)`
+- `RoundReset()`
+
+---
+
+### TruthService
+**OWNS:** Per-player reality packets, fake position generation, reality push cadence
+
+**NEVER TOUCHES:** Lighting, GUI, direct visual effects (client does that)
+
+**DEPENDS ON:** StateService
+
+**API:**
+```lua
+TruthService:Initialize()
+TruthService:GetPlayerReality(player: Player) → RealityPacket
+TruthService:PushRealityToPlayer(player: Player)
+TruthService:PushRealityToAll()
+TruthService:GenerateFakePositions(chance: number) → {[userId]: Vector3}
+TruthService:CanSeeRole(viewer: Player, target: Player) → boolean
+```
+
+**RealityPacket structure:**
+```lua
+{
+  MapState: "Clean" | "Fractured" | "Critical" | "Collapse",
+  UITrustworthiness: number,  -- 1.00 | 0.85 | 0.65 | 0.40
+  CorruptionDisplay: number,  -- may be false value at Collapse
+  FakePositions: nil | {[userId]: Vector3},
+  GhostVision: boolean,
+  ShowTrueRoles: boolean,
+  TrueCorruption: number | nil,  -- only for Glitched
+}
+```
+
+**Listens for:** `CorruptionChanged`, `PlayerEliminated`
+
+**Fires remote:** `UpdateHUD` → `{type="RealityUpdate", payload=RealityPacket}`
+
+---
+
+### RoleService
+**OWNS:** Role assignment algorithm, Glitched team reveal, win condition logic
+
+**NEVER TOUCHES:** Corruption, voting, elimination (those belong to other systems)
+
+**DEPENDS ON:** StateService
+
+**API:**
+```lua
+RoleService:Initialize()
+RoleService:AssignRoles(players: {Player}) → glitchedCount: number
+RoleService:NotifyPlayersOfRole(pool: {Player}, glitchedCount: number)
+RoleService:RevealGlitchedToGlitched(pool: {Player}, glitchedCount: number)
+RoleService:GetDistribution() → (glitched: number, normal: number)
+RoleService:GetGlitchedPlayers() → {Player}
+RoleService:CheckWinConditions() → "Glitched" | "Normal" | nil
+```
+
+**Fires remote:** `PlayerAssignedRole` → `{role, isGlitched, teammates?, totalGlitched}`
+
+---
+
+### AbilityService
+**OWNS:** Ability validation, execution, server-side cooldown tracking
+
+**NEVER TOUCHES:** Corruption math (delegates to CorruptionSystem), client cooldown display
+
+**DEPENDS ON:** StateService, AntiExploitService, CorruptionSystem (lazy)
+
+**API:**
+```lua
+AbilityService:Initialize()
+AbilityService:HandleRequest(player: Player, data: {ability: string})
+AbilityService:DoGlitchDash(player: Player, data: table)
+AbilityService:DoSignalJam(player: Player, data: table)
+AbilityService:DoScanPulse(player: Player, data: table)
+AbilityService:DoEmergencyBroadcast(player: Player, data: table)
+```
+
+**Listens for remote:** `AbilityUsed` (C→S)
+
+**Fires remotes:** `ShowNotification` (for SignalJam, ScanResult, EmergencyBroadcast)
+
+---
+
+### AntiExploitService
+**OWNS:** Suspicion scores, shadow pool membership, rate limit windows, position validation
+
+**NEVER TOUCHES:** Game logic, roles, corruption (it gates, it doesn't act)
+
+**DEPENDS ON:** Nothing
+
+**API:**
+```lua
+AntiExploitService:Initialize()
+AntiExploitService:OnPlayerAdded(player: Player)
+AntiExploitService:CheckRate(player: Player, remoteName: string) → boolean
+AntiExploitService:ValidateAbilityUse(player: Player, ability: string, cooldowns: table) → (ok: boolean, reason: string?)
+AntiExploitService:Flag(player: Player, reason: string, detail: any)
+AntiExploitService:BeginPositionMonitor(player: Player)
+AntiExploitService:IsInShadowPool(player: Player) → boolean
+AntiExploitService:GetSuspicion(player: Player) → number
+```
+
+---
+
+### EconomyService
+**OWNS:** Player data persistence, coins, XP, Battle Pass tiers, creator codes
+
+**NEVER TOUCHES:** Gameplay decisions, role logic, corruption
+
+**DEPENDS ON:** DataStoreService (external)
+
+**API:**
+```lua
+EconomyService:Initialize()
+EconomyService:OnPlayerAdded(player: Player)
+EconomyService:OnPlayerRemoving(player: Player)
+EconomyService:Load(player: Player) → DataTable
+EconomyService:Save(player: Player)
+EconomyService:GetData(player: Player) → DataTable
+EconomyService:AddCoins(player: Player, amount: number)
+EconomyService:SpendCoins(player: Player, amount: number) → boolean
+EconomyService:RecordRoundResult(player: Player, won: boolean, asGlitched: boolean)
+EconomyService:SetCreatorCode(player: Player, code: string)
+```
+
+**DataSchema:**
+```lua
+{
+  Coins = 0, PremiumCoins = 0,
+  TotalRounds = 0, Wins = 0, GlitchedWins = 0,
+  BattlePassXP = 0, BattlePassTier = 0,
+  OwnedItems = {}, EquippedItems = {},
+  CreatorCode = nil,
+  FirstJoin = 0, LastJoin = 0,
+  _version = 1,
+}
+```
+
+---
+
+### MetaService
+**OWNS:** Session event log, clip moment detection and triggering
+
+**NEVER TOUCHES:** Gameplay state directly (reads via events only)
+
+**DEPENDS ON:** StateService
+
+**API:**
+```lua
+MetaService:Initialize()
+MetaService:Log(eventName: string, data: table?)
+MetaService:FlagClipMoment(player: Player, reason: string)
+MetaService:GetSessionLog() → {table}
+MetaService:GetEventCount(eventName: string) → number
+```
+
+**Listens for:** `PhaseChanged`, `PlayerEliminated`, `CorruptionChanged`
+
+**Fires remote:** `ClipCaptured` (S→C)
+
+---
+
+## SERVER SYSTEMS
+
+---
+
+### RoundSystem
+**OWNS:** Round lifecycle, phase transitions, timer, boot sequence
+
+**NEVER TOUCHES:** State directly (uses StateService), role assignment (uses RoleService)
+
+**DEPENDS ON:** StateService, RoleService, CorruptionSystem, VotingSystem, RevealSystem
+
+**API:**
+```lua
+RoundSystem:Initialize()
+RoundSystem:StartRoundLoop()  -- blocking, runs forever
+RoundSystem:RunLobby()
+RoundSystem:RunCountdown()
+RoundSystem:RunInProgress()
+RoundSystem:RunVoting()
+RoundSystem:RunReveal()
+RoundSystem:Cleanup()
+RoundSystem:BroadcastPhase(phase: string, data: table)
+RoundSystem:BroadcastTimer(seconds: number)
+```
+
+**Phase durations (from GameConfig):**
+- Lobby: 20s
+- Countdown: 5s
+- InProgress: 240s
+- Voting: 45s
+- Reveal: 10s
+
+---
+
+### CorruptionSystem
+**OWNS:** Corruption tick loop, event-driven spikes, corruption broadcast
+
+**NEVER TOUCHES:** StateService directly for anything other than corruption value
+
+**DEPENDS ON:** StateService
+
+**API:**
+```lua
+CorruptionSystem:Initialize()
+CorruptionSystem:StartTick()
+CorruptionSystem:StopTick()
+CorruptionSystem:Reset()
+CorruptionSystem:OnKill(killerPlayer: Player)
+CorruptionSystem:OnAbilityUsed(player: Player)
+CorruptionSystem:CountActiveGlitched() → number
+CorruptionSystem:GetCorruptionLabel() → "Clean" | "Fractured" | "Critical" | "Collapse"
+CorruptionSystem:BroadcastCorruption()
+```
+
+**Fires remote:** `CorruptionUpdate` → `{value, label}`
+
+---
+
+### VotingSystem
+**OWNS:** Vote collection, vote validation, "all votes in" detection
+
+**NEVER TOUCHES:** Ejection, reveal sequence (those belong to RevealSystem)
+
+**DEPENDS ON:** StateService, AntiExploitService
+
+**API:**
+```lua
+VotingSystem:Initialize()
+VotingSystem:OpenVoting()
+VotingSystem:CloseVoting()
+VotingSystem:ReceiveVote(voter: Player, targetUserId: number)
+VotingSystem:AllVotesIn() → boolean
+VotingSystem:Reset()
+VotingSystem:OnPlayerRemoving(player: Player)
+VotingSystem:BuildVotingPlayerList() → {table}
+```
+
+**Listens for remote:** `PlayerInteracted` with `{action="vote", targetId}`
+
+**Fires remote:** `UpdateHUD` → `{type="VoteUpdate", votes}`
+
+---
+
+### GhostSystem
+**OWNS:** Ghost physics application, ghost-to-spectator transition, ghost interference
+
+**NEVER TOUCHES:** Corruption math (delegates), voting, reveal
+
+**DEPENDS ON:** StateService
+
+**API:**
+```lua
+GhostSystem:Initialize()
+GhostSystem:OnCharacterAdded(player: Player, character: Model)
+GhostSystem:ConvertToGhost(player: Player)
+GhostSystem:ApplyGhostPhysics(character: Model)
+GhostSystem:RestorePlayer(player: Player)
+GhostSystem:OnGhostInterference(player: Player)
+```
+
+**Listens for:** `PlayerEliminated`
+
+**Fires remote:** `SpectatorModeEnabled` → `{isGhost, canOrient}`
+
+---
+
+### RevealSystem
+**OWNS:** Reveal payload construction, ejection application, win state broadcast
+
+**NEVER TOUCHES:** Vote tallying (reads from StateService after VotingSystem is done)
+
+**DEPENDS ON:** StateService, RoleService
+
+**API:**
+```lua
+RevealSystem:Initialize()
+RevealSystem:RunReveal(topId: number?, topCount: number?)
+RevealSystem:BuildRevealData(topId: number?, topCount: number?) → RevealData
+RevealSystem:PlayRevealSequence(data: RevealData)
+RevealSystem:ApplyResult(data: RevealData)
+```
+
+**RevealData structure:**
+```lua
+{
+  hasConsensus: boolean,
+  ejectedId: number?,
+  ejectedName: string,
+  ejectedRole: string,
+  wasGlitched: boolean,
+  voteCount: number,
+  winner: "Glitched" | "Normal" | nil,
+  roleList: {table},  -- all players, their roles, elimination status
+}
+```
+
+**Fires remote:** `ShowRevealSequence` → RevealData
+
+---
+
+## CLIENT SYSTEMS
+
+---
+
+### UIStateManager
+**OWNS:** Client-side snapshot of current game state, ShouldDistortUI logic
+
+**NEVER TOUCHES:** Any rendering, any input handling
+
+**DEPENDS ON:** Nothing (updated by ClientMain router)
+
+**API:**
+```lua
+UIStateManager:Initialize()
+UIStateManager:OnRealityUpdate(reality: RealityPacket)
+UIStateManager:GetPhase() → string
+UIStateManager:GetRole() → string
+UIStateManager:IsEliminated() → boolean
+UIStateManager:GetTrustScore() → number
+UIStateManager:GetMapLevel() → string
+UIStateManager:GetCorruption() → number
+UIStateManager:SetPhase(phase: string)
+UIStateManager:SetRole(role: string)
+UIStateManager:ShouldDistortUI(element: string) → boolean
+```
+
+---
+
+### CorruptionRenderer
+**OWNS:** Visual effect application based on reality packet, corruption bar update
+
+**NEVER TOUCHES:** Game state (reads only from reality packets)
+
+**DEPENDS ON:** ScreenEffects
+
+**API:**
+```lua
+CorruptionRenderer:Initialize()
+CorruptionRenderer:ApplyReality(reality: RealityPacket)
+CorruptionRenderer:TransitionToLevel(level: string)
+CorruptionRenderer:UpdateCorruptionBar(value: number, label: string)
+CorruptionRenderer:ApplyClean()
+CorruptionRenderer:ApplyFractured()
+CorruptionRenderer:ApplyCritical()
+CorruptionRenderer:ApplyCollapse()
+CorruptionRenderer:ClearAllEffects()
+```
+
+**Listens for remote:** `CorruptionUpdate` (for bar updates)
+
+---
+
+### ScreenEffects
+**OWNS:** Glitch flash, screen shake, color flash — all cosmetic screen effects
+
+**NEVER TOUCHES:** Game state, HUD logic
+
+**API:**
+```lua
+ScreenEffects:Initialize()
+ScreenEffects:PlayGlitch(duration: number)
+ScreenEffects:Flash(color: Color3, duration: number)
+ScreenEffects:Shake(intensity: number, duration: number)
+ScreenEffects:PlayEliminationEffect()
+ScreenEffects:PlayRevealEffect(wasGlitched: boolean)
+```
+
+---
+
+### UIController
+**OWNS:** Phase → GUI routing, timer display, vote UI population, reveal UI, notifications
+
+**NEVER TOUCHES:** Game logic, server communication (receives, doesn't initiate)
+
+**DEPENDS ON:** UIStateManager, ScreenEffects
+
+**API:**
+```lua
+UIController:Initialize()
+UIController:OnPhaseChanged(phase: string, data: table)
+UIController:OnRoleAssigned(data: table)
+UIController:OnTimerUpdate(seconds: number)
+UIController:OpenVotingPanel()
+UIController:OnVoteUpdate(votes: table)
+UIController:OnReveal(data: RevealData)
+UIController:OnNotification(data: table)
+UIController:ShowOnly(gui: ScreenGui)
+UIController:ShowBanner(message: string, duration: number)
+UIController:BuildVotingButtons(playerList: table)
+```
+
+---
+
+### AbilityController
+**OWNS:** Ability keybinds, optimistic cooldown UI, firing ability remotes
+
+**NEVER TOUCHES:** Ability execution (server does that), actual cooldown enforcement
+
+**DEPENDS ON:** UIStateManager
+
+**API:**
+```lua
+AbilityController:Initialize()
+AbilityController:OnRoleAssigned(role: string)
+AbilityController:HandleInput(input: InputObject)
+AbilityController:IsOnCooldown(name: string) → boolean
+AbilityController:GetCooldownRemaining(name: string) → number
+AbilityController:UpdateCooldownUI()
+AbilityController:BuildAbilityUI()
+AbilityController:FlashCooldown(name: string)
+```
+
+---
+
+### SpectatorController
+**OWNS:** Ghost spectate target cycling, ghost interference input, GhostGui population
+
+**NEVER TOUCHES:** Ghost physics (server/GhostSystem handles that)
+
+**DEPENDS ON:** UIStateManager
+
+**API:**
+```lua
+SpectatorController:Initialize()
+SpectatorController:Enable(data: table)
+SpectatorController:Disable()
+SpectatorController:SpectateTarget(player: Player)
+SpectatorController:CycleTarget(direction: number)
+SpectatorController:RefreshTargets()
+SpectatorController:UseGhostInterference()
+```
+
+---
+
+## REMOTEEVENTS — COMPLETE REFERENCE
+
+| Remote | Path | Direction | Rate Limit | Validated By |
+|--------|------|-----------|------------|--------------|
+| RoundStateChanged | Remotes/RoundEvents/ | S→C | N/A | N/A |
+| PlayerAssignedRole | Remotes/RoundEvents/ | S→C | N/A | N/A |
+| RoundTimerUpdated | Remotes/RoundEvents/ | S→C | N/A | N/A |
+| RoundEnded | Remotes/RoundEvents/ | S→C | N/A | N/A |
+| AbilityUsed | Remotes/GameplayEvents/ | C→S | 10/sec | AbilityService |
+| PlayerInteracted | Remotes/GameplayEvents/ | C→S | 10/sec | VotingSystem + GhostSystem |
+| KillEvent | Remotes/GameplayEvents/ | C→S | 5/sec | CombatService |
+| CorruptionUpdate | Remotes/GameplayEvents/ | S→C | N/A | N/A |
+| ShowNotification | Remotes/UIEvents/ | S→C | N/A | N/A |
+| ShowRevealSequence | Remotes/UIEvents/ | S→C | N/A | N/A |
+| UpdateHUD | Remotes/UIEvents/ | S→C | N/A | N/A |
+| ClipCaptured | Remotes/MetaEvents/ | S→C | N/A | N/A |
+| SpectatorModeEnabled | Remotes/MetaEvents/ | S→C | N/A | N/A |
+
+---
+
+## STUDIO SETUP CHECKLIST
+
+**Lighting (add these effects as children of Lighting):**
+- [ ] BlurEffect — Size = 0
+- [ ] ColorCorrectionEffect — all defaults
+
+**GUI elements that code references:**
+
+HUDGui needs:
+- [ ] TimerFrame/TimerLabel
+- [ ] CorruptionBar/Fill + CorruptionBar/Label
+- [ ] AbilityUI/Slot1 and Slot2, each with CooldownFill + CooldownLabel
+- [ ] VotingPanel (with player buttons added dynamically)
+- [ ] RoleOverlay/RoleLabel + RoleOverlay/TeammateFrame
+- [ ] BannerLabel
+- [ ] GlitchOverlay
+- [ ] FlashFrame
+- [ ] Vignette
+
+RevealGui needs:
+- [ ] RevealFrame/EjectedName
+- [ ] RevealFrame/EjectedRole
+- [ ] RevealFrame/ResultLabel
+
+GhostGui needs:
+- [ ] TargetLabel
+
+MainMenuGui needs:
+- [ ] StatusLabel

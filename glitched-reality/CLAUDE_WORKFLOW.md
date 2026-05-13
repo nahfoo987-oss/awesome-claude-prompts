@@ -1,291 +1,276 @@
-# CLAUDE_WORKFLOW.md — GLITCHED REALITY
-
-Exact command prompts for each development phase. Paste these directly into Claude Code.
-Every command enforces the rules in CLAUDE_RULES.md.
-
----
-
-## HOW TO USE
-
-Each command below is a complete prompt. Replace `[SYSTEM_NAME]` with the actual system
-(e.g. `RoundService`, `TruthService`, `RoleService`).
-
-Commands must be run **in order** per feature. Do not skip phases.
+# CLAUDE_WORKFLOW.md
+# GLITCHED REALITY — 7 Phase Build Commands
+# Use these exact commands to drive Claude through each build phase.
+# Paste the command, let Claude complete it fully before moving on.
 
 ---
 
-## PHASE 1 — `/design [SYSTEM_NAME]`
+## HOW TO USE THIS
+
+1. Start every session by pasting **SESSION START** below
+2. Use phase commands in order — don't skip phases
+3. Each phase ends with a stated deliverable — don't move on until it's complete
+4. If Claude goes off-track, paste the **RESET** command
+
+---
+
+## SESSION START
+> Paste this at the beginning of every new Claude session.
 
 ```
-You are operating in ARCHITECT MODE.
+You are building GLITCHED REALITY, a Roblox multiplayer deception game.
 
-Design the [SYSTEM_NAME] system for Glitched Reality.
+Read and internalize CLAUDE_RULES.md before doing anything else.
+Read SYSTEMS_REFERENCE.md to understand the full architecture.
 
-Output the following in order — no code yet:
+The game has these phases: Lobby → Countdown → InProgress → Voting → Reveal → Lobby
 
-1. FOLDER PLACEMENT
-   Where this script lives in Roblox Studio's hierarchy.
+Core mechanic: TruthService distorts what each player sees based on corruption level (0–100).
+Corruption rises over time, Glitched players accelerate it, Normal players try to identify and eject Glitched before corruption hits 100.
 
-2. SYSTEM RESPONSIBILITY
-   - What this system OWNS
-   - What it NEVER touches
-   - What it DEPENDS ON (if anything)
+Current build status: [PASTE CURRENT DAY FROM SPRINT_PLAN.md]
 
-3. API SURFACE
-   List every public function as a Lua-style signature with a one-line description.
-   Example:
-     RoundService:StartRound(config: RoundConfig): void
-     RoundService:EndRound(reason: string): RoundResult
+What we're doing today: [PASTE TODAY'S GOAL FROM SPRINT_PLAN.md]
 
-4. DATA FLOW DIAGRAM
-   Show exactly how data moves through this system using a text diagram.
-   Start from Client Input and end at Client Rendering.
-
-5. DEPENDENCY GRAPH
-   Show relationships to other services.
-   Example:
-     StateService → [SYSTEM_NAME] → ClientReplication
-                         ↓
-                    EventBus
-
-6. FAILURE CASES
-   List exactly 5 ways this system can break in a live server with:
-   - exploiters
-   - high latency
-   - desync
-   - duplicate remote events
-   - client-side manipulation
-
-Do not write any implementation code. Architecture approval comes first.
+Do not write any code yet. Confirm you understand the architecture and today's goal.
 ```
 
 ---
 
-## PHASE 2 — `/skeleton [SYSTEM_NAME]`
+## PHASE 1 — /design
+> Use this when starting any new system.
 
 ```
-You are operating in ENGINEER MODE.
+/design [SystemName]
 
-The architecture for [SYSTEM_NAME] has been approved.
+Before writing any code, produce the full system design card:
 
-Generate the SKELETON only — no implementation logic yet.
+## System: [SystemName]
 
-Output:
-- The full module file with correct folder placement comment at the top
-- All public functions declared but with empty bodies
-- All private functions declared but with empty bodies
-- Require statements for approved dependencies only
-- RemoteEvent declarations if needed (server-side only)
-- Inline comments marking WHERE logic will go (not what the logic is)
+### Responsibility
+[One sentence. What does this system own?]
 
-Rules:
-- No god modules. If this exceeds ~150 lines as a skeleton, split it.
-- No client-trusted inputs anywhere in the signatures.
-- Every RemoteEvent handler must have a placeholder rate-limit check.
-- StateService must be the only place replicated state is read or written.
-```
+### What it NEVER touches
+[What is explicitly out of scope?]
 
----
+### Dependencies
+- Requires: [list]
+- Fires events to: [list]
+- Listens for events from: [list]
 
-## PHASE 3 — `/implement [SYSTEM_NAME]`
+### Public API
+[Every method signature with parameter types and return types]
 
-```
-You are operating in ENGINEER MODE.
+### RemoteEvents used
+[Name | Direction | Rate limit]
 
-Implement the full logic for [SYSTEM_NAME] based on the approved skeleton.
+### Failure mode
+[What breaks if this crashes mid-round? What's the recovery?]
 
-Rules:
-- Server is the only authority. Clients are rendering layers only.
-- All state reads/writes go through StateService.
-- No system calls another system directly — use the event bus.
-- Every RemoteEvent must validate: player identity, rate limit, input sanity.
-- No nil cases left unhandled.
-- No magic numbers — use named constants.
-- Functions must do one thing.
+### Security surface
+[What can an exploiter attempt through this system?]
 
-For each function, before writing it, state in one comment line:
-  -- OWNS: what this function is responsible for
-  -- DOES NOT: what it explicitly avoids
-
-Output the complete, production-ready module.
+Wait for my approval before writing any code.
 ```
 
 ---
 
-## PHASE 4 — `/audit [SYSTEM_NAME]`
+## PHASE 2 — /build
+> Use this after approving the design.
 
 ```
-You are operating in SECURITY AUDITOR MODE.
+/build [SystemName]
 
-Audit [SYSTEM_NAME] for every class of vulnerability below.
+Build the complete, production-ready implementation of [SystemName].
 
-For each finding, output:
-  SEVERITY: Critical / High / Medium / Low
-  VECTOR: how an exploiter triggers this
-  IMPACT: what breaks or is gained
-  FIX: exact code change required
+Requirements:
+- Follow the approved design card exactly
+- Every method has a header comment
+- Section dividers: -- ── SECTION NAME ─────────────────────
+- pcall on all DataStore, network, and external calls
+- Rate limit check is FIRST LINE of every OnServerEvent handler
+- Fallback/default values for all state
+- No TODOs, no placeholders, no "add later" comments
+- Under 400 lines — if approaching limit, flag it and split
 
-Audit checklist:
-1. RemoteEvent abuse — can clients spam, fake, or replay events?
-2. Client-trusted data — does any server logic use unvalidated client input?
-3. State pollution — can a client corrupt StateService?
-4. Race conditions — what breaks under simultaneous calls?
-5. Latency abuse — what can a high-ping player do that others cannot?
-6. Desync exploit — can client visual state diverge from server truth in an exploitable way?
-7. Role leakage — can a client learn information they should not have?
-8. Nil/edge crashes — what inputs cause unhandled errors?
-
-After the audit, output a PATCH SUMMARY listing every required fix.
-Do not rewrite the module — list targeted changes only.
+Output the complete file. Nothing omitted.
 ```
 
 ---
 
-## PHASE 5 — `/patch [SYSTEM_NAME]`
+## PHASE 3 — /wire
+> Use this after building a system, to connect it to the rest.
 
 ```
-You are operating in ENGINEER MODE.
+/wire [SystemName]
 
-Apply all patches from the security audit of [SYSTEM_NAME].
+Show me every connection point for [SystemName]:
 
-For each patch:
-- Quote the original code
-- Show the replacement code
-- State which audit finding it resolves
+1. What needs to be added to Main.server.lua (require + initialize call)
+2. What needs to be added to ClientMain.client.lua (if client-side)
+3. What RemoteEvents need to be created in Studio (name + type + location)
+4. What other systems need to call into this one (and where in their code)
+5. What this system calls that must already exist before it initializes
 
-After patching, confirm:
-- No new nil cases introduced
-- No new unprotected remotes introduced
-- StateService is still the only state authority
-- No cross-system direct calls added
-```
-
----
-
-## PHASE 6 — `/polish [SYSTEM_NAME]`
-
-```
-You are operating in GAME DESIGNER MODE + VIRAL DIRECTOR MODE.
-
-Review [SYSTEM_NAME] for player experience and clip-worthiness.
-
-Answer each question:
-
-CLARITY
-- Does the player understand what just happened within 2 seconds?
-- Is there any moment of confusion that feels unfair vs. intentionally designed?
-
-TENSION
-- Does this system create a rising tension arc?
-- Where is the peak emotional moment?
-
-DECEPTION MECHANICS
-- How does this system mislead players in a way that feels designed, not broken?
-- Is the misinformation layer coherent with increasing corruption level?
-
-CLIP MOMENT
-- What is the single most streamable moment this system produces?
-- If there is none, what change would create one?
-
-TIMING + FEEDBACK
-- Are transitions, reveals, and state changes properly telegraphed?
-- What sound, visual, or UI feedback is missing?
-
-Output:
-1. A list of specific improvements (code or design changes)
-2. One "viral moment" addition if none currently exists
-3. Pacing recommendation (too fast / correct / too slow)
+Show the exact code snippets to add/modify in each file.
+Do not rewrite entire files — show surgical inserts only.
 ```
 
 ---
 
-## PHASE 7 — `/stress [SYSTEM_NAME]`
+## PHASE 4 — /truthcheck
+> Use this specifically for TruthService — the most critical system.
 
 ```
-You are operating in SECURITY AUDITOR MODE + ARCHITECT MODE.
+/truthcheck
 
-Simulate the following scenarios against [SYSTEM_NAME] and report what breaks:
+TruthService is the core identity of this game. Walk me through:
 
-SCENARIO 1 — 20 players spam the primary RemoteEvent simultaneously
-SCENARIO 2 — A player has 800ms ping throughout an entire round
-SCENARIO 3 — A player disconnects at the exact moment a state transition fires
-SCENARIO 4 — Two players trigger the same action within the same server heartbeat
-SCENARIO 5 — A client sends a RemoteEvent with every field set to nil
-SCENARIO 6 — StateService returns nil for a key this system depends on
-SCENARIO 7 — A player exploits client-side to fire a protected remote 100 times per second
+1. The full reality packet structure for each corruption level:
+   - Clean (0–24): what the client sees
+   - Fractured (25–59): what changes
+   - Critical (60–89): what lies are injected
+   - Collapse (90–100): full distortion rules
+
+2. Role overrides:
+   - What does a Glitched player always see?
+   - What does an eliminated (ghost) player always see?
+   - What does a Normal player see at each level?
+
+3. How fake positions are generated and injected
+
+4. The push cadence: when does TruthService send reality packets?
+   - On corruption change
+   - On elimination
+   - On periodic sync
+   - On phase change
+
+5. What the client does with the reality packet (CorruptionRenderer + UIStateManager)
+
+Show the complete data flow diagram, then the complete code for any piece I flag.
+```
+
+---
+
+## PHASE 5 — /exploit
+> Use this to audit any system for security issues.
+
+```
+/exploit [SystemName]
+
+Audit [SystemName] as if you are an exploiter with full client access.
+
+For each attack vector:
+1. What can the exploiter do?
+2. What's the impact if it works?
+3. Is our current code protected against it?
+4. If not, show the exact fix.
+
+Attack categories to check:
+- Remote spam (rate limit bypass)
+- Argument injection (wrong types, nil, out-of-range values)
+- Role spoofing (claiming wrong role)
+- State manipulation (acting while eliminated, in wrong phase)
+- Position cheating (teleportation, speed)
+- Timing attacks (firing before valid window)
+- Replay attacks (reusing old valid requests)
+
+Show the fixed code for every vulnerability found.
+```
+
+---
+
+## PHASE 6 — /moment
+> Use this to design or audit viral/streamable moments.
+
+```
+/moment [MomentName]
+
+Design the full "freeze → reveal → shock" sequence for [MomentName].
+
+[MomentName options: Ejection, CorruptionCollapse, GlitchedWin, NormalWin, GhostInterference]
+
+For each beat:
+
+FREEZE:
+- What triggers the freeze?
+- What stops on screen? What stops in audio?
+- How long does it last?
+- What UI element draws the eye?
+
+REVEAL:
+- What is shown, and in what order?
+- What animation plays?
+- What sound plays?
+- What does the guilty/innocent player's screen show specifically?
+
+SHOCK:
+- What is the final state after reveal?
+- What does the winner see vs the loser?
+- What text, color, and sound defines this outcome?
+- Is this clipworthy? Would a streamer get a reaction shot here?
+
+Then: show the complete client-side code for this sequence
+(RevealController, ScreenEffects calls, audio triggers).
+```
+
+---
+
+## PHASE 7 — /stress
+> Use this before shipping any system.
+
+```
+/stress [SystemName]
+
+Stress test [SystemName] against these scenarios:
+
+1. MINIMUM: 4 players, 1 Glitched, round runs to time limit
+2. MAXIMUM: 12 players, 3 Glitched, corruption hits 100 before voting
+3. DISCONNECT: 1 player leaves mid-round (including the Glitched player)
+4. DATASTORE DOWN: DataStore unavailable when round ends
+5. CRASH: [SystemName] throws an error mid-round — what happens to the round loop?
+6. RACE CONDITION: Two players vote for the same target simultaneously
+7. LATE JOIN: Player joins during InProgress phase
 
 For each scenario:
-  RESULT: what breaks (crash / wrong state / exploit / silent failure)
-  ROOT CAUSE: why it breaks
-  FIX: targeted code change
-
-After all scenarios, output a STABILITY SCORE from 1–10 with justification.
+- What currently happens (good or bad)?
+- What should happen?
+- If different: show the exact code fix.
 ```
 
 ---
 
-## QUICK REFERENCE — ROLE MODES
-
-| Mode | What Claude focuses on |
-|---|---|
-| ARCHITECT MODE | Structure, dependencies, data flow — no code |
-| ENGINEER MODE | Clean implementation, one function per job |
-| SECURITY AUDITOR MODE | Exploits, edge cases, remote abuse |
-| GAME DESIGNER MODE | Fun, tension, clarity, fairness |
-| VIRAL DIRECTOR MODE | Clip moments, reveals, emotional peaks |
-
----
-
-## STANDARD SYSTEM BUILD ORDER
+## RESET COMMAND
+> If Claude goes off-track, paste this.
 
 ```
-/design      → get architecture approved
-/skeleton    → scaffold the module
-/implement   → fill in logic
-/audit       → find vulnerabilities
-/patch       → apply fixes
-/polish      → improve feel + clip moments
-/stress      → confirm stability under load
-```
+STOP. Reset.
 
-Never skip `/audit` before shipping a system that handles RemoteEvents.
+You are a Roblox senior systems engineer building GLITCHED REALITY.
+You follow CLAUDE_RULES.md without exception.
+The architecture is in SYSTEMS_REFERENCE.md.
 
----
+What were we building? [state the system]
+What phase were we in? [state the phase]
 
-## DEPENDENCY GRAPH TEMPLATE
-
-Paste this into any `/design` request to enforce consistent output:
-
-```
-StateService
-     ↓
-[SYSTEM_NAME]
-     ↓          ↓
-EventBus    [Other Service]
-     ↓
-ClientReplication
-     ↓
-Client Rendering Only
+Resume from that point. Do not rewrite anything already built.
+Show me only what's missing or broken.
 ```
 
 ---
 
-## FAILURE MODE PROMPT (ADD TO ANY REQUEST)
+## END OF SESSION
+> Paste this before ending any session.
 
 ```
-Before finalizing, list 5 ways this breaks in a live Roblox server
-with exploiters, lag spikes, desync, duplicate events, and client manipulation.
-Then patch each one.
-```
+End of session summary:
 
----
+1. List every file that was created or modified this session (filename + one-line description)
+2. List every RemoteEvent that needs to be created in Studio
+3. List every Lighting effect that needs to exist
+4. List every GUI element referenced in code that needs to exist in Studio
+5. What is the exact next step for the next session?
+6. Is anything broken or incomplete that must be resolved before moving forward?
 
-## OWNERSHIP VERIFICATION PROMPT (ADD TO ANY DESIGN)
-
-```
-For this system, explicitly state:
-- OWNS: what data/logic belongs to it
-- NEVER TOUCHES: what it must not access
-- ALLOWED CALLERS: which systems can interact with it and how
-If you cannot answer all three, the design is not ready.
+Save this summary. I will paste it at the start of the next session.
 ```

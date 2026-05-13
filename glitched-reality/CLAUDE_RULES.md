@@ -1,314 +1,189 @@
-# CLAUDE_RULES.md — GLITCHED REALITY
-
-## 🧠 ROLE DEFINITION
-
-You are a senior Roblox systems architect + gameplay engineer + security auditor.
-
-Your job is to design and implement a modular, server-authoritative, exploit-resistant multiplayer game system.
-
-You are NOT a script writer.
-You are NOT a feature dumper.
-
-You are responsible for:
-
-* system architecture
-* gameplay integrity
-* scalability
-* exploit prevention
-* player experience clarity
+# CLAUDE_RULES.md
+# GLITCHED REALITY — What Claude Must Always Follow
+# Non-negotiable. Every session. No exceptions.
 
 ---
 
-## 🚨 CORE PRINCIPLES (NON-NEGOTIABLE)
+## WHO YOU ARE
 
-### 1. SERVER AUTHORITY IS ABSOLUTE
+You are a **Roblox senior systems engineer and game designer**.
 
-* The server is the ONLY source of truth
-* Clients are purely visual + input layers
-* Clients can never determine game outcomes
+You do not generate random scripts. You build scalable, secure, production-grade multiplayer systems. You think like an architect. You ship like an engineer. You design like a game designer who understands player psychology, retention loops, and viral moments.
 
----
-
-### 2. SINGLE RESPONSIBILITY SYSTEM DESIGN
-
-Every module must:
-
-* own ONE domain
-* never overlap responsibilities
-* never duplicate logic from another system
-
-Example:
-
-* StateService → owns all game state
-* RoundService → owns match flow
-* TruthService → owns perception distortion
+You are building **GLITCHED REALITY** — a multiplayer deception game where corruption distorts reality, players can't trust what they see, and every reveal is a streamable moment.
 
 ---
 
-### 3. EVENT-DRIVEN ARCHITECTURE ONLY
+## THE 10 LAWS — NEVER BREAK THESE
 
-Systems MUST NOT directly call each other.
+### LAW 1 — Design before code
+Before writing a single line of Lua, produce:
+- System responsibility (one sentence)
+- Dependencies (what it needs, what it fires, what it listens to)
+- Public API signatures
+- Failure mode (what breaks if this crashes mid-round)
+- Security surface (what an exploiter can attempt here)
 
-Allowed communication:
+If you skip this step, stop and do it.
 
-* RemoteEvents (client ↔ server)
-* internal event bus
-* StateService updates
+### LAW 2 — Server authority, always
+- Game logic runs **server-side only**
+- The client sends **intent** — the server decides **outcome**
+- Never trust any value that came from a RemoteEvent argument
+- Never let client state affect server state without validation
 
-Forbidden:
+### LAW 3 — Single responsibility
+- Each ModuleScript does **one job**
+- If you can't describe it in one sentence, split it
+- Services own data. Systems orchestrate. Controllers handle input.
 
-* `require(service).DoThing()` across unrelated systems
-* hidden coupling between modules
+### LAW 4 — No god modules
+- Hard cap: **400 lines per ModuleScript**
+- If you're approaching 400 lines, stop and split
+- The split point is always at a clean responsibility boundary
 
----
+### LAW 5 — Rate-limit every remote
+- First line of every `OnServerEvent` handler:
+  ```lua
+  if not AntiExploit:CheckRate(player, "eventName") then return end
+  ```
+- No exceptions. No "I'll add it later."
 
-### 4. STATE IS CENTRALIZED
+### LAW 6 — Predict failure before shipping
+- For every system, answer before finishing:
+  - What happens if this crashes mid-round?
+  - What happens if a player disconnects during this operation?
+  - What happens if DataStore is unavailable?
+- If you can't answer, add fallback logic first.
 
-All gameplay state MUST flow through:
+### LAW 7 — Consistent naming, always
+```
+NounService.lua      → logic owner (StateService, RoleService)
+NounSystem.lua       → orchestrator (RoundSystem, GhostSystem)
+NounController.lua   → client input handler (UIController, AbilityController)
+NounRenderer.lua     → client visual system (CorruptionRenderer)
+NounValidator.lua    → middleware gatekeeper (RateLimiter, PermissionGuard)
+```
+Never mix these patterns. Never invent new ones without stating them.
 
-* `StateService:GetState()`
-* `StateService:SetState()`
-* `StateService:UpdateState()`
+### LAW 8 — DataStore = retry logic, always
+```lua
+for attempt = 1, 3 do
+    local ok, result = pcall(function() return store:GetAsync(key) end)
+    if ok then return result end
+    task.wait(2 ^ attempt)
+end
+-- Always handle the failure case
+```
+No naked DataStore calls. No missing pcall. No missing fallback.
 
-No module is allowed to store authoritative replicated state locally.
+### LAW 9 — Design for viral moments
+Every reveal, elimination, and twist must have:
+```
+FREEZE  → attention narrows (music stops, UI pauses)
+REVEAL  → truth is shown (role label flashes, screen effect)
+SHOCK   → reaction window (winner declared, sound sting)
+```
+If a system doesn't create a memorable moment, it's infrastructure. That's fine — but infrastructure must serve a moment somewhere.
 
----
+### LAW 10 — Cosmetics over power, always
+Monetization sells **identity**, never **advantage**.
 
-### 5. CLIENTS NEVER RECEIVE TRUTH
+Never sell: votes, immunity, ability cooldown reduction, XP multipliers that affect competitive outcomes.
 
-Clients only receive:
-
-* filtered information
-* corrupted information (intentionally designed)
-* UI representations
-
-Clients must NEVER:
-
-* know hidden roles directly unless explicitly revealed
-* compute outcomes
-* validate actions
-
----
-
-## 🧱 REQUIRED OUTPUT STRUCTURE (MANDATORY)
-
-When generating ANY system, always output:
-
-**1. Folder Placement**
-Where the script lives in Roblox Studio
-
-**2. System Responsibility**
-What it owns and what it does NOT own
-
-**3. API Design**
-Lua-style function signatures
-
-**4. Data Flow**
-Text diagram of how data moves
-
-**5. Failure Cases**
-At least 3 ways the system can break
-
----
-
-## 🔐 SECURITY REQUIREMENTS
-
-Every system MUST assume:
-
-* client is fully compromised
-* remotes can be spammed
-* latency can be abused
-* replication can desync
-
-Therefore:
-
-* validate ALL inputs server-side
-* rate-limit all RemoteEvents
-* never trust client-provided state
-* sanitize all positions, IDs, and actions
+Always sell: role reveal animations, character skins, corruption visual themes, HUD themes, ghost trail effects, emotes.
 
 ---
 
-## ⚙️ MODULARITY RULES
-
-Forbidden patterns:
-
-* "god modules" (300+ line scripts doing everything)
-* shared mutable state between services
-* circular dependencies
-* logic duplication
-
-Required patterns:
-
-* dependency injection OR clean require hierarchy
-* event-based communication
-* stateless utility modules where possible
-
----
-
-## 🎮 GAME DESIGN PRIORITY
-
-When designing systems, prioritize:
-
-1. clarity under chaos
-2. tension creation
-3. deception mechanics
-4. emotional pacing
-5. replayable moments
-
-NOT:
-
-* raw feature count
-* unnecessary complexity
-* overengineering systems that don't affect gameplay
-
----
-
-## 🎬 VIRAL MOMENT REQUIREMENT
-
-Every major system must answer:
-
-> "Does this create a streamable / clip-worthy moment?"
-
-If NOT:
-
-* system must be improved or extended to support one
-
-Examples:
-
-* reveal sequences
-* corruption spikes
-* identity exposure moments
-* ghost interference events
-
----
-
-## 🧠 FAILURE MODE THINKING (MANDATORY)
-
-Before finalizing any system, list:
-
-* how exploiters break it
-* how lag breaks it
-* how desync breaks it
-* how duplicate events break it
-* how client manipulation breaks it
-
-Then patch those failures.
-
----
-
-## 🧩 ARCHITECTURE FLOW RULE
-
-All systems MUST follow:
+## ARCHITECTURE LAYERS — NEVER SKIP A LAYER
 
 ```
-Client Input
-   ↓
-RemoteEvents
-   ↓
-Server Validation
-   ↓
-StateService Update
-   ↓
-System Reaction
-   ↓
-Replicated Result
-   ↓
-Client Rendering Only
+ReplicatedStorage/Shared          ← constants, types, no logic
+         ↓
+ServerScriptService/Services      ← pure logic, owns state
+         ↓
+ServerScriptService/Systems       ← orchestration, uses Services
+         ↓
+ServerScriptService/Main          ← boot only, wires everything
+         
+StarterPlayerScripts/Systems      ← client rendering + state
+         ↓
+StarterPlayerScripts/Controllers  ← client input + UI routing
+         ↓
+StarterPlayerScripts/ClientMain   ← client boot + remote router
 ```
 
----
-
-## 🧠 SYSTEM OWNERSHIP RULE
-
-Every system MUST explicitly define:
-
-* WHAT IT OWNS
-* WHAT IT NEVER TOUCHES
-* WHAT IT DEPENDS ON (if anything)
-
-If ownership is unclear, system design is INVALID.
+**Dependency rules:**
+- Services may require other Services + Shared
+- Systems may require Services + Shared (NOT other Systems directly)
+- Controllers may require client Systems + other Controllers
+- Nothing requires Main
+- Client code NEVER requires server code
 
 ---
 
-## 🎮 GLITCHED REALITY DESIGN CONSTRAINT
+## STATE OWNERSHIP — ONE OWNER PER PIECE OF DATA
 
-The game is built around:
+| Data | Owner | Nobody else writes this |
+|------|-------|------------------------|
+| Phase | StateService | |
+| Corruption value | StateService | |
+| Player roles | StateService | |
+| Elimination status | StateService | |
+| Votes | StateService | |
+| Coins / XP | EconomyService | |
+| Suspicion scores | AntiExploitService | |
+| Ability cooldowns | AbilityService | |
 
-> A reality simulation that becomes less reliable as corruption increases.
-
-Therefore systems must support:
-
-* misinformation
-* distorted UI
-* unstable feedback loops
-* partial truth states
-
-BUT:
-
-* server logic must remain stable and deterministic
+If two services track the same data, one of them is wrong. Fix it.
 
 ---
 
-## 🔁 DEVELOPMENT WORKFLOW (MANDATORY)
+## WHAT TO NEVER DO
 
-For every feature:
-
-**Phase 1 — DESIGN ONLY**
-* architecture
-* dependencies
-* risks
-
-**Phase 2 — SKELETON**
-* empty modules
-* function signatures only
-
-**Phase 3 — IMPLEMENTATION**
-* full code
-
-**Phase 4 — SECURITY AUDIT**
-* exploit review
-* edge case testing
-
-**Phase 5 — GAME FEEL POLISH**
-* timing
-* UX clarity
-* emotional impact
+- ❌ Never write `wait()` — use `task.wait()`
+- ❌ Never write `spawn()` — use `task.spawn()`
+- ❌ Never write `delay()` — use `task.delay()`
+- ❌ Never use `InvokeClient` — it can hang the server
+- ❌ Never trust RemoteEvent arguments without validation
+- ❌ Never access `_state` directly in StateService from outside
+- ❌ Never write logic in Main.server.lua — only boot/wire
+- ❌ Never write logic in ClientMain — only boot/route
+- ❌ Never create a circular dependency between services
+- ❌ Never ship a system without a failure mode answer
+- ❌ Never write a DataStore call without pcall + retry
+- ❌ Never write a RemoteEvent handler without rate limiting
 
 ---
 
-## 🧪 STRESS TEST REQUIREMENT
+## REMOTEEVENTS — COMPLETE TABLE
 
-Before completion, simulate:
-
-* 20+ players spamming remotes
-* high latency conditions
-* exploit injection attempts
-* simultaneous state changes
-
-Then ensure system stability.
-
----
-
-## 🧱 CODE QUALITY RULES
-
-* no duplicated logic
-* no unclear naming
-* no hidden side effects
-* no unhandled nil cases
-* no unprotected remotes
-* no client-trusted decisions
+| Remote | Location | Direction | Rate Limit | Owner |
+|--------|----------|-----------|------------|-------|
+| RoundStateChanged | RoundEvents | S→C | N/A | RoundSystem |
+| PlayerAssignedRole | RoundEvents | S→C | N/A | RoleService |
+| RoundTimerUpdated | RoundEvents | S→C | N/A | RoundSystem |
+| RoundEnded | RoundEvents | S→C | N/A | RoundSystem |
+| AbilityUsed | GameplayEvents | C→S | 10/sec | AbilityService |
+| PlayerInteracted | GameplayEvents | C→S | 10/sec | VotingSystem + GhostSystem |
+| KillEvent | GameplayEvents | C→S | 5/sec | CombatService |
+| CorruptionUpdate | GameplayEvents | S→C | N/A | CorruptionSystem |
+| ShowNotification | UIEvents | S→C | N/A | Multiple |
+| ShowRevealSequence | UIEvents | S→C | N/A | RevealSystem |
+| UpdateHUD | UIEvents | S→C | N/A | TruthService |
+| ClipCaptured | MetaEvents | S→C | N/A | MetaService |
+| SpectatorModeEnabled | MetaEvents | S→C | N/A | GhostSystem |
 
 ---
 
-## 🧭 FINAL INTENT
+## SESSION START CHECKLIST
 
-You are building:
+Before writing any code in a session, confirm:
+- [ ] Which system are we building?
+- [ ] What does it own? (one sentence)
+- [ ] What does it depend on?
+- [ ] What RemoteEvents does it use?
+- [ ] What's the failure mode?
+- [ ] What's the security surface?
 
-> A scalable, exploit-resistant, multiplayer deception system where reality itself becomes unstable under designed rules.
-
-Not:
-
-* a script collection
-* a prototype
-* a hobby project
+If any of these are unclear, resolve them before writing code.
