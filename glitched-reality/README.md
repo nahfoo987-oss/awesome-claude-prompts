@@ -5,7 +5,7 @@
 
 ## WHAT THIS IS
 
-Five files that turn Claude into a production-grade Roblox systems engineer for GLITCHED REALITY. Paste them in the right order and Claude will design, build, audit, and ship every system without going off-track.
+Seven files that turn Claude into a production-grade Roblox systems engineer for GLITCHED REALITY. Paste them in the right order and Claude will design, build, audit, and ship every system without going off-track.
 
 ---
 
@@ -13,11 +13,13 @@ Five files that turn Claude into a production-grade Roblox systems engineer for 
 
 | File | Purpose | When to use |
 |------|---------|-------------|
-| `CLAUDE_RULES.md` | The 10 laws + architecture layers + naming conventions + what to never do | Paste at start of every session |
-| `CLAUDE_WORKFLOW.md` | 7 phase commands (/design, /build, /wire, /truthcheck, /exploit, /moment, /stress) | Reference during building |
-| `GAME_BUILD_PROMPT.md` | Full game brief (4 sections: game design, GameConfig values, TruthService spec, error fixes) | Paste Section 1 to start, others as needed |
-| `SPRINT_PLAN.md` | 7-day execution plan — exact tasks, Claude commands, and done conditions per day | Track progress, paste current day's goal |
-| `SYSTEMS_REFERENCE.md` | All 23 systems — OWNS/NEVER TOUCHES/DEPENDS ON/API/Events for each | Keep open while building |
+| `CLAUDE_RULES.md` | The 10 laws + architecture layers + naming conventions + kill mechanic + split criteria | Paste at start of every session |
+| `CLAUDE_WORKFLOW.md` | 9 phase commands (/design, /build, /wire, /truthcheck, /exploit, /moment, /stress, /debug, /combat) + SESSION START/RESET/END | Reference during building |
+| `GAME_BUILD_PROMPT.md` | Full game brief (4 sections: game design + kill mechanic + audio, all GameConfig values, TruthService spec, 8 error fixes) | Paste Section 1 to start, others as needed |
+| `SPRINT_PLAN.md` | 7-day execution plan — exact tasks, Claude commands, done conditions, and common traps per day | Track progress, paste current day's goal |
+| `SYSTEMS_REFERENCE.md` | All 23 systems + 3 middleware — full APIs, dependency graph, RemoteEvent table, Studio setup checklist | Keep open while building |
+| `DESIGN_DECISIONS.md` | The WHY behind every architectural choice — prevents Claude from questioning settled decisions | Paste when Claude proposes changing something that shouldn't change |
+| `README.md` | This file — quickstart, build order, game summary | Read first |
 
 ---
 

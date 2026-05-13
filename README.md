@@ -176,6 +176,7 @@ See [`glitched-reality/README.md`](glitched-reality/README.md) for full usage gu
 | [`GAME_BUILD_PROMPT.md`](glitched-reality/GAME_BUILD_PROMPT.md) | Full game brief (4 sections: game design, all GameConfig values, TruthService spec with packet structure, 8 error fixes with code) | Paste Section 1 to start |
 | [`SPRINT_PLAN.md`](glitched-reality/SPRINT_PLAN.md) | 7-day execution plan — 39 checkboxes, exact Claude commands, unfakeable done conditions per day | Track progress daily |
 | [`SYSTEMS_REFERENCE.md`](glitched-reality/SYSTEMS_REFERENCE.md) | All 23 systems: OWNS/NEVER TOUCHES/API/Events, full dependency graph, complete RemoteEvent table, Studio setup checklist | Keep open while building |
+| [`DESIGN_DECISIONS.md`](glitched-reality/DESIGN_DECISIONS.md) | The WHY behind every architectural choice — prevents Claude from questioning or "improving" settled decisions across sessions | Read once, paste when Claude goes off-script |
 
 ---
 
