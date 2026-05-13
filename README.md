@@ -25,6 +25,7 @@ We hope you find these prompts useful and have fun using Claude!
 
 
 ## Contents
+- [Glitched Reality — Roblox Game Development System](#glitched-reality--roblox-game-development-system)
 - [Claude Code Coding Prompt](claudecode/LinusTorvalds.md)
 - [Summarize this PDF document (official example)](#summarize-this-pdf-document-official-example)
 - [Explain Python Code (official example)](#explain-python-code-official-example)
@@ -158,6 +159,31 @@ We hope you find these prompts useful and have fun using Claude!
 - [Learn a new topic using AI](#learn-a-new-topic-using-ai)
 - [Use Claude to answer frequently asked questions](#use-claude-to-answer-frequently-asked-questions)
 
+
+## Glitched Reality — Roblox Game Development System
+
+A complete Claude Code prompt system for building a production-grade, server-authoritative,
+exploit-resistant Roblox multiplayer deception game. Includes role-switching modes,
+per-phase workflow commands, a full game build prompt, a 7-day sprint plan, and a
+quick-reference card for all 23 game systems.
+
+**Files** (in [`glitched-reality/`](glitched-reality/)):
+
+| File | Purpose |
+|---|---|
+| [`CLAUDE_RULES.md`](glitched-reality/CLAUDE_RULES.md) | Non-negotiable architecture rules Claude must follow at all times |
+| [`CLAUDE_WORKFLOW.md`](glitched-reality/CLAUDE_WORKFLOW.md) | Seven paste-ready phase commands: `/design` `/skeleton` `/implement` `/audit` `/patch` `/polish` `/stress` |
+| [`GAME_BUILD_PROMPT.md`](glitched-reality/GAME_BUILD_PROMPT.md) | Full opening prompt with concrete game mechanics, role definitions, corruption system, and 8 structural error fixes vs. generic game prompts |
+| [`SPRINT_PLAN.md`](glitched-reality/SPRINT_PLAN.md) | Day-by-day 7-day studio execution plan with done conditions, test cases, and build order |
+| [`SYSTEMS_REFERENCE.md`](glitched-reality/SYSTEMS_REFERENCE.md) | Quick-reference API, ownership rules, and dependency graph for all 23 systems |
+
+**How to use:**
+1. Start with `CLAUDE_RULES.md` — paste as your Claude Code project context
+2. Paste Section A of `GAME_BUILD_PROMPT.md` to get architecture output
+3. Use `CLAUDE_WORKFLOW.md` commands per system
+4. Follow `SPRINT_PLAN.md` day by day for structured execution
+
+---
 
 ## AI Resume（with Claude Artifacts)
 ![alt text](imgs/ai_resume.png)
