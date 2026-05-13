@@ -45,6 +45,15 @@ TruthService (THE CORE MECHANIC):
     - Whether they're eliminated (ghosts see true state + true roles)
   Clients never know if their data is real or fabricated. That uncertainty IS the game.
 
+Kill mechanic:
+  - Glitched players kill Normal players via proximity interaction
+  - Kill range: 5 studs (server validates via HumanoidRootPart magnitude — never trust client position)
+  - Client fires KillEvent → CombatService validates: role, alive status, phase, range, cooldown
+  - Kill cooldown: 15 seconds, tracked server-side only. Client cooldown UI is optimistic.
+  - On valid kill: EliminatePlayer → CorruptionSystem:OnKill(+8) → GhostSystem:ConvertToGhost
+  - Kill is SILENT — no reveal, no broadcast. The disappearance IS the moment.
+  - Glitched cannot kill other Glitched. Eliminated players cannot be killed.
+
 Post-elimination (Ghost System):
   Eliminated players become ghosts:
     - Semi-transparent, no collision, reduced speed
@@ -64,6 +73,22 @@ Abilities:
   Normal:
     - ScanPulse (Q): reveal true positions in 50-stud radius, roles within 20 studs, 20s cooldown
     - EmergencyBroadcast (E): global alert of active Glitched count, 40s cooldown
+
+Audio events (AudioController reacts to these):
+  PhaseChanged:
+    Lobby → calm lobby music
+    Countdown → countdown beeps
+    InProgress → Clean ambient (escalates with corruption)
+    Voting → tense loop
+    Reveal → silence (FREEZE beat), then reveal sting, then result fanfare
+  CorruptionUpdate:
+    0–24: calm ambient
+    25–59: low distortion layer added
+    60–89: tense, glitchy hits, random audio artifacts
+    90–100: heavy distortion, chaotic
+  ShowRevealSequence: silence → dramatic sting (wasGlitched changes which sting) → fanfare
+  PlayerEliminated (local player): elimination sound + ghost ambience begins
+  AbilityUsed (received): per-ability sound (GlitchDash: whoosh, SignalJam: interference buzz, ScanPulse: ping sweep, EmergencyBroadcast: alert chime)
 
 Anti-exploit requirements:
   - Position validation every 0.5s (max 32 studs/sec)
@@ -107,7 +132,7 @@ Client Systems:
   CorruptionRenderer — visual effects per corruption level
   ScreenEffects      — glitch flash, shake, vignette
   UIStateManager     — client-side state snapshot
-  AudioController    — sound reactions to game events
+  AudioController    — ambient music + event stings + per-ability sounds
 
 Client Controllers:
   UIController       — phase transitions → correct GUI

@@ -187,3 +187,55 @@ Before writing any code in a session, confirm:
 - [ ] What's the security surface?
 
 If any of these are unclear, resolve them before writing code.
+
+---
+
+## WHEN TO SPLIT A MODULE
+
+Split immediately when any of these are true:
+- You can name two distinct jobs this module does ("it validates AND executes")
+- Public method count exceeds 12
+- Line count is approaching 400
+- A future system would only need half of what's here
+- One section changes often; another never changes
+
+The split always happens at a responsibility boundary, never at an arbitrary line count.
+The name of each new module must be obvious after the split.
+
+---
+
+## RESOLVING CIRCULAR DEPENDENCIES
+
+If Service A needs Service B and Service B needs Service A, one of them is wrong.
+
+Fix options in order of preference:
+1. Move shared logic into a third module both can require (cleanest)
+2. Use the event bus — fire a StateService event instead of calling directly
+3. Lazy require — require() inside the function body, not at the top of the file
+
+Lazy require pattern (last resort only):
+```lua
+-- At top of file: do NOT require ServiceB here
+function ServiceA:DoThing()
+    local ServiceB = require(script.Parent.ServiceB) -- safe here, module table exists
+    ServiceB:OtherThing()
+end
+```
+Never use a global service locator. Never use _G.
+
+---
+
+## KILL MECHANIC — HOW COMBAT WORKS
+
+Glitched players eliminate Normal players via proximity kill.
+
+Rules:
+- Kill range: 5 studs (server validates via HumanoidRootPart magnitude, NOT client-claimed position)
+- Kill input: client fires KillEvent with {targetId}
+- CombatService validates ALL of: attacker is Glitched, attacker is alive, phase is InProgress, target is Normal, target is alive, target within 5 studs, attacker not on cooldown
+- Kill cooldown: 15 seconds, tracked server-side only
+- On valid kill: StateService:EliminatePlayer(targetId) → CorruptionSystem:OnKill(attacker) → GhostSystem:ConvertToGhost(target)
+- Kill is SILENT — no broadcast, no reveal animation. The body disappears. Ghost mode activates.
+- This asymmetry (silent kill vs announced ejection) is the core tension driver. Protect it.
+
+Client cooldown is optimistic (shows immediately on fire). Server is the authority. If server rejects, client visual resets.

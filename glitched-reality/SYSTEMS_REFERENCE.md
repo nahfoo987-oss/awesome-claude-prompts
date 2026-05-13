@@ -296,6 +296,88 @@ MetaService:GetEventCount(eventName: string) → number
 
 ---
 
+## SERVER MIDDLEWARE
+
+Middleware sits between NetworkService and Services/Systems. Every C→S remote passes through middleware before any game logic runs. Middleware NEVER modifies state — it only gates.
+
+Order of execution for every inbound remote:
+```
+RateLimiter:Check → ActionValidator → PermissionGuard → [actual handler]
+```
+If any layer returns false, the handler does not run.
+
+---
+
+### RateLimiter
+**OWNS:** Per-player, per-remote call-count windows
+
+**NEVER TOUCHES:** Game logic, kick decisions (flags AntiExploitService, doesn't kick directly)
+
+**DEPENDS ON:** GameConfig (for limits), AntiExploitService (lazy, for flagging)
+
+**API:**
+```lua
+RateLimiter:Initialize()
+RateLimiter:Check(player: Player, remoteName: string) → boolean
+  -- Returns false and flags player if over limit. Returns true if under limit.
+RateLimiter:Reset(player: Player)
+  -- Called on PlayerRemoving
+RateLimiter:OnPlayerRemoving(player: Player)
+```
+
+**Rate window:** 1 second rolling window. Limit per remote defined in NetworkConfig.
+
+---
+
+### ActionValidator
+**OWNS:** Action legality checks — is this action legal in the current game phase?
+
+**NEVER TOUCHES:** Role checks (PermissionGuard), rate limiting (RateLimiter), state mutation
+
+**DEPENDS ON:** StateService
+
+**API:**
+```lua
+ActionValidator:Initialize()
+ActionValidator:CanVote(player: Player) → (ok: boolean, reason: string?)
+ActionValidator:CanUseAbility(player: Player) → (ok: boolean, reason: string?)
+ActionValidator:CanKill(player: Player) → (ok: boolean, reason: string?)
+ActionValidator:CanUseGhostInterference(player: Player) → (ok: boolean, reason: string?)
+ActionValidator:IsInPhase(requiredPhases: {string}) → boolean
+ActionValidator:IsAlive(player: Player) → boolean
+```
+
+**Phase rules:**
+- Vote: only during Voting phase, only if alive
+- Ability: only during InProgress phase, only if alive
+- Kill: only during InProgress phase, only if alive
+- GhostInterference: only during InProgress phase, only if eliminated
+
+---
+
+### PermissionGuard
+**OWNS:** Role-based access checks — does this player's role allow this action?
+
+**NEVER TOUCHES:** Phase checks (ActionValidator), rate limiting (RateLimiter), state mutation
+
+**DEPENDS ON:** StateService
+
+**API:**
+```lua
+PermissionGuard:Initialize()
+PermissionGuard:IsGlitched(player: Player) → boolean
+PermissionGuard:IsNormal(player: Player) → boolean
+PermissionGuard:IsGhost(player: Player) → boolean
+PermissionGuard:RequireRole(player: Player, requiredRole: string) → boolean
+PermissionGuard:RequireAlive(player: Player) → boolean
+PermissionGuard:CanUseGlitchedAbility(player: Player) → boolean
+PermissionGuard:CanUseNormalAbility(player: Player) → boolean
+PermissionGuard:CanKill(player: Player) → boolean
+  -- True only if Glitched + alive
+```
+
+---
+
 ## SERVER SYSTEMS
 
 ---
@@ -436,6 +518,37 @@ RevealSystem:ApplyResult(data: RevealData)
 
 ---
 
+### CombatService
+**OWNS:** Kill attempt validation, proximity check, kill execution, kill cooldown tracking
+
+**NEVER TOUCHES:** Corruption math (CorruptionSystem:OnKill), elimination state (StateService:EliminatePlayer), ghost conversion (GhostSystem:ConvertToGhost) — delegates all three
+
+**DEPENDS ON:** StateService, AntiExploitService, CorruptionSystem (lazy), GhostSystem (lazy)
+
+**API:**
+```lua
+CombatService:Initialize()
+CombatService:HandleKillRequest(attacker: Player, data: {targetId: number})
+CombatService:ValidateKill(attacker: Player, target: Player) → (ok: boolean, reason: string?)
+  -- Checks: attacker is Glitched, alive, InProgress, target is Normal, alive, not same player, within range, cooldown elapsed
+CombatService:ExecuteKill(attacker: Player, target: Player)
+  -- Calls: StateService:EliminatePlayer, CorruptionSystem:OnKill, GhostSystem:ConvertToGhost
+CombatService:IsOnCooldown(player: Player) → boolean
+CombatService:GetCooldownRemaining(player: Player) → number
+CombatService:ResetCooldowns()
+  -- Called by RoundSystem:Cleanup between rounds
+```
+
+**Kill range:** 5 studs, validated via `(attacker HRP position - target HRP position).Magnitude`
+
+**Kill is silent:** No RemoteEvent broadcast on kill. Target's client learns they died via SpectatorModeEnabled. Other players see the character disappear on natural Roblox replication.
+
+**Listens for remote:** `KillEvent` (C→S, 5/sec)
+
+**Cooldown:** 15 seconds, server-tracked in a private table
+
+---
+
 ## CLIENT SYSTEMS
 
 ---
@@ -570,6 +683,45 @@ SpectatorController:UseGhostInterference()
 
 ---
 
+### AudioController
+**OWNS:** All sound playback — ambient music, event stings, ability sounds, phase transitions
+
+**NEVER TOUCHES:** Visual effects (CorruptionRenderer/ScreenEffects), game state
+
+**DEPENDS ON:** Nothing (reacts to RemoteEvents and local UIStateManager)
+
+**API:**
+```lua
+AudioController:Initialize()
+AudioController:OnPhaseChanged(phase: string)
+  -- Routes to correct ambient/music for the phase
+AudioController:OnRealityUpdate(reality: RealityPacket)
+  -- Escalates ambient based on MapState
+AudioController:OnCorruptionUpdate(value: number, label: string)
+  -- Fades between ambient layers
+AudioController:OnReveal(data: RevealData)
+  -- FREEZE: stops all audio. REVEAL: plays sting. SHOCK: plays result fanfare.
+AudioController:OnLocalElimination()
+  -- Plays elimination sound, starts ghost ambience
+AudioController:PlayAbilitySound(abilityId: string)
+AudioController:SetAmbientLevel(level: string)
+  -- "Clean" | "Fractured" | "Critical" | "Collapse"
+AudioController:StopAll()
+```
+
+**Sound event map:**
+```
+PhaseChanged → Lobby: lobby_music | InProgress: ingame_ambient | Voting: vote_tension | Reveal: silence
+CorruptionUpdate → escalates ambient layer (Clean → Fractured → Critical → Collapse)
+ShowRevealSequence → silence (300ms) → reveal_sting → result_fanfare
+PlayerEliminated (local) → elimination_sound → ghost_ambient begins
+AbilityUsed → GlitchDash: whoosh | SignalJam: interference_buzz | ScanPulse: ping_sweep | EmergencyBroadcast: alert_chime
+```
+
+**Listens for remotes:** `RoundStateChanged`, `ShowRevealSequence`, `CorruptionUpdate`, `UpdateHUD`
+
+---
+
 ## REMOTEEVENTS — COMPLETE REFERENCE
 
 | Remote | Path | Direction | Rate Limit | Validated By |
@@ -619,3 +771,17 @@ GhostGui needs:
 
 MainMenuGui needs:
 - [ ] StatusLabel
+
+**Audio (add SoundService children or workspace sounds):**
+- [ ] lobby_music (Sound)
+- [ ] ingame_ambient (Sound)
+- [ ] vote_tension (Sound)
+- [ ] reveal_sting (Sound)
+- [ ] result_fanfare_normal (Sound)
+- [ ] result_fanfare_glitched (Sound)
+- [ ] elimination_sound (Sound)
+- [ ] ghost_ambient (Sound)
+- [ ] ability_whoosh (Sound) — GlitchDash
+- [ ] ability_jam (Sound) — SignalJam
+- [ ] ability_ping (Sound) — ScanPulse
+- [ ] ability_broadcast (Sound) — EmergencyBroadcast

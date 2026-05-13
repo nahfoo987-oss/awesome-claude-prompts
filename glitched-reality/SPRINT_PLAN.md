@@ -143,6 +143,12 @@ Done when:
 - [ ] InProgress → HUDGui
 - [ ] Phase changes broadcast and client reacts correctly
 
+**Common traps on Day 2:**
+- Fisher-Yates shuffle with 1 player loops infinitely — add a guard: `if #pool <= 1 then return end`
+- `PlayerAssignedRole` fires to everyone instead of per-player — use `FireClient(player, data)` not `FireAllClients`
+- Round loop error kills the `while true do` without a pcall wrapper — every phase function must be wrapped
+- `StateService:ResetRound()` not called between rounds — corruption and roles persist into next round
+
 **Test Day 2:**
 - Start a round with 4 players in Studio
 - Confirm roles are assigned (check output logs)
@@ -217,6 +223,12 @@ Done when:
 - [ ] Shake(intensity, duration) works
 - [ ] PlayRevealEffect(wasGlitched) calls both
 
+**Common traps on Day 3:**
+- TruthService periodic sync runs before InProgress starts — guard with phase check: `if StateService:GetPhase() ~= "InProgress" then return end`
+- FakePositions not cleared when phase resets — call `TruthService:InvalidateCache()` in RoundSystem:Cleanup
+- Client reads `CorruptionSystem:GetCorruption()` directly — client has NO access to server modules. Only valid read is from the reality packet.
+- `Collapse` fake corruption value can go negative or over 100 — always clamp: `math.clamp(real + offset, 0, 100)`
+
 **Test Day 3:**
 ```
 /stress TruthService
@@ -284,6 +296,12 @@ Done when:
 - [ ] Reveal beat: ejected player name and role flash with animation
 - [ ] Shock beat: "GLITCHED WINS" or "NORMALS WIN" or "Round continues"
 - [ ] ScreenEffects:PlayRevealEffect(wasGlitched) fires at correct moment
+
+**Common traps on Day 4:**
+- Player disconnects during voting — their pending vote target may not exist. Guard with `Players:GetPlayerByUserId(targetId)` nil check.
+- Self-vote not explicitly blocked — add `if voter.UserId == targetUserId then return end` as first check in ReceiveVote
+- `RevealSystem:RunReveal()` called before `VotingSystem:CloseVoting()` — always close voting before building reveal data
+- No consensus (tied vote) — must handle "Nobody" ejection path where `hasConsensus = false`
 
 **Test Day 4:**
 ```
@@ -355,6 +373,12 @@ Done when:
 - [ ] GhostGui shows who is being spectated
 - [ ] GhostGui shows true corruption value
 
+**Common traps on Day 5:**
+- Ghost physics not reapplied after character respawn — connect `CharacterAdded` inside `ConvertToGhost`, not just once
+- `AbilityService:HandleRequest` called with wrong ability string — validate against a whitelist of known ability IDs before routing
+- `SpectatorController` cycles to eliminated players — filter target list to alive players only: `if not StateService:IsEliminated(p.UserId) then`
+- Kill range check uses client-sent position instead of `player.Character.HumanoidRootPart.Position` — never trust client-sent Vector3 for range validation
+
 **Test Day 5:**
 - Get eliminated and confirm ghost physics apply immediately
 - Spectate other players, cycle through them
@@ -394,6 +418,12 @@ Done when:
 - [ ] Coins added to each player based on outcome + role
 - [ ] XP added, tier calculated
 - [ ] Results shown in a post-round UI screen (basic: coins earned, XP earned, new tier if changed)
+
+**Common traps on Day 6:**
+- `SetAsync` used instead of `UpdateAsync` — if player is on two servers (rare but possible), SetAsync causes data loss. Always use UpdateAsync.
+- `EconomyService:Save()` not called in `PlayerRemoving` — data lost on disconnect. This is the most common economy bug.
+- Battle Pass XP from Section 2: `XP_PER_TIER = 500` — tier = `math.floor(totalXP / 500)`, NOT cumulative. Recalculate from totalXP every time.
+- Studio API access not enabled — DataStore fails silently with no error. Enable: Game Settings → Security → Enable Studio Access to API Services.
 
 **Task 6.3 — ShopGui (basic)**
 Build a working shop with at least 3 placeholder items.
@@ -483,6 +513,12 @@ Done when:
 - [ ] All key events logged (phase changes, eliminations, corruption milestones)
 - [ ] GlitchedCaught triggers clip capture remote
 - [ ] Session log doesn't grow unbounded (capped at 500 entries)
+
+**Common traps on Day 7:**
+- Position monitor uses client-reported position (`data.position`) instead of server-known `player.Character.HumanoidRootPart.Position` — the server already knows where the character is
+- Rate limit windows not reset when a player leaves and rejoins in the same session — `RateLimiter:Reset(player)` must be called in both `PlayerRemoving` and `PlayerAdded`
+- Shadow pool flag persists across rounds — if a laggy player gets flagged mid-round, they shouldn't start the next round pre-flagged. Reset suspicion on round start for non-kicked players.
+- `AntiExploitService:BeginPositionMonitor()` starts before character loads — wrap with `player.CharacterAdded:Wait()` or guard with nil check on HumanoidRootPart
 
 **Task 7.5 — Final checklist**
 

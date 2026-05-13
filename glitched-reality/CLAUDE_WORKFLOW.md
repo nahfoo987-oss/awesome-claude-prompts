@@ -240,6 +240,69 @@ For each scenario:
 
 ---
 
+## PHASE 8 — /debug [SystemName]
+> Use when a system isn't working as expected. Do not rewrite — find the break point.
+
+```
+/debug [SystemName]
+
+The system is not working. Here is the symptom:
+[Describe exactly what happens vs. what should happen]
+
+Walk me through a systematic debug — do not rewrite anything:
+
+1. IDENTIFY THE BREAK POINT
+   Trace the data path step by step:
+   Client fires remote → server handler runs → state updates → client receives result
+   At which step does it stop being correct?
+
+2. CHECK CONNECTIONS
+   - Does the remote exist at the exact path the code references?
+   - Is OnServerEvent connected before the remote is fired?
+   - Is OnClientEvent connected in ClientMain before the server fires?
+
+3. CHECK ASSUMPTIONS
+   - Is the phase correct when this runs?
+   - Is the player alive / not eliminated?
+   - Is the rate limiter blocking it silently?
+   - Is a pcall swallowing an error?
+
+4. MINIMAL REPRODUCTION
+   What is the smallest change to isolate this bug?
+   (e.g., add a print at line X to confirm the handler runs)
+
+5. EXACT FIX
+   Show only the specific lines that need to change.
+   Do not refactor surrounding code.
+```
+
+---
+
+## PHASE 9 — /combat
+> Use specifically for CombatService — the kill mechanic.
+
+```
+/combat
+
+Design and build the CombatService kill mechanic.
+
+The kill mechanic works as follows (do not change these rules):
+- Kill range: 5 studs, measured server-side via HumanoidRootPart magnitude
+- Client fires KillEvent with {targetId: number}
+- CombatService validates: attacker is Glitched, alive, InProgress phase, target is Normal, alive, in range, cooldown elapsed
+- Kill cooldown: 15 seconds, server-tracked
+- On valid kill: StateService:EliminatePlayer, CorruptionSystem:OnKill, GhostSystem:ConvertToGhost
+- Kill is silent — no broadcast, no reveal sequence
+
+Produce in order:
+1. Design card (/design format)
+2. Full implementation
+3. Security audit (/exploit format) — focus on: range spoofing, role spoofing, phase bypass, cooldown bypass
+4. Wire instructions (/wire format)
+```
+
+---
+
 ## RESET COMMAND
 > If Claude goes off-track, paste this.
 
