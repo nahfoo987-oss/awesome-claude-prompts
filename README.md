@@ -25,6 +25,7 @@ We hope you find these prompts useful and have fun using Claude!
 
 
 ## Contents
+- [Glitched Reality — Roblox Game Development System](#glitched-reality--roblox-game-development-system)
 - [Claude Code Coding Prompt](claudecode/LinusTorvalds.md)
 - [Summarize this PDF document (official example)](#summarize-this-pdf-document-official-example)
 - [Explain Python Code (official example)](#explain-python-code-official-example)
@@ -158,6 +159,26 @@ We hope you find these prompts useful and have fun using Claude!
 - [Learn a new topic using AI](#learn-a-new-topic-using-ai)
 - [Use Claude to answer frequently asked questions](#use-claude-to-answer-frequently-asked-questions)
 
+
+## Glitched Reality — Roblox Game Development System
+
+A complete Claude prompt system for building a production-grade, server-authoritative,
+exploit-resistant Roblox multiplayer deception game. 6 files, 2,061 lines, zero gaps.
+
+See [`glitched-reality/README.md`](glitched-reality/README.md) for full usage guide.
+
+**Files** (in [`glitched-reality/`](glitched-reality/)):
+
+| File | Purpose | When to use |
+|---|---|---|
+| [`CLAUDE_RULES.md`](glitched-reality/CLAUDE_RULES.md) | 10 laws + architecture layers + naming conventions + state ownership table | Paste at start of every session |
+| [`CLAUDE_WORKFLOW.md`](glitched-reality/CLAUDE_WORKFLOW.md) | 7 phase commands: `/design` `/build` `/wire` `/truthcheck` `/exploit` `/moment` `/stress` + SESSION START/RESET/END | Reference during building |
+| [`GAME_BUILD_PROMPT.md`](glitched-reality/GAME_BUILD_PROMPT.md) | Full game brief (4 sections: game design, all GameConfig values, TruthService spec with packet structure, 8 error fixes with code) | Paste Section 1 to start |
+| [`SPRINT_PLAN.md`](glitched-reality/SPRINT_PLAN.md) | 7-day execution plan — 39 checkboxes, exact Claude commands, unfakeable done conditions per day | Track progress daily |
+| [`SYSTEMS_REFERENCE.md`](glitched-reality/SYSTEMS_REFERENCE.md) | All 23 systems: OWNS/NEVER TOUCHES/API/Events, full dependency graph, complete RemoteEvent table, Studio setup checklist | Keep open while building |
+| [`DESIGN_DECISIONS.md`](glitched-reality/DESIGN_DECISIONS.md) | The WHY behind every architectural choice — prevents Claude from questioning or "improving" settled decisions across sessions | Read once, paste when Claude goes off-script |
+
+---
 
 ## AI Resume（with Claude Artifacts)
 ![alt text](imgs/ai_resume.png)
