@@ -1,0 +1,39 @@
+{
+  "name": "CrownChaos",
+  "tree": {
+    "$className": "DataModel",
+
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "RemoteSetup":    { "$path": "src/server/01_RemoteSetup.server.lua" },
+      "CrownService":   { "$path": "src/server/02_CrownService.server.lua" },
+      "PowerUpService": { "$path": "src/server/03_PowerUpService.server.lua" },
+      "DataService":    { "$path": "src/server/04_DataService.server.lua" },
+      "AntiExploit":    { "$path": "src/server/05_AntiExploit.server.lua" },
+      "CrowdService":   { "$path": "src/server/06_CrowdService.server.lua" },
+      "GateEvent":      { "$path": "src/server/07_GateEvent.server.lua" },
+      "WorkspaceSetup": { "$path": "src/server/08_WorkspaceSetup.server.lua" },
+      "FounderSystem":  { "$path": "src/server/09_FounderSystem.server.lua" }
+    },
+
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "UIClient": { "$path": "src/client/UIClient.client.lua" }
+      },
+      "StarterCharacterScripts": {
+        "$className": "StarterCharacterScripts"
+      }
+    },
+
+    "StarterGui": {
+      "$className": "StarterGui",
+      "ShopUI": { "$path": "src/client/ShopUI.client.lua" }
+    },
+
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage"
+    }
+  }
+}
