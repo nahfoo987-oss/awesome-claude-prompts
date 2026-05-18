@@ -30,43 +30,141 @@ local GAMEPASSES = {
 }
 
 -------------------------------------------------
+-- STARTER SET  (always owned, never sold, never deleted)
+-------------------------------------------------
+local STARTER_COSMETICS = {
+    "crown_newcomer",
+    "body_newcomer",
+    "sword_newcomer",
+}
+local STARTER_EQUIPPED = {
+    crown = "crown_newcomer",
+    body  = "body_newcomer",
+    sword = "sword_newcomer",
+    trail = "trail_none",
+}
+local WELCOME_COINS = 100
+
+-------------------------------------------------
 -- DEFAULT DATA TEMPLATE
 -------------------------------------------------
 local function defaultData()
     return {
-        coins            = 0,
+        -- Economy
+        coins            = WELCOME_COINS,
         xp               = 0,
         level            = 1,
-        cosmetics        = { "crown_default", "aura_none", "kill_default", "trail_none", "pet_none", "pose_default" },
+
+        -- Cosmetics: four primary slots (crown, body, sword, trail)
+        -- plus legacy slots (aura, kill, pet, pose) for future use
+        cosmetics        = {
+            "crown_newcomer",
+            "body_newcomer",
+            "sword_newcomer",
+            "trail_none",
+        },
         equipped         = {
-            crown = "crown_default",
+            crown = "crown_newcomer",
+            body  = "body_newcomer",
+            sword = "sword_newcomer",
+            trail = "trail_none",
+            -- legacy slots (populated when unlocked)
             aura  = "aura_none",
             kill  = "kill_default",
-            trail = "trail_none",
             pet   = "pet_none",
             pose  = "pose_default",
         },
+
+        -- Battle Pass
         passOwned        = false,
         passTier         = 0,
+
+        -- Match stats
         totalWins        = 0,
         totalSteals      = 0,
         tyrantCount      = 0,
+
+        -- Crown hold tracking (minutes, for Ascendant King + Last Kingdom achievement)
+        crownHoldMinutes = 0,
+
+        -- Ascendant King evolution stage (0 = not started, 1-5)
+        ascendantStage   = 0,
+
+        -- Kingdom assignment
         kingdom          = nil,
+
+        -- Daily login
         dailyLoginDate   = "",
         dailyLoginStreak = 0,
     }
 end
 
+-- Ensure a loaded data record has all current fields (forward-compat)
+local function migrateData(d)
+    -- Slot migration: old records used aura/kill/pet/pose as primary equipped
+    -- New primary slots are crown, body, sword, trail
+    if not d.equipped.body  then d.equipped.body  = "body_newcomer"  end
+    if not d.equipped.sword then d.equipped.sword = "sword_newcomer" end
+    if not d.equipped.trail then d.equipped.trail = "trail_none"     end
+    -- Ensure starter skins are always owned
+    for _, id in ipairs(STARTER_COSMETICS) do
+        if not table.find(d.cosmetics, id) then
+            table.insert(d.cosmetics, id)
+        end
+    end
+    -- New stat fields
+    if not d.crownHoldMinutes then d.crownHoldMinutes = 0 end
+    if not d.ascendantStage   then d.ascendantStage   = 0 end
+    return d
+end
+
 -------------------------------------------------
--- COSMETIC PRICES
+-- COSMETIC PRICES  (matches SKIN_CATALOG.md)
 -------------------------------------------------
 local COIN_PRICES = {
-    crown_rose_gold = 500,
-    crown_silver    = 500,
-    crown_obsidian  = 800,
-    trail_sparks    = 200,
-    trail_embers    = 300,
-    trail_frost     = 350,
+    -- Crown skins
+    crown_iron_circlet   = 200,
+    crown_bone_wreath    = 200,
+    crown_tarnished_loop = 150,
+    crown_silver_spike   = 800,
+    crown_obsidian_ring  = 900,
+    crown_marble_laurel  = 1000,
+    crown_bloodmetal_horns = 3500,
+
+    -- Body skins
+    body_ashen_guard     = 200,
+    body_iron_wretch     = 250,
+    body_coal_vagrant    = 150,
+    body_gunmetal_knight = 900,
+    body_obsidian_warden = 1000,
+    body_shadow_courtier = 850,
+    body_void_stalker    = 4000,
+
+    -- Sword skins
+    sword_iron_shard     = 200,
+    sword_grey_warden    = 200,
+    sword_ashen_edge     = 150,
+    sword_obsidian_fang  = 950,
+    sword_gunmetal_reaper= 1000,
+    sword_coal_thorn     = 900,
+    sword_dusk_impaler   = 4500,
+
+    -- Trail skins
+    trail_ash_drift      = 200,
+    trail_iron_dust      = 200,
+    trail_stone_crumble  = 150,
+    trail_obsidian_shards= 950,
+    trail_silver_mist    = 1000,
+    trail_dark_smoke_ring= 900,
+    trail_eclipse_orbit  = 5000,
+
+    -- Meme / chaos tier
+    crown_cardboard_king = 50,
+    crown_traffic_cone   = 75,
+    body_the_pretender   = 100,
+    sword_giant_spoon    = 50,
+    sword_broken_signpost= 75,
+    trail_lag_aura       = 50,
 }
 local ROBUX_PRICES = {
     crown_diamond   = { price = 200, productId = 123456010 },
@@ -106,17 +204,29 @@ productToCosmeticId[PRODUCTS.COINS_5000] = "coins_5000"
 productToCosmeticId[PRODUCTS.TIER_SKIP]  = "tier_skip"
 
 -------------------------------------------------
--- BATTLE PASS REWARDS
+-- BATTLE PASS REWARDS  (matches SKIN_CATALOG.md tier assignments)
 -------------------------------------------------
 local PASS_REWARDS = {
-    [2]  = { type = "cosmetic", id = "trail_sparks",  freeOk = true  },
-    [4]  = { type = "cosmetic", id = "aura_phantom",  freeOk = false },
-    [5]  = { type = "cosmetic", id = "trail_embers",  freeOk = false },
-    [10] = { type = "cosmetic", id = "pose_bow",       freeOk = false },
-    [15] = { type = "cosmetic", id = "kill_shatter",   freeOk = false },
-    [20] = { type = "cosmetic", id = "aura_void",      freeOk = false },
-    [25] = { type = "cosmetic", id = "pet_dragon",     freeOk = false },
-    [30] = { type = "cosmetic", id = "crown_season1",  freeOk = false },
+    -- Free tier rewards (freeOk = true: all players, no pass required)
+    [1]  = { type = "cosmetic", id = "body_slate_sentinel",     freeOk = true  },
+    [2]  = { type = "cosmetic", id = "crown_stone_band",        freeOk = true  },
+    [3]  = { type = "cosmetic", id = "sword_bone_cleaver",      freeOk = true  },
+    [5]  = { type = "cosmetic", id = "trail_cold_smoke",        freeOk = true  },
+
+    -- Premium tier rewards (pass required)
+    [10] = { type = "cosmetic", id = "body_ascendant_stage1",   freeOk = false },  -- Ascendant King starts here
+    [12] = { type = "cosmetic", id = "crown_gunmetal_thorns",   freeOk = false },
+    [15] = { type = "cosmetic", id = "body_marble_regent",      freeOk = false },
+    [18] = { type = "cosmetic", id = "sword_silver_verdict",    freeOk = false },
+    [20] = { type = "cosmetic", id = "trail_gunmetal_sparks",   freeOk = false },
+    [28] = { type = "cosmetic", id = "crown_onyx_sovereign",    freeOk = false },
+    [32] = { type = "cosmetic", id = "body_onyx_sovereign",     freeOk = false },
+    [35] = { type = "cosmetic", id = "sword_onyx_sovereign_blade", freeOk = false },
+    [38] = { type = "cosmetic", id = "trail_onyx_throne_pulse", freeOk = false },
+    [45] = { type = "cosmetic", id = "crown_void_emperor",      freeOk = false },
+    [47] = { type = "cosmetic", id = "sword_void_arbiter",      freeOk = false },
+    [48] = { type = "cosmetic", id = "trail_void_sovereign_aura", freeOk = false },
+    [50] = { type = "cosmetic", id = "body_eternal_sovereign",  freeOk = false },
 }
 local PASS_COIN_REWARDS = {
     100, 0, 200, 0, 0, 300, 0, 350, 0, 0,
@@ -153,6 +263,7 @@ local function loadData(player)
     if ok and stored then
         for k, v in pairs(stored) do d[k] = v end
     end
+    migrateData(d)
 
     if not d.kingdom then
         local kingdoms = { "Iron", "Gold", "Stone", "Ash" }
@@ -287,7 +398,7 @@ end)
 Remotes.EquipCosmetic.OnServerEvent:Connect(function(player, slot, cosmeticId)
     local d = getData(player)
     if not d then return end
-    local validSlots = { "crown", "aura", "kill", "trail", "pet", "pose" }
+    local validSlots = { "crown", "body", "sword", "trail", "aura", "kill", "pet", "pose" }
     if not table.find(validSlots, slot) then return end
     if cosmeticId ~= "default" and cosmeticId ~= "none"
         and not table.find(d.cosmetics, cosmeticId) then return end

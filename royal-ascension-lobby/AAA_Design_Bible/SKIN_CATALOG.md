@@ -243,6 +243,27 @@ This document defines every cosmetic skin available at launch across four equipm
 
 ---
 
+## Starter Set — The Newcomer
+
+> *Every player spawns wearing this. It should feel intentional — not ugly, not embarrassing — just clearly the bottom of the ladder.*
+
+The Newcomer set communicates "you just arrived at the fortress with nothing." It should be readable as low-tier at a glance but still fit the dark visual language. No clashing colors, no placeholder grey boxes.
+
+| Slot | id | Name | Description | Visual |
+|---|---|---|---|---|
+| Crown | `crown_newcomer` | The Newcomer's Band | A plain iron band. No spikes. No glow. Just iron. | Flat dark iron ring, no decoration |
+| Body | `body_newcomer` | Road-Worn Plate | Dark cloth travel coat over minimal chest plate. The plate is dented. | Dark charcoal cloth, single cracked chest plate |
+| Sword | `sword_newcomer` | Worn Iron Blade | Short iron blade with a wrapped leather grip. It has seen use. | Dull grey iron, worn leather wrap |
+| Trail | *(none)* | — | No trail. You haven't earned one yet. | — |
+
+**Rules:**
+- Always owned. Cannot be deleted, sold, or traded.
+- Not listed in the shop (no price, no unlock condition).
+- New players start equipped with this full set.
+- New players receive **100 welcome coins** — enough to see the shop has things to want, not enough to skip the grind.
+
+---
+
 ## Hero Set — Onyx Sovereign
 
 > *This is the face of the game. Push it in every marketing asset, thumbnail, and trailer.*
