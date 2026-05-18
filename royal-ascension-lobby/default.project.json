@@ -30,10 +30,11 @@
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "UIClient":   { "$path": "src/client/UIClient.client.lua" },
-        "SocialUI":   { "$path": "src/client/SocialUI.client.lua" },
-        "EmoteUI":    { "$path": "src/client/EmoteUI.client.lua" },
-        "WeatherFX":  { "$path": "src/client/WeatherFX.client.lua" }
+        "UIClient":      { "$path": "src/client/UIClient.client.lua" },
+        "SocialUI":      { "$path": "src/client/SocialUI.client.lua" },
+        "EmoteUI":       { "$path": "src/client/EmoteUI.client.lua" },
+        "WeatherFX":     { "$path": "src/client/WeatherFX.client.lua" },
+        "CreatorTools":  { "$path": "src/client/CreatorTools.client.lua" }
       },
       "StarterCharacterScripts": {
         "$className": "StarterCharacterScripts"
