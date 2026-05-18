@@ -46,10 +46,45 @@ local remoteNames = {
     "ReadyUp",
     "MapVote",
 
-    -- NEW: King fight-back system
-    -- Client fires this to request a Royal Slam.
-    -- Server fires it back for: VFX ("SLAM"), cooldown feedback ("COOLDOWN"), unlock hint ("UNLOCK").
+    -- Royal Slam
     "RoyalSlam",
+
+    -- Kingdom Wars
+    "KingdomScoreUpdate",
+
+    -- Bandit system
+    "BanditModeStart",
+    "BanditModeEnd",
+    "BanditReclaim",
+
+    -- Challenges
+    "ChallengeUpdate",
+    "ChallengeComplete",
+
+    -- Reward Wheel
+    "RewardWheelSpin",
+
+    -- Guild system
+    "GuildUpdate",
+    "GuildCreate",
+    "GuildJoin",
+
+    -- Match history
+    "MatchHistoryUpdate",
+
+    -- Dynamic weather
+    "WeatherEvent",
+
+    -- Emote system
+    "EmotePlay",
+    "EmoteRequest",
+
+    -- Trophy wall
+    "TrophyUpdate",
+
+    -- Throne sit
+    "ThroneSitResult",
+    "OpenShop",
 }
 
 for _, name in remoteNames do

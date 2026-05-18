@@ -5,22 +5,35 @@
 
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "RemoteSetup":    { "$path": "src/server/01_RemoteSetup.server.lua" },
-      "CrownService":   { "$path": "src/server/02_CrownService.server.lua" },
-      "PowerUpService": { "$path": "src/server/03_PowerUpService.server.lua" },
-      "DataService":    { "$path": "src/server/04_DataService.server.lua" },
-      "AntiExploit":    { "$path": "src/server/05_AntiExploit.server.lua" },
-      "CrowdService":   { "$path": "src/server/06_CrowdService.server.lua" },
-      "GateEvent":      { "$path": "src/server/07_GateEvent.server.lua" },
-      "WorkspaceSetup": { "$path": "src/server/08_WorkspaceSetup.server.lua" },
-      "FounderSystem":  { "$path": "src/server/09_FounderSystem.server.lua" }
+      "RemoteSetup":       { "$path": "src/server/01_RemoteSetup.server.lua" },
+      "CrownService":      { "$path": "src/server/02_CrownService.server.lua" },
+      "PowerUpService":    { "$path": "src/server/03_PowerUpService.server.lua" },
+      "DataService":       { "$path": "src/server/04_DataService.server.lua" },
+      "AntiExploit":       { "$path": "src/server/05_AntiExploit.server.lua" },
+      "CrowdService":      { "$path": "src/server/06_CrowdService.server.lua" },
+      "GateEvent":         { "$path": "src/server/07_GateEvent.server.lua" },
+      "WorkspaceSetup":    { "$path": "src/server/08_WorkspaceSetup.server.lua" },
+      "FounderSystem":     { "$path": "src/server/09_FounderSystem.server.lua" },
+      "KingdomWars":       { "$path": "src/server/10_KingdomWars.server.lua" },
+      "ChallengeService":  { "$path": "src/server/11_ChallengeService.server.lua" },
+      "BanditSystem":      { "$path": "src/server/12_BanditSystem.server.lua" },
+      "RewardWheel":       { "$path": "src/server/13_RewardWheel.server.lua" },
+      "EmoteSystem":       { "$path": "src/server/14_EmoteSystem.server.lua" },
+      "ThroneSit":         { "$path": "src/server/15_ThroneSit.server.lua" },
+      "GuildSystem":       { "$path": "src/server/16_GuildSystem.server.lua" },
+      "MatchHistory":      { "$path": "src/server/17_MatchHistory.server.lua" },
+      "WeatherSystem":     { "$path": "src/server/18_WeatherSystem.server.lua" },
+      "TrophySystem":      { "$path": "src/server/19_TrophySystem.server.lua" }
     },
 
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "UIClient": { "$path": "src/client/UIClient.client.lua" }
+        "UIClient":   { "$path": "src/client/UIClient.client.lua" },
+        "SocialUI":   { "$path": "src/client/SocialUI.client.lua" },
+        "EmoteUI":    { "$path": "src/client/EmoteUI.client.lua" },
+        "WeatherFX":  { "$path": "src/client/WeatherFX.client.lua" }
       },
       "StarterCharacterScripts": {
         "$className": "StarterCharacterScripts"
