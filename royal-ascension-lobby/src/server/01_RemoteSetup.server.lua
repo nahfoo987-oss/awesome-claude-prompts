@@ -1,50 +1,40 @@
 -- RemoteSetup | ServerScriptService
--- Run once on server start. Creates all RemoteEvents and BindableEvents.
--- PASTE INTO: ServerScriptService > Script
+-- Idempotent: safe to run multiple times if Studio reloads scripts.
+-- Creates all RemoteEvents in ReplicatedStorage.Remotes and
+-- all BindableEvents directly in ReplicatedStorage.
 
 local RS = game:GetService("ReplicatedStorage")
 
-local remotesFolder = Instance.new("Folder")
-remotesFolder.Name   = "Remotes"
-remotesFolder.Parent = RS
+local remotesFolder = RS:FindFirstChild("Remotes")
+if not remotesFolder then
+    remotesFolder        = Instance.new("Folder")
+    remotesFolder.Name   = "Remotes"
+    remotesFolder.Parent = RS
+end
 
 local remoteNames = {
     -- Crown core
-    "CrownPickup",
-    "CrownDrop",
-    "CrownStolen",
-    "StageChanged",
-    "UpdateTimer",
-    "RoundEnd",
+    "CrownPickup", "CrownDrop", "CrownStolen", "StageChanged",
+    "UpdateTimer", "RoundEnd",
 
     -- Economy
-    "CoinReward",
-    "InitClient",
+    "CoinReward", "InitClient", "AddCoins",
 
     -- Power-ups
-    "PowerUpCollected",
-    "PowerUpSpawned",
-    "ActivateHammer",
+    "PowerUpCollected", "PowerUpSpawned", "ActivateHammer",
 
-    -- Shop
-    "BuyCosmeticCoins",
-    "EquipCosmetic",
-    "CosmeticUnlocked",
-    "PlayerEquipChanged",
-    "UpdateShop",
+    -- Shop / cosmetics
+    "BuyCosmeticCoins", "EquipCosmetic", "CosmeticUnlocked",
+    "PlayerEquipChanged", "UpdateShop", "OpenShop",
 
     -- Battle Pass
-    "UpdateBattlePass",
-    "ClaimPassTier",
+    "UpdateBattlePass", "ClaimPassTier",
 
-    -- Crowd / Events
-    "CrowdEvent",
-    "CorruptionStageChanged",
+    -- Crowd / events
+    "CrowdEvent", "CorruptionStageChanged",
 
     -- Lobby
-    "PreRoundLobbyUpdate",
-    "ReadyUp",
-    "MapVote",
+    "PreRoundLobbyUpdate", "ReadyUp", "MapVote",
 
     -- Royal Slam
     "RoyalSlam",
@@ -53,21 +43,16 @@ local remoteNames = {
     "KingdomScoreUpdate",
 
     -- Bandit system
-    "BanditModeStart",
-    "BanditModeEnd",
-    "BanditReclaim",
+    "BanditModeStart", "BanditModeEnd", "BanditReclaim",
 
     -- Challenges
-    "ChallengeUpdate",
-    "ChallengeComplete",
+    "ChallengeUpdate", "ChallengeComplete",
 
     -- Reward Wheel
     "RewardWheelSpin",
 
     -- Guild system
-    "GuildUpdate",
-    "GuildCreate",
-    "GuildJoin",
+    "GuildUpdate", "GuildCreate", "GuildJoin",
 
     -- Match history
     "MatchHistoryUpdate",
@@ -76,21 +61,24 @@ local remoteNames = {
     "WeatherEvent",
 
     -- Emote system
-    "EmotePlay",
-    "EmoteRequest",
+    "EmotePlay", "EmoteRequest",
 
     -- Trophy wall
     "TrophyUpdate",
 
     -- Throne sit
     "ThroneSitResult",
-    "OpenShop",
+
+    -- Founder system
+    "FounderGranted",
 }
 
 for _, name in remoteNames do
-    local re    = Instance.new("RemoteEvent")
-    re.Name     = name
-    re.Parent   = remotesFolder
+    if not remotesFolder:FindFirstChild(name) then
+        local re    = Instance.new("RemoteEvent")
+        re.Name     = name
+        re.Parent   = remotesFolder
+    end
 end
 
 local bindableNames = {
@@ -98,20 +86,16 @@ local bindableNames = {
     "CrownPickupBindable",
     "RoundEndBindable",
     "CoinShowerBindable",
+    "CrownDropBindable",
     "Final30",
 }
 
 for _, name in bindableNames do
-    local be    = Instance.new("BindableEvent")
-    be.Name     = name
-    be.Parent   = RS
+    if not RS:FindFirstChild(name) then
+        local be    = Instance.new("BindableEvent")
+        be.Name     = name
+        be.Parent   = RS
+    end
 end
 
--- AddCoins BindableFunction (created HERE so it exists before any other script needs it)
--- DataService will set its OnInvoke handler once it loads.
--- FIX: was created at the bottom of DataService, causing race conditions.
-local addCoinsFunc    = Instance.new("BindableFunction")
-addCoinsFunc.Name     = "AddCoins"
-addCoinsFunc.Parent   = RS
-
-print("[CrownChaos] All remotes and bindables created successfully.")
+print("[CrownChaos] RemoteSetup complete.")

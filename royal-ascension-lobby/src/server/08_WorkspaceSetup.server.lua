@@ -1,71 +1,36 @@
 -- WorkspaceSetup | ServerScriptService
--- Builds the entire Royal Ascension Lobby: districts, geometry, lighting,
--- local lights, ParticleEmitters, and RunService animations.
--- Runs once on server start. All MeshPart entries use MeshId="" as
--- artist placeholders — replace with uploaded asset IDs for final art.
+-- Royal Ascension Lobby V3 master build.
+-- Source of truth: AAA_Design_Bible/ROYAL_ASCENSION_MASTER.docx
+-- Compact 96 x 96 footprint. Ceiling read ~28 studs. Neon on route/portal/hub only.
 
 local RunService        = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 local Lighting          = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local COLORS
 
 -------------------------------------------------
 -- HELPERS
 -------------------------------------------------
 local function makePart(props)
     local p = Instance.new("Part")
-    p.Anchored       = true
-    p.CanCollide     = props.canCollide  ~= nil and props.canCollide  or false
-    p.CanTouch       = props.canTouch   ~= nil and props.canTouch   or false
-    p.CanQuery       = props.canQuery   ~= nil and props.canQuery   or false
-    p.CastShadow     = props.castShadow ~= nil and props.castShadow or false
-    p.Transparency   = props.transparency or 0
-    p.Size           = props.size or Vector3.new(4, 4, 4)
-    p.CFrame         = props.cframe or CFrame.new(0, 0, 0)
-    p.Color          = props.color or Color3.fromRGB(30, 28, 35)
-    p.Material       = props.material or Enum.Material.SmoothPlastic
-    p.Name           = props.name or "Part"
-    p.TopSurface     = Enum.SurfaceType.Smooth
-    p.BottomSurface  = Enum.SurfaceType.Smooth
-    p.Parent         = props.parent or workspace
+    p.Name          = props.name or "Part"
+    p.Anchored      = true
+    p.CanCollide    = props.canCollide  ~= nil and props.canCollide  or false
+    p.CanTouch      = props.canTouch   ~= nil and props.canTouch   or false
+    p.CanQuery      = props.canQuery   ~= nil and props.canQuery   or false
+    p.CastShadow    = props.castShadow ~= nil and props.castShadow or false
+    p.Transparency  = props.transparency or 0
+    p.Size          = props.size or Vector3.new(4, 4, 4)
+    p.CFrame        = props.cframe or CFrame.new()
+    p.Color         = props.color or Color3.fromRGB(20, 20, 20)
+    p.Material      = props.material or Enum.Material.SmoothPlastic
+    p.Reflectance   = props.reflectance or 0
+    p.TopSurface    = Enum.SurfaceType.Smooth
+    p.BottomSurface = Enum.SurfaceType.Smooth
+    p.Parent        = props.parent or workspace
     return p
-end
-
-local function makeMeshPart(props)
-    local p = Instance.new("MeshPart")
-    p.Anchored           = true
-    p.CanCollide         = props.canCollide  ~= nil and props.canCollide  or false
-    p.CanTouch           = props.canTouch   ~= nil and props.canTouch   or false
-    p.CanQuery           = props.canQuery   ~= nil and props.canQuery   or false
-    p.CastShadow         = props.castShadow ~= nil and props.castShadow or false
-    p.Transparency       = props.transparency or 0
-    p.Size               = props.size or Vector3.new(4, 4, 4)
-    p.CFrame             = props.cframe or CFrame.new(0, 0, 0)
-    p.Color              = props.color or Color3.fromRGB(30, 28, 35)
-    p.Material           = props.material or Enum.Material.SmoothPlastic
-    p.Name               = props.name or "MeshPart"
-    p.MeshId             = props.meshId or ""
-    p.CollisionFidelity  = Enum.CollisionFidelity.Box
-    p.RenderFidelity     = Enum.RenderFidelity.Automatic
-    p.TopSurface         = Enum.SurfaceType.Smooth
-    p.BottomSurface      = Enum.SurfaceType.Smooth
-    p.Parent             = props.parent or workspace
-    return p
-end
-
-local function makeCylinder(props)
-    local p = makePart(props)
-    p.Shape = Enum.PartType.Cylinder
-    -- Roblox cylinders extend along X; rotate so they extend along Y
-    p.CFrame = (props.cframe or CFrame.new()) * CFrame.Angles(0, 0, math.pi / 2)
-    p.Size   = Vector3.new(props.thickness or 4, props.diameter or 10, props.diameter or 10)
-    return p
-end
-
-local function makeModel(name, parent)
-    local m = Instance.new("Model")
-    m.Name   = name
-    m.Parent = parent or workspace
-    return m
 end
 
 local function makeFolder(name, parent)
@@ -75,770 +40,510 @@ local function makeFolder(name, parent)
     return f
 end
 
-local function makeAttachment(name, position, parent)
-    local a = Instance.new("Attachment")
-    a.Name     = name
-    a.Position = position
-    a.Parent   = parent
-    return a
+local function makeModel(name, parent)
+    local m = Instance.new("Model")
+    m.Name   = name
+    m.Parent = parent or workspace
+    return m
 end
 
-local function makePointLight(props)
-    local l = Instance.new("PointLight")
-    l.Brightness = props.brightness or 2
-    l.Range      = props.range or 20
-    l.Color      = props.color or Color3.fromRGB(100, 30, 200)
-    l.Enabled    = true
-    l.Parent     = props.parent
+local function makeCylinderY(props)
+    local p   = makePart(props)
+    p.Shape   = Enum.PartType.Cylinder
+    p.Size    = Vector3.new(props.height or props.size.X, props.diameter or props.size.Y, props.diameter or props.size.Z)
+    p.CFrame  = (props.cframe or CFrame.new()) * CFrame.Angles(0, 0, math.pi / 2)
+    return p
+end
+
+local function makePointLight(parent, color, range, brightness)
+    local l        = Instance.new("PointLight")
+    l.Color        = color
+    l.Range        = range
+    l.Brightness   = brightness
+    l.Parent       = parent
     return l
 end
 
-local function makeParticle(props)
-    local e = Instance.new("ParticleEmitter")
-    e.Rate          = props.rate or 5
-    e.Lifetime      = NumberRange.new(props.lifetimeMin or 1, props.lifetimeMax or 2)
-    e.Speed         = NumberRange.new(props.speedMin or 0.5, props.speedMax or 2)
-    e.LightEmission = props.lightEmission or 0
-    e.Transparency  = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 1),
-        NumberSequenceKeypoint.new(0.1, 0),
-        NumberSequenceKeypoint.new(0.9, 0),
-        NumberSequenceKeypoint.new(1, 1),
+local function makeSpotLight(parent, color, range, brightness, angle, face)
+    local l       = Instance.new("SpotLight")
+    l.Color       = color
+    l.Range       = range
+    l.Brightness  = brightness
+    l.Angle       = angle or 60
+    l.Face        = face or Enum.NormalId.Bottom
+    l.Parent      = parent
+    return l
+end
+
+local function addLabel(part, text, color)
+    local gui            = Instance.new("SurfaceGui")
+    gui.Name             = "RAL_SurfaceLabel"
+    gui.Face             = Enum.NormalId.Front
+    gui.SizingMode       = Enum.SurfaceGuiSizingMode.PixelsPerStud
+    gui.PixelsPerStud    = 32
+    gui.Parent           = part
+
+    local label                    = Instance.new("TextLabel")
+    label.BackgroundTransparency   = 1
+    label.Size                     = UDim2.fromScale(1, 1)
+    label.Text                     = text
+    label.TextColor3               = color
+    label.TextStrokeColor3         = Color3.fromRGB(0, 0, 0)
+    label.TextStrokeTransparency   = 0.35
+    label.Font                     = Enum.Font.GothamBold
+    label.TextScaled               = true
+    label.Parent                   = gui
+end
+
+local function makeAttachmentAnchor(name, position, parent)
+    local anchor = makePart({
+        name         = name .. "_Anchor",
+        size         = Vector3.new(0.1, 0.1, 0.1),
+        cframe       = CFrame.new(position),
+        transparency = 1,
+        parent       = parent,
     })
-    e.Color     = props.color or ColorSequence.new(Color3.fromRGB(100, 30, 200))
-    e.Size      = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, props.sizeStart or 0.3),
-        NumberSequenceKeypoint.new(0.5, props.sizePeak or 0.6),
-        NumberSequenceKeypoint.new(1, 0),
+    local attachment      = Instance.new("Attachment")
+    attachment.Name       = name
+    attachment.Parent     = anchor
+    return attachment
+end
+
+local function makeParticle(parent, color, rate, size)
+    local p            = Instance.new("ParticleEmitter")
+    p.Rate             = rate
+    p.Lifetime         = NumberRange.new(2.4, 4.0)
+    p.Speed            = NumberRange.new(0.4, 1.2)
+    p.Drag             = 2
+    p.LightEmission    = 0.35
+    p.Color            = ColorSequence.new(color)
+    p.Size             = NumberSequence.new({
+        NumberSequenceKeypoint.new(0,    size * 0.35),
+        NumberSequenceKeypoint.new(0.5,  size),
+        NumberSequenceKeypoint.new(1,    0),
     })
-    if props.spreadAngle then
-        e.SpreadAngle = props.spreadAngle
+    p.Transparency     = NumberSequence.new({
+        NumberSequenceKeypoint.new(0,    1),
+        NumberSequenceKeypoint.new(0.15, 0.2),
+        NumberSequenceKeypoint.new(0.85, 0.25),
+        NumberSequenceKeypoint.new(1,    1),
+    })
+    p.Parent = parent
+    return p
+end
+
+local function ringSegments(parent, prefix, center, radius, y, count, segLen, thick, height, color, material, tag)
+    local parts = {}
+    for i = 1, count do
+        local angle = (i - 1) * math.tau / count
+        local part  = makePart({
+            name      = prefix .. "_" .. string.format("%02d", i) .. "_MSH",
+            size      = Vector3.new(segLen, height, thick),
+            cframe    = CFrame.new(center.X + math.cos(angle) * radius, y, center.Z + math.sin(angle) * radius)
+                        * CFrame.Angles(0, -angle, 0),
+            color     = color,
+            material  = material,
+            castShadow= material ~= Enum.Material.Neon,
+            parent    = parent,
+        })
+        if tag then CollectionService:AddTag(part, tag) end
+        table.insert(parts, part)
     end
-    if props.drag then
-        e.Drag = props.drag
-    end
-    if props.rotSpeed then
-        e.RotSpeed = props.rotSpeed
-    end
-    e.Enabled = props.enabled ~= nil and props.enabled or true
-    e.Parent  = props.parent
-    return e
+    return parts
+end
+
+local function localPart(parent, base, name, offset, size, color, material, reflectance, castShadow)
+    return makePart({
+        name       = name,
+        size       = size,
+        cframe     = base * CFrame.new(offset),
+        color      = color,
+        material   = material,
+        reflectance= reflectance or 0,
+        castShadow = castShadow ~= nil and castShadow or true,
+        parent     = parent,
+    })
+end
+
+local function gateFrame(parent, base, prefix, width, height, depth, glowColor, labelText, labelColor)
+    localPart(parent, base, prefix .. "_LeftPier_MSH",       Vector3.new(-width / 2, height / 2, 0),        Vector3.new(2, height, depth),       COLORS.STEEL, Enum.Material.Metal,         0.08)
+    localPart(parent, base, prefix .. "_RightPier_MSH",      Vector3.new( width / 2, height / 2, 0),        Vector3.new(2, height, depth),       COLORS.STEEL, Enum.Material.Metal,         0.08)
+    localPart(parent, base, prefix .. "_TopLintel_MSH",      Vector3.new(0, height, 0),                     Vector3.new(width + 3, 2, depth),    COLORS.GOLD,  Enum.Material.SmoothPlastic,  0.1)
+    localPart(parent, base, prefix .. "_InnerGlowLeft_MSH",  Vector3.new(-width / 2 + 1.4, height / 2, -depth / 2 - 0.05), Vector3.new(0.7, height - 4, 0.25), glowColor, Enum.Material.Neon, 0, false)
+    localPart(parent, base, prefix .. "_InnerGlowRight_MSH", Vector3.new( width / 2 - 1.4, height / 2, -depth / 2 - 0.05), Vector3.new(0.7, height - 4, 0.25), glowColor, Enum.Material.Neon, 0, false)
+    local label = localPart(parent, base, prefix .. "_LabelPanel_MSH", Vector3.new(0, height + 3, -depth / 2 - 0.1), Vector3.new(width + 1, 3, 0.25), COLORS.STONE, Enum.Material.SmoothPlastic, 0, false)
+    addLabel(label, labelText, labelColor or COLORS.GOLD)
+    return label
 end
 
 -------------------------------------------------
 -- COLORS
 -------------------------------------------------
-local COL_ONYX    = Color3.fromRGB(15,  16,  22)
-local COL_MARBLE  = Color3.fromRGB(216, 217, 222)
-local COL_GOLD    = Color3.fromRGB(199, 166,  90)
-local COL_GUNMTL  = Color3.fromRGB(18,  19,  23)
-local COL_VIOLET  = Color3.fromRGB(74,   0, 128)
-local COL_PURPLE  = Color3.fromRGB(125,  43, 255)
+COLORS = {
+    FLOOR      = Color3.fromRGB(28, 28, 28),
+    BASALT     = Color3.fromRGB(20, 20, 20),
+    STONE      = Color3.fromRGB(26, 21, 32),
+    PATH       = Color3.fromRGB(30, 30, 38),
+    MOON       = Color3.fromRGB(42, 42, 56),
+    STEEL      = Color3.fromRGB(14, 14, 14),
+    STEEL_EDGE = Color3.fromRGB(30, 30, 30),
+    GOLD       = Color3.fromRGB(199, 166, 90),
+    GOLD_DARK  = Color3.fromRGB(138, 110, 46),
+    GOLD_BRIGHT= Color3.fromRGB(232, 201, 106),
+    VIOLET     = Color3.fromRGB(139, 46, 255),
+    VIOLET_DARK= Color3.fromRGB(85,  0, 204),
+    BLUE       = Color3.fromRGB(170, 182, 255),
+    CRIMSON    = Color3.fromRGB(74,  14,  14),
+    DANGER     = Color3.fromRGB(204, 51,  51),
+    RUST       = Color3.fromRGB(30,  20,  16),
+}
 
 -------------------------------------------------
--- LOBBY ROOT
+-- SURFACE APPEARANCE PLACEHOLDERS
 -------------------------------------------------
+local packageRoot = ReplicatedStorage:FindFirstChild("RAL_Packages") or makeFolder("RAL_Packages", ReplicatedStorage)
+local surfaceRoot = packageRoot:FindFirstChild("SurfaceAppearances") or makeFolder("SurfaceAppearances", packageRoot)
+for _, saName in ipairs({
+    "RAL_MAT_CrackedDarkMarble_SA",
+    "RAL_MAT_CorruptionVeinedStone_SA",
+    "RAL_MAT_BlackenedSteel_SA",
+    "RAL_MAT_AgedBrass_SA",
+}) do
+    if not surfaceRoot:FindFirstChild(saName) then
+        local sa = Instance.new("SurfaceAppearance")
+        sa.Name   = saName
+        sa.Parent = surfaceRoot
+    end
+end
+
+-------------------------------------------------
+-- ROOT / DISTRICTS
+-------------------------------------------------
+local old = workspace:FindFirstChild("TheRoyalAscension_Lobby")
+if old then old:Destroy() end
+
 local lobbyRoot = makeModel("TheRoyalAscension_Lobby", workspace)
 
--------------------------------------------------
--- DISTRICTS
--------------------------------------------------
 local DISTRICTS = {
-    { name = "RAL_Core_Persistent",           streaming = Enum.ModelStreamingMode.Persistent, lod = Enum.ModelLevelOfDetail.Automatic },
-    { name = "RAL_NorthThrone_Atomic",        streaming = Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh },
-    { name = "RAL_EastCommerce_Atomic",       streaming = Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh },
-    { name = "RAL_WestWar_Atomic",            streaming = Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh },
-    { name = "RAL_SouthGate_Atomic",          streaming = Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh },
-    { name = "RAL_SoutheastTraining_Atomic",  streaming = Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh },
-    { name = "RAL_SouthwestProgression_Atomic",streaming= Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh },
+    { name = "RAL_Core_Persistent",           streaming = Enum.ModelStreamingMode.Persistent, lod = Enum.ModelLevelOfDetail.Automatic      },
+    { name = "RAL_NorthThrone_Atomic",        streaming = Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh  },
+    { name = "RAL_EastCommerce_Atomic",       streaming = Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh  },
+    { name = "RAL_WestWar_Atomic",            streaming = Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh  },
+    { name = "RAL_SouthGate_Atomic",          streaming = Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh  },
+    { name = "RAL_SoutheastTraining_Atomic",  streaming = Enum.ModelStreamingMode.Atomic,     lod = Enum.ModelLevelOfDetail.StreamingMesh  },
+    { name = "RAL_SouthwestProgression_Atomic", streaming = Enum.ModelStreamingMode.Atomic,   lod = Enum.ModelLevelOfDetail.StreamingMesh  },
 }
 
 local districtModels = {}
-for _, d in DISTRICTS do
-    local m = makeModel(d.name, lobbyRoot)
-    m.ModelStreamingMode = d.streaming
-    m.LevelOfDetail      = d.lod
-    makeFolder("Collisions", m)
-    makeFolder("Visuals",    m)
-    districtModels[d.name] = m
+for _, d in ipairs(DISTRICTS) do
+    local model = makeModel(d.name, lobbyRoot)
+    model.ModelStreamingMode = d.streaming
+    model.LevelOfDetail      = d.lod
+    makeFolder("Collisions", model)
+    makeFolder("Visuals",    model)
+    makeFolder("Lights",     model)
+    makeFolder("VFX",        model)
+    districtModels[d.name] = model
 end
 
-local function col(districtName) return districtModels[districtName].Collisions end
-local function vis(districtName) return districtModels[districtName].Visuals    end
+local function col(name)    return districtModels[name].Collisions end
+local function vis(name)    return districtModels[name].Visuals    end
+local function lights(name) return districtModels[name].Lights     end
+local function vfx(name)    return districtModels[name].VFX        end
 
 -------------------------------------------------
--- CORE — FLOORS
+-- CORE FOUNDATION  (96 × 96, world center Y=50)
 -------------------------------------------------
--- Main floor collision (invisible cylinder)
-local mainFloorCol = makePart({
-    name        = "RAL_MainFloor_A_COL",
-    size        = Vector3.new(4, 120, 120),
-    cframe      = CFrame.new(0, 50, 0) * CFrame.Angles(0, 0, math.pi/2),
-    canCollide  = true,
-    transparency= 1,
-    castShadow  = false,
-    parent      = col("RAL_Core_Persistent"),
-})
-mainFloorCol.Shape = Enum.PartType.Cylinder
+makePart({ name = "RAL_MainFloor_A_COL", size = Vector3.new(96, 1, 96), cframe = CFrame.new(0, 50, 0),    canCollide = true, canTouch = true, transparency = 1,  parent = col("RAL_Core_Persistent") })
+makePart({ name = "RAL_MainFloor_A_MSH", size = Vector3.new(96, 1, 96), cframe = CFrame.new(0, 50.03, 0), color = COLORS.FLOOR, material = Enum.Material.SmoothPlastic, reflectance = 0.08, castShadow = true, parent = vis("RAL_Core_Persistent") })
 
--- Main floor visual (marble)
-local mainFloorVis = makeMeshPart({
-    name        = "RAL_MainFloor_A_MSH",
-    size        = Vector3.new(4.02, 120, 120),
-    cframe      = CFrame.new(0, 50.01, 0),
-    color       = COL_MARBLE,
-    material    = Enum.Material.SmoothPlastic,
-    parent      = vis("RAL_Core_Persistent"),
-})
+-- Gold rim border
+makePart({ name = "RAL_Rim_North_MSH", size = Vector3.new(96, 0.5, 2), cframe = CFrame.new( 0, 50.8,  47), color = COLORS.GOLD, material = Enum.Material.SmoothPlastic, reflectance = 0.12, parent = vis("RAL_Core_Persistent") })
+makePart({ name = "RAL_Rim_South_MSH", size = Vector3.new(96, 0.5, 2), cframe = CFrame.new( 0, 50.8, -47), color = COLORS.GOLD, material = Enum.Material.SmoothPlastic, reflectance = 0.12, parent = vis("RAL_Core_Persistent") })
+makePart({ name = "RAL_Rim_East_MSH",  size = Vector3.new(2, 0.5, 96), cframe = CFrame.new( 47, 50.8,  0), color = COLORS.GOLD, material = Enum.Material.SmoothPlastic, reflectance = 0.12, parent = vis("RAL_Core_Persistent") })
+makePart({ name = "RAL_Rim_West_MSH",  size = Vector3.new(2, 0.5, 96), cframe = CFrame.new(-47, 50.8,  0), color = COLORS.GOLD, material = Enum.Material.SmoothPlastic, reflectance = 0.12, parent = vis("RAL_Core_Persistent") })
 
--- Core socket disc
-local socketDisc = makePart({
-    name        = "RAL_SocketDisc_A_MSH",
-    size        = Vector3.new(0.6, 16, 16),
-    cframe      = CFrame.new(0, 52.03, 0) * CFrame.Angles(0, 0, math.pi/2),
-    color       = COL_ONYX,
-    parent      = vis("RAL_Core_Persistent"),
-})
-socketDisc.Shape = Enum.PartType.Cylinder
+-- Central hub platform
+makePart({ name = "RAL_CentralHub_A_COL", size = Vector3.new(24, 2, 24), cframe = CFrame.new(0, 51.25, 0), canCollide = true, canTouch = true, transparency = 1, parent = col("RAL_Core_Persistent") })
+makePart({ name = "RAL_CentralHub_A_MSH", size = Vector3.new(24, 2, 24), cframe = CFrame.new(0, 51.28, 0), color = COLORS.STONE, material = Enum.Material.SmoothPlastic, reflectance = 0.05, castShadow = true, parent = vis("RAL_Core_Persistent") })
 
--- Corruption ring (animated placeholder)
-local corruptRing = makePart({
-    name        = "RAL_CorruptionRing_A_MSH",
-    size        = Vector3.new(2, 30, 30),
-    cframe      = CFrame.new(0, 52.55, 0) * CFrame.Angles(0, 0, math.pi/2),
-    color       = COL_VIOLET,
-    material    = Enum.Material.Neon,
-    transparency= 0.25,
-    castShadow  = false,
-    parent      = vis("RAL_Core_Persistent"),
-})
-corruptRing.Shape = Enum.PartType.Cylinder
-CollectionService:AddTag(corruptRing, "RAL_CorruptionRing")
+ringSegments(vis("RAL_Core_Persistent"), "RAL_HubGoldRing",         Vector3.new(0,0,0), 12.7, 52.55, 16, 4.2, 0.45, 0.35, COLORS.GOLD,   Enum.Material.SmoothPlastic)
+ringSegments(vis("RAL_Core_Persistent"), "RAL_CorruptionEnergyRing", Vector3.new(0,0,0), 12,   53.15, 16, 3.6, 0.55, 0.35, COLORS.VIOLET, Enum.Material.Neon, "RAL_CorruptionRing")
 
--- Emote circles
-for i, pos in ipairs({ Vector3.new(-24, 52.03, 17), Vector3.new(24, 52.03, 17) }) do
-    local ec = makePart({
-        name        = "RAL_EmoteCircle_" .. i .. "_MSH",
-        size        = Vector3.new(0.4, 14, 14),
-        cframe      = CFrame.new(pos) * CFrame.Angles(0, 0, math.pi/2),
-        color       = COL_GOLD,
-        material    = Enum.Material.Neon,
-        transparency= 0.5,
-        castShadow  = false,
-        parent      = vis("RAL_Core_Persistent"),
-    })
-    ec.Shape = Enum.PartType.Cylinder
-end
+-- Crown beam
+local crownBeamShell = makePart({ name = "RAL_CrownBeamShell_A_MSH", size = Vector3.new(4, 30, 4), cframe = CFrame.new(0, 67, 0), color = COLORS.GOLD, material = Enum.Material.SmoothPlastic, reflectance = 0.18, castShadow = true, parent = vis("RAL_Core_Persistent") })
+local crownBeamCore  = makePart({ name = "RAL_CrownBeamCore_A_MSH",  size = Vector3.new(1, 32, 1), cframe = CFrame.new(0, 68, 0), color = COLORS.VIOLET, material = Enum.Material.Neon, castShadow = false, parent = vis("RAL_Core_Persistent") })
+CollectionService:AddTag(crownBeamCore, "RAL_BeamPulse")
+makePointLight(crownBeamCore, COLORS.VIOLET, 35, 2.5)
 
--------------------------------------------------
--- CORE — FLOATING CROWN
--------------------------------------------------
-local crown = makeMeshPart({
-    name        = "RAL_Crown_A_MSH",
-    size        = Vector3.new(16, 14, 16),
-    cframe      = CFrame.new(0, 90, 0),
-    color       = COL_GOLD,
-    material    = Enum.Material.Neon,
-    transparency= 0,
-    castShadow  = false,
-    parent      = vis("RAL_Core_Persistent"),
-})
+-- Floating crown
+local crown = makePart({ name = "RAL_Crown_A_MSH", size = Vector3.new(6, 2, 6), cframe = CFrame.new(0, 83, 0), color = COLORS.GOLD_BRIGHT, material = Enum.Material.Neon, castShadow = false, parent = vis("RAL_Core_Persistent") })
 CollectionService:AddTag(crown, "RAL_Crown")
 
--- Crown point light
-makePointLight({ brightness=2.5, range=38, color=COL_VIOLET, parent=crown })
-
--- Crown corruption beam (neon cylinder)
-local beam = makePart({
-    name        = "RAL_CorruptionBeam_A_MSH",
-    size        = Vector3.new(180, 2, 2),
-    cframe      = CFrame.new(0, 71, 0) * CFrame.Angles(0, 0, math.pi/2),
-    color       = COL_VIOLET,
-    material    = Enum.Material.Neon,
-    transparency= 0.28,
-    castShadow  = false,
-    parent      = vis("RAL_Core_Persistent"),
-})
-beam.Shape = Enum.PartType.Cylinder
-CollectionService:AddTag(beam, "RAL_BeamPulse")
+-- Route guides (axis-aligned neon only)
+makePart({ name = "RAL_RouteGuide_North_MSH", size = Vector3.new(1, 0.25, 8), cframe = CFrame.new( 0, 51.2,  22), color = COLORS.VIOLET, material = Enum.Material.Neon, parent = vis("RAL_Core_Persistent") })
+makePart({ name = "RAL_RouteGuide_South_MSH", size = Vector3.new(1, 0.25, 8), cframe = CFrame.new( 0, 51.2, -22), color = COLORS.VIOLET, material = Enum.Material.Neon, parent = vis("RAL_Core_Persistent") })
+makePart({ name = "RAL_RouteGuide_East_MSH",  size = Vector3.new(8, 0.25, 1), cframe = CFrame.new( 22, 51.2,  0), color = COLORS.VIOLET, material = Enum.Material.Neon, parent = vis("RAL_Core_Persistent") })
+makePart({ name = "RAL_RouteGuide_West_MSH",  size = Vector3.new(8, 0.25, 1), cframe = CFrame.new(-22, 51.2,  0), color = COLORS.VIOLET, material = Enum.Material.Neon, parent = vis("RAL_Core_Persistent") })
 
 -------------------------------------------------
--- CORE — PILLARS (8) + ARCHES (8) + CHANDELIERS (4) + BANNERS (8)
+-- FORTRESS WALLS, BUTTRESSES, CORNER TOWERS
 -------------------------------------------------
-local PILLAR_POSITIONS = {
-    Vector3.new( 70,     92,  0     ),
-    Vector3.new( 49.497, 92,  49.497),
-    Vector3.new( 0,      92,  70    ),
-    Vector3.new(-49.497, 92,  49.497),
-    Vector3.new(-70,     92,  0     ),
-    Vector3.new(-49.497, 92, -49.497),
-    Vector3.new( 0,      92, -70    ),
-    Vector3.new( 49.497, 92, -49.497),
+local wallParent = vis("RAL_Core_Persistent")
+
+for _, z in ipairs({ -48, 48 }) do
+    for i = -2, 2 do
+        makePart({ name = "RAL_OuterWall_Z" .. z .. "_" .. i .. "_MSH", size = Vector3.new(16, 24, 2), cframe = CFrame.new(i * 16, 62, z), color = COLORS.BASALT, material = Enum.Material.Basalt, castShadow = true, parent = wallParent })
+    end
+end
+for _, x in ipairs({ -48, 48 }) do
+    for i = -2, 2 do
+        makePart({ name = "RAL_OuterWall_X" .. x .. "_" .. i .. "_MSH", size = Vector3.new(2, 24, 16), cframe = CFrame.new(x, 62, i * 16), color = COLORS.BASALT, material = Enum.Material.Basalt, castShadow = true, parent = wallParent })
+    end
+end
+
+for _, pos in ipairs({
+    Vector3.new(-45, 62, -45), Vector3.new(45, 62, -45),
+    Vector3.new(-45, 62,  45), Vector3.new(45, 62,  45),
+}) do
+    makePart({ name = "RAL_CornerButtress_MSH",      size = Vector3.new(6, 24, 6),   cframe = CFrame.new(pos),               color = COLORS.BASALT, material = Enum.Material.Basalt,         parent = wallParent })
+    makePart({ name = "RAL_CornerTower_MSH",         size = Vector3.new(4, 26, 4),   cframe = CFrame.new(pos.X, 76, pos.Z),  color = COLORS.BASALT, material = Enum.Material.Basalt,         parent = wallParent })
+    makePart({ name = "RAL_CornerTowerGoldCap_MSH",  size = Vector3.new(5, 1.2, 5),  cframe = CFrame.new(pos.X, 89.5, pos.Z), color = COLORS.GOLD,  material = Enum.Material.SmoothPlastic, reflectance = 0.1, parent = wallParent })
+end
+
+-------------------------------------------------
+-- NORTH: THRONE + SHOP CATHEDRAL + FOUNDERS WALL
+-------------------------------------------------
+local northVis = vis("RAL_NorthThrone_Atomic")
+local northCol = col("RAL_NorthThrone_Atomic")
+
+makePart({ name = "RAL_NorthWingPad_COL", size = Vector3.new(16, 1, 16), cframe = CFrame.new(0, 51, 32),    transparency = 1, canCollide = true, canTouch = true, parent = northCol })
+makePart({ name = "RAL_NorthWingPad_MSH", size = Vector3.new(16, 1, 16), cframe = CFrame.new(0, 51.05, 32), color = COLORS.STONE, material = Enum.Material.SmoothPlastic, parent = northVis })
+
+gateFrame(northVis, CFrame.new(0, 51, 40), "RAL_ShopCathedralEntrance", 14, 16, 2, COLORS.VIOLET, "SHOP", COLORS.GOLD)
+
+local shopPedestal = makePart({ name = "RAL_ShopPromptPedestal_A_MSH", size = Vector3.new(5, 3, 5), cframe = CFrame.new(0, 53, 32), color = COLORS.STEEL, material = Enum.Material.Metal, reflectance = 0.08, parent = northVis })
+makePointLight(shopPedestal, COLORS.GOLD, 18, 1.5)
+local shopPrompt = Instance.new("ProximityPrompt")
+shopPrompt.ObjectText          = "Royal Shop"
+shopPrompt.ActionText          = "Browse Artifacts"
+shopPrompt.KeyboardKeyCode     = Enum.KeyCode.E
+shopPrompt.MaxActivationDistance = 10
+shopPrompt.HoldDuration        = 0.25
+shopPrompt.Parent              = shopPedestal
+shopPrompt.Triggered:Connect(function(player)
+    local remotes  = ReplicatedStorage:FindFirstChild("Remotes")
+    local openShop = remotes and remotes:FindFirstChild("OpenShop")
+    if openShop then openShop:FireClient(player) end
+end)
+
+for i, x in ipairs({ -6, -3, 3, 6 }) do
+    local ped = makePart({ name = "RAL_ShopRarityPedestal_" .. i .. "_MSH", size = Vector3.new(2, 2, 2), cframe = CFrame.new(x, 53, 37), color = COLORS.BASALT, material = Enum.Material.Basalt, parent = northVis })
+    local lightColor = i == 1 and COLORS.BLUE or i == 2 and COLORS.VIOLET or i == 3 and COLORS.GOLD or COLORS.DANGER
+    makePointLight(ped, lightColor, 8, 1.2)
+end
+
+-- Throne (compact V3 position, visible from spawn)
+local throne = makePart({ name = "RAL_Throne_MSH", size = Vector3.new(10, 8, 10), cframe = CFrame.new(0, 56, 14), color = COLORS.STONE, material = Enum.Material.SmoothPlastic, reflectance = 0.05, parent = northVis })
+makePart({ name = "RAL_ThroneGoldSeat_MSH", size = Vector3.new(8, 1, 8), cframe = CFrame.new(0, 58.5, 12), color = COLORS.GOLD, material = Enum.Material.SmoothPlastic, reflectance = 0.1, parent = northVis })
+makeSpotLight(throne, COLORS.GOLD, 20, 2.0, 45, Enum.NormalId.Front)
+
+-- Hall of Founders title panel
+local founderPanel = makePart({ name = "RAL_FoundersHall_TitlePanel_MSH", size = Vector3.new(18, 6, 1), cframe = CFrame.new(-28, 58, 40), color = COLORS.STONE, material = Enum.Material.SmoothPlastic, parent = northVis })
+addLabel(founderPanel, "FOUNDERS", COLORS.GOLD)
+
+-------------------------------------------------
+-- SOUTH: SPAWN DAIS + TRAINING GATE
+-------------------------------------------------
+local southVis = vis("RAL_SouthGate_Atomic")
+local southCol = col("RAL_SouthGate_Atomic")
+
+makePart({ name = "RAL_SpawnDais_COL", size = Vector3.new(12, 2, 12), cframe = CFrame.new(0, 52, -28),    transparency = 1, canCollide = true, canTouch = true, parent = southCol })
+makePart({ name = "RAL_SpawnDais_MSH", size = Vector3.new(12, 2, 12), cframe = CFrame.new(0, 52.03, -28), color = COLORS.MOON, material = Enum.Material.SmoothPlastic, reflectance = 0.04, parent = southVis })
+ringSegments(southVis, "RAL_SpawnSigilRing", Vector3.new(0, 0, -28), 5.4, 53.2, 12, 2.6, 0.35, 0.25, COLORS.VIOLET_DARK, Enum.Material.Neon)
+
+local spawnFill = makePart({ name = "RAL_LGT_SpawnFill_PL", size = Vector3.new(0.1, 0.1, 0.1), cframe = CFrame.new(0, 54, -28), transparency = 1, parent = lights("RAL_SouthGate_Atomic") })
+makePointLight(spawnFill, COLORS.BLUE, 22, 0.8)
+
+makePart({ name = "RAL_SouthWingPad_COL", size = Vector3.new(16, 1, 16), cframe = CFrame.new(0, 51, -38),    transparency = 1, canCollide = true, canTouch = true, parent = southCol })
+makePart({ name = "RAL_SouthWingPad_MSH", size = Vector3.new(16, 1, 16), cframe = CFrame.new(0, 51.05, -38), color = COLORS.STONE, material = Enum.Material.SmoothPlastic, parent = southVis })
+
+gateFrame(southVis, CFrame.new(0, 51, -44) * CFrame.Angles(0, math.pi, 0), "RAL_ArenaGate", 14, 16, 2, COLORS.DANGER, "TRAIN", COLORS.DANGER)
+local arenaGate = makePart({ name = "RAL_ArenaGate_MSH", size = Vector3.new(14, 16, 2), cframe = CFrame.new(0, 59, -46), color = COLORS.STEEL, material = Enum.Material.Metal, reflectance = 0.08, transparency = 1, parent = southVis })
+makeSpotLight(arenaGate, COLORS.DANGER, 20, 2.0, 55, Enum.NormalId.Front)
+
+-------------------------------------------------
+-- EAST: RANKED PORTAL + LEADERBOARD + MATCH HISTORY
+-------------------------------------------------
+local eastVis = vis("RAL_EastCommerce_Atomic")
+local eastCol = col("RAL_EastCommerce_Atomic")
+
+makePart({ name = "RAL_EastWingPad_COL", size = Vector3.new(16, 1, 16), cframe = CFrame.new(32, 51, 0),    transparency = 1, canCollide = true, canTouch = true, parent = eastCol })
+makePart({ name = "RAL_EastWingPad_MSH", size = Vector3.new(16, 1, 16), cframe = CFrame.new(32, 51.05, 0), color = COLORS.STONE, material = Enum.Material.SmoothPlastic, parent = eastVis })
+gateFrame(eastVis, CFrame.new(40, 51, 0) * CFrame.Angles(0, -math.pi / 2, 0), "RAL_RankedPortal", 12, 14, 2, COLORS.VIOLET, "RANKED", COLORS.BLUE)
+
+local portalFill = makePart({ name = "RAL_RankedPortalFill_MSH", size = Vector3.new(0.6, 10, 8), cframe = CFrame.new(41.2, 58, 0), color = COLORS.VIOLET, material = Enum.Material.Neon, transparency = 0.25, parent = eastVis })
+CollectionService:AddTag(portalFill, "RAL_PortalGlyph")
+makePointLight(portalFill, COLORS.VIOLET, 25, 3.0)
+
+local leaderboard = makePart({ name = "RAL_LeaderboardWall",  size = Vector3.new(1, 10, 18), cframe = CFrame.new(46.5, 58,  18), color = COLORS.STONE, material = Enum.Material.SmoothPlastic, parent = eastVis })
+addLabel(leaderboard, "LEADERS", COLORS.GOLD)
+local matchHistory = makePart({ name = "RAL_MatchHistoryWall", size = Vector3.new(1,  8, 14), cframe = CFrame.new(46.5, 57, -18), color = COLORS.STONE, material = Enum.Material.SmoothPlastic, parent = eastVis })
+addLabel(matchHistory, "MATCHES", COLORS.BLUE)
+
+-------------------------------------------------
+-- WEST: GUILD HALL + WAR TABLE + EVENT WALL
+-------------------------------------------------
+local westVis = vis("RAL_WestWar_Atomic")
+local westCol = col("RAL_WestWar_Atomic")
+
+makePart({ name = "RAL_WestWingPad_COL", size = Vector3.new(16, 1, 16), cframe = CFrame.new(-32, 51, 0),    transparency = 1, canCollide = true, canTouch = true, parent = westCol })
+makePart({ name = "RAL_WestWingPad_MSH", size = Vector3.new(16, 1, 16), cframe = CFrame.new(-32, 51.05, 0), color = COLORS.STONE, material = Enum.Material.SmoothPlastic, parent = westVis })
+gateFrame(westVis, CFrame.new(-40, 51, 0) * CFrame.Angles(0, math.pi / 2, 0), "RAL_GuildHall", 14, 16, 2, COLORS.CRIMSON, "GUILD", COLORS.GOLD)
+
+local warTable = makePart({ name = "RAL_GuildWarTable_A_MSH", size = Vector3.new(10, 2, 6), cframe = CFrame.new(-32, 53, 0), color = COLORS.STEEL, material = Enum.Material.Metal, reflectance = 0.08, parent = westVis })
+makePointLight(warTable, COLORS.GOLD, 10, 0.8)
+ringSegments(westVis, "RAL_GuildDuelCircle", Vector3.new(-32, 0, 0), 5, 52.2, 12, 2.3, 0.25, 0.25, COLORS.VIOLET, Enum.Material.Neon)
+local eventWall = makePart({ name = "RAL_SeasonalEventWall", size = Vector3.new(1, 8, 14), cframe = CFrame.new(-46.5, 57, -18), color = COLORS.STONE, material = Enum.Material.SmoothPlastic, parent = westVis })
+addLabel(eventWall, "EVENT", COLORS.DANGER)
+
+-------------------------------------------------
+-- REWARD WHEEL + EMOTE CIRCLE + BANNERS + DEBRIS
+-------------------------------------------------
+local wheel = makePart({ name = "RAL_RewardWheel_Disc", size = Vector3.new(0.5, 8, 8), cframe = CFrame.new(18, 56, 34) * CFrame.Angles(0, math.pi / 2, 0), color = COLORS.GOLD, material = Enum.Material.Neon, parent = northVis })
+wheel.Shape = Enum.PartType.Cylinder
+CollectionService:AddTag(wheel, "RAL_RewardWheel")
+makePointLight(wheel, COLORS.GOLD, 10, 1.2)
+
+ringSegments(vis("RAL_Core_Persistent"), "RAL_EmoteCircle", Vector3.new(-22, 0, -28), 5, 51.5, 16, 2.1, 0.25, 0.25, COLORS.VIOLET, Enum.Material.Neon)
+
+local bannerPositions = {
+    { -42, 61,  26, 0           }, { -42, 61,  10, 0           },
+    {  42, 61,  26, 0           }, {  42, 61,  10, 0           },
+    { -26, 61,  42, math.pi / 2 }, { -10, 61,  42, math.pi / 2 },
+    {  26, 61, -42, math.pi / 2 }, {  10, 61, -42, math.pi / 2 },
 }
-
-local ARCH_MIDPOINTS = {
-    Vector3.new( 59.748, 125,  24.748),
-    Vector3.new( 24.748, 125,  59.748),
-    Vector3.new(-24.748, 125,  59.748),
-    Vector3.new(-59.748, 125,  24.748),
-    Vector3.new(-59.748, 125, -24.748),
-    Vector3.new(-24.748, 125, -59.748),
-    Vector3.new( 24.748, 125, -59.748),
-    Vector3.new( 59.748, 125, -24.748),
-}
-
-for i, pos in ipairs(PILLAR_POSITIONS) do
-    -- Pedestal
-    makePart({
-        name       = "RAL_PillarPedestal_" .. i .. "_MSH",
-        size       = Vector3.new(16, 6, 16),
-        cframe     = CFrame.new(pos.X, 49, pos.Z),
-        color      = COL_ONYX,
-        castShadow = true,
-        parent     = vis("RAL_Core_Persistent"),
-    })
-
-    -- Shaft
-    local shaft = makePart({
-        name       = "RAL_PillarShaft_" .. i .. "_MSH",
-        size       = Vector3.new(12, 80, 12),
-        cframe     = CFrame.new(pos),
-        color      = COL_ONYX,
-        castShadow = true,
-        parent     = vis("RAL_Core_Persistent"),
-    })
-    -- Invisible collision shaft (simple box)
-    makePart({
-        name       = "RAL_PillarShaft_" .. i .. "_COL",
-        size       = Vector3.new(12, 80, 12),
-        cframe     = CFrame.new(pos),
-        canCollide = true,
-        transparency=1,
-        parent     = col("RAL_Core_Persistent"),
-    })
-
-    -- Banner (suspended between pillars)
-    local bannerX = pos.X * (63 / 70)
-    local bannerZ = pos.Z * (63 / 70)
-    local banner = makePart({
-        name       = "RAL_Banner_" .. i .. "_MSH",
-        size       = Vector3.new(0.2, 20, 8),
-        cframe     = CFrame.new(bannerX, 100, bannerZ),
-        color      = COL_VIOLET,
-        material   = Enum.Material.SmoothPlastic,
-        parent     = vis("RAL_Core_Persistent"),
-    })
+for i, data in ipairs(bannerPositions) do
+    local banner = makePart({ name = "RAL_Banner_" .. i .. "_MSH", size = Vector3.new(2, 10, 0.5), cframe = CFrame.new(data[1], data[2], data[3]) * CFrame.Angles(0, data[4], 0), color = COLORS.CRIMSON, material = Enum.Material.Fabric, parent = vis("RAL_Core_Persistent") })
     CollectionService:AddTag(banner, "RAL_Banner")
 end
 
--- Arch spans
-for i, pos in ipairs(ARCH_MIDPOINTS) do
-    local prevPillar = PILLAR_POSITIONS[i]
-    local nextPillar = PILLAR_POSITIONS[i == 8 and 1 or i + 1]
-    local dir = (nextPillar - prevPillar).Unit
-    local angle = math.atan2(dir.X, dir.Z)
-    makeMeshPart({
-        name       = "RAL_ArchSpan_" .. i .. "_MSH",
-        size       = Vector3.new(12, 10, 53.576),
-        cframe     = CFrame.new(pos) * CFrame.Angles(0, angle, 0),
-        color      = COL_ONYX,
-        castShadow = true,
-        parent     = vis("RAL_Core_Persistent"),
-    })
-end
-
--- Chandeliers
-local CHANDELIER_POS = {
-    Vector3.new( 26, 118,  26),
-    Vector3.new(-26, 118,  26),
-    Vector3.new( 26, 118, -26),
-    Vector3.new(-26, 118, -26),
-}
-for i, pos in ipairs(CHANDELIER_POS) do
-    makeMeshPart({
-        name       = "RAL_Chandelier_" .. i .. "_MSH",
-        size       = Vector3.new(12, 18, 12),
-        cframe     = CFrame.new(pos),
-        color      = COL_GUNMTL,
-        castShadow = true,
-        parent     = vis("RAL_Core_Persistent"),
-    })
-    -- Warm gold light per chandelier
-    local chanPart = makePart({
-        name        = "RAL_LGT_Chandelier_" .. i .. "_PL",
-        size        = Vector3.new(0.1, 0.1, 0.1),
-        cframe      = CFrame.new(pos + Vector3.new(0, -5, 0)),
-        transparency= 1,
-        castShadow  = false,
-        parent      = vis("RAL_Core_Persistent"),
-    })
-    makePointLight({ brightness=2.0, range=26, color=Color3.fromRGB(212,164,58), parent=chanPart })
-end
-
--- Ring lights for corruption ring (8 around ring radius 15)
-for i = 1, 8 do
-    local angle = (i - 1) * (math.pi * 2 / 8)
-    local lx = math.cos(angle) * 15
-    local lz = math.sin(angle) * 15
-    local ringLightPart = makePart({
-        name        = "RAL_LGT_Ring_" .. i .. "_PL",
-        size        = Vector3.new(0.1, 0.1, 0.1),
-        cframe      = CFrame.new(lx, 52.55, lz),
-        transparency= 1,
-        castShadow  = false,
-        parent      = vis("RAL_Core_Persistent"),
-    })
-    makePointLight({ brightness=1.5, range=18, color=COL_PURPLE, parent=ringLightPart })
+for i = 1, 10 do
+    local angle  = i * math.tau / 10
+    local radius = 58 + (i % 3) * 4
+    makePart({ name = "RAL_AbyssDebris_" .. i .. "_MSH",
+        size   = Vector3.new(1 + (i % 3), 1 + (i % 2), 1 + (i % 4)),
+        cframe = CFrame.new(math.cos(angle) * radius, 46 + (i % 4), math.sin(angle) * radius)
+                 * CFrame.Angles(math.rad(i * 18), math.rad(i * 11), math.rad(i * 7)),
+        color  = COLORS.BASALT, material = Enum.Material.Basalt, parent = vis("RAL_Core_Persistent") })
 end
 
 -------------------------------------------------
--- NORTH/THRONE DISTRICT
+-- CROWN SPAWN MARKER + VFX ANCHORS
 -------------------------------------------------
+makePart({ name = "CrownSpawn", size = Vector3.new(1, 1, 1), cframe = CFrame.new(0, 62, 0), transparency = 1, parent = workspace })
 
--- Spawn platform (octagon proxy)
-makePart({
-    name       = "RAL_SpawnOctagon_A_COL",
-    size       = Vector3.new(40, 4, 40),
-    cframe     = CFrame.new(0, 65, 80),
-    canCollide = true,
-    canTouch   = true,
-    transparency=1,
-    parent     = col("RAL_NorthThrone_Atomic"),
-})
-makeMeshPart({
-    name       = "RAL_SpawnOctagon_A_MSH",
-    size       = Vector3.new(40, 4, 40),
-    cframe     = CFrame.new(0, 65, 80),
-    color      = COL_MARBLE,
-    castShadow = true,
-    parent     = vis("RAL_NorthThrone_Atomic"),
-})
-
--- CrownSpawn anchor (used by CrownService to spawn crown)
-local crownSpawnPart = makePart({
-    name        = "CrownSpawn",
-    size        = Vector3.new(1, 1, 1),
-    cframe      = CFrame.new(0, 96, 0),
-    transparency= 1,
-    castShadow  = false,
-    parent      = workspace,
-})
-
--- 22 Ceremonial stair treads
--- Tread 1: (0, 52.25, 18)  Tread 22: (0, 62.75, 60)
-local STAIR_COUNT = 22
-local stairZStart, stairZEnd = 18, 60
-local stairYStart, stairYEnd = 52.25, 62.75
-for i = 1, STAIR_COUNT do
-    local t  = (i - 1) / (STAIR_COUNT - 1)
-    local sz = stairZStart + t * (stairZEnd - stairZStart)
-    local sy = stairYStart + t * (stairYEnd - stairYStart)
-    makePart({
-        name       = "RAL_Stair_" .. i .. "_COL",
-        size       = Vector3.new(20, 0.5, 2),
-        cframe     = CFrame.new(0, sy, sz),
-        canCollide = true,
-        canTouch   = true,
-        transparency=1,
-        parent     = col("RAL_NorthThrone_Atomic"),
-    })
-    makePart({
-        name       = "RAL_Stair_" .. i .. "_MSH",
-        size       = Vector3.new(20, 0.5, 2),
-        cframe     = CFrame.new(0, sy + 0.01, sz),
-        color      = COL_MARBLE,
-        castShadow = false,
-        parent     = vis("RAL_NorthThrone_Atomic"),
-    })
-end
-
--- Throne
-local throne = makeMeshPart({
-    name       = "RAL_Throne_A_MSH",
-    size       = Vector3.new(18, 18, 10),
-    cframe     = CFrame.new(0, 73.5, 98),
-    color      = COL_GOLD,
-    castShadow = true,
-    parent     = vis("RAL_NorthThrone_Atomic"),
-})
--- Throne backlights
-for _, xOff in ipairs({ -6, 6 }) do
-    local tl = makePart({
-        name        = "RAL_LGT_Throne_PL",
-        size        = Vector3.new(0.1, 0.1, 0.1),
-        cframe      = CFrame.new(xOff, 76, 100),
-        transparency= 1,
-        castShadow  = false,
-        parent      = vis("RAL_NorthThrone_Atomic"),
-    })
-    makePointLight({ brightness=1.2, range=14, color=COL_VIOLET, parent=tl })
-end
-
--- Founders Hall pad
-makePart({
-    name       = "RAL_FoundersHall_A_COL",
-    size       = Vector3.new(56, 4, 34),
-    cframe     = CFrame.new(-72, 70, 125),
-    canCollide = true,
-    transparency=1,
-    parent     = col("RAL_NorthThrone_Atomic"),
-})
-makePart({
-    name       = "RAL_FoundersHall_A_MSH",
-    size       = Vector3.new(56, 4, 34),
-    cframe     = CFrame.new(-72, 70.01, 125),
-    color      = COL_MARBLE,
-    castShadow = true,
-    parent     = vis("RAL_NorthThrone_Atomic"),
-})
-
--- Spectator wing pad
-makePart({
-    name       = "RAL_SpectatorWing_A_COL",
-    size       = Vector3.new(56, 4, 34),
-    cframe     = CFrame.new(72, 70, 125),
-    canCollide = true,
-    transparency=1,
-    parent     = col("RAL_NorthThrone_Atomic"),
-})
-makePart({
-    name       = "RAL_SpectatorWing_A_MSH",
-    size       = Vector3.new(56, 4, 34),
-    cframe     = CFrame.new(72, 70.01, 125),
-    color      = COL_MARBLE,
-    castShadow = true,
-    parent     = vis("RAL_NorthThrone_Atomic"),
-})
-
--------------------------------------------------
--- EAST/COMMERCE DISTRICT
--------------------------------------------------
-makePart({ name="RAL_EastBridge_A_COL",    size=Vector3.new(74,4,24),  cframe=CFrame.new(97,50,0),     canCollide=true, transparency=1, parent=col("RAL_EastCommerce_Atomic") })
-makePart({ name="RAL_EastBridge_A_MSH",    size=Vector3.new(74,4,24),  cframe=CFrame.new(97,50.01,0),  color=COL_MARBLE, castShadow=true, parent=vis("RAL_EastCommerce_Atomic") })
-
--- Shop Cathedral pad (cylinder)
-local shopPad = makePart({ name="RAL_ShopCathedral_A_COL", size=Vector3.new(4,72,72), cframe=CFrame.new(170,50,0)*CFrame.Angles(0,0,math.pi/2), canCollide=true, transparency=1, parent=col("RAL_EastCommerce_Atomic") })
-shopPad.Shape = Enum.PartType.Cylinder
-local shopVis = makePart({ name="RAL_ShopCathedral_A_MSH", size=Vector3.new(4.02,72,72), cframe=CFrame.new(170,50.01,0)*CFrame.Angles(0,0,math.pi/2), color=COL_MARBLE, castShadow=true, parent=vis("RAL_EastCommerce_Atomic") })
-shopVis.Shape = Enum.PartType.Cylinder
-
-makePart({ name="RAL_SkinShowcase_A_COL",  size=Vector3.new(44,4,28),  cframe=CFrame.new(220,50,70),   canCollide=true, transparency=1, parent=col("RAL_EastCommerce_Atomic") })
-makePart({ name="RAL_SkinShowcase_A_MSH",  size=Vector3.new(44,4,28),  cframe=CFrame.new(220,50.01,70),color=COL_MARBLE, castShadow=true, parent=vis("RAL_EastCommerce_Atomic") })
-
--- Reward wheel alcove
-local rwCol = makePart({ name="RAL_RewardWheel_A_COL", size=Vector3.new(4,24,24), cframe=CFrame.new(145,50,-55)*CFrame.Angles(0,0,math.pi/2), canCollide=true, transparency=1, parent=col("RAL_EastCommerce_Atomic") })
-rwCol.Shape = Enum.PartType.Cylinder
-local rwVis = makePart({ name="RAL_RewardWheel_A_MSH", size=Vector3.new(4.02,24,24), cframe=CFrame.new(145,50.01,-55)*CFrame.Angles(0,0,math.pi/2), color=COL_MARBLE, castShadow=true, parent=vis("RAL_EastCommerce_Atomic") })
-rwVis.Shape = Enum.PartType.Cylinder
--- Wheel face disc (animated)
-local wheelDisc = makePart({
-    name        = "RAL_RewardWheelDisc_A_MSH",
-    size        = Vector3.new(0.3, 22, 22),
-    cframe      = CFrame.new(145, 53, -55) * CFrame.Angles(0, 0, math.pi/2),
-    color       = COL_GOLD,
-    material    = Enum.Material.Neon,
-    transparency= 0.1,
-    castShadow  = false,
-    parent      = vis("RAL_EastCommerce_Atomic"),
-})
-wheelDisc.Shape = Enum.PartType.Cylinder
-CollectionService:AddTag(wheelDisc, "RAL_RewardWheel")
-
--------------------------------------------------
--- WEST/WAR DISTRICT
--------------------------------------------------
-makePart({ name="RAL_WestBridge_A_COL",    size=Vector3.new(74,4,24),  cframe=CFrame.new(-97,50,0),    canCollide=true, transparency=1, parent=col("RAL_WestWar_Atomic") })
-makePart({ name="RAL_WestBridge_A_MSH",    size=Vector3.new(74,4,24),  cframe=CFrame.new(-97,50.01,0), color=COL_MARBLE, castShadow=true, parent=vis("RAL_WestWar_Atomic") })
-
-local guildCol = makePart({ name="RAL_GuildChamber_A_COL", size=Vector3.new(4,72,72), cframe=CFrame.new(-170,50,0)*CFrame.Angles(0,0,math.pi/2), canCollide=true, transparency=1, parent=col("RAL_WestWar_Atomic") })
-guildCol.Shape = Enum.PartType.Cylinder
-local guildVis = makePart({ name="RAL_GuildChamber_A_MSH", size=Vector3.new(4.02,72,72), cframe=CFrame.new(-170,50.01,0)*CFrame.Angles(0,0,math.pi/2), color=COL_MARBLE, castShadow=true, parent=vis("RAL_WestWar_Atomic") })
-guildVis.Shape = Enum.PartType.Cylinder
-
-makePart({ name="RAL_LeaderboardWall_A_MSH", size=Vector3.new(36,18,2), cframe=CFrame.new(-145,59,55), color=COL_ONYX, castShadow=true, parent=vis("RAL_WestWar_Atomic") })
-makePart({ name="RAL_EventWall_A_MSH",       size=Vector3.new(28,16,2), cframe=CFrame.new(-145,58,-55), color=COL_ONYX, castShadow=true, parent=vis("RAL_WestWar_Atomic") })
-
--------------------------------------------------
--- SOUTH/GATE DISTRICT
--------------------------------------------------
-makePart({ name="RAL_SouthBridge_A_COL",   size=Vector3.new(80,4,26),  cframe=CFrame.new(0,50,-100),   canCollide=true, transparency=1, parent=col("RAL_SouthGate_Atomic") })
-makePart({ name="RAL_SouthBridge_A_MSH",   size=Vector3.new(80,4,26),  cframe=CFrame.new(0,50.01,-100),color=COL_MARBLE, castShadow=true, parent=vis("RAL_SouthGate_Atomic") })
-
-makePart({ name="RAL_SouthGatePad_A_COL",  size=Vector3.new(96,4,56),  cframe=CFrame.new(0,50,-170),   canCollide=true, transparency=1, parent=col("RAL_SouthGate_Atomic") })
-makePart({ name="RAL_SouthGatePad_A_MSH",  size=Vector3.new(96,4,56),  cframe=CFrame.new(0,50.01,-170),color=COL_MARBLE, castShadow=true, parent=vis("RAL_SouthGate_Atomic") })
-
-makePart({ name="RAL_EastSouthConn_A_COL", size=Vector3.new(60,4,22),  cframe=CFrame.new(78,50,-170),  canCollide=true, transparency=1, parent=col("RAL_SouthGate_Atomic") })
-makePart({ name="RAL_EastSouthConn_A_MSH", size=Vector3.new(60,4,22),  cframe=CFrame.new(78,50.01,-170),color=COL_MARBLE, castShadow=true, parent=vis("RAL_SouthGate_Atomic") })
-makePart({ name="RAL_WestSouthConn_A_COL", size=Vector3.new(60,4,22),  cframe=CFrame.new(-78,50,-170), canCollide=true, transparency=1, parent=col("RAL_SouthGate_Atomic") })
-makePart({ name="RAL_WestSouthConn_A_MSH", size=Vector3.new(60,4,22),  cframe=CFrame.new(-78,50.01,-170),color=COL_MARBLE, castShadow=true, parent=vis("RAL_SouthGate_Atomic") })
-
--- Ranked portals
-local PORTAL_POS = {
-    Vector3.new(-14, 58, -147),
-    Vector3.new(  0, 58, -147),
-    Vector3.new( 14, 58, -147),
-}
-for i, pos in ipairs(PORTAL_POS) do
-    local pv = makePart({
-        name        = "RAL_RankedPortal_" .. i .. "_MSH",
-        size        = Vector3.new(10, 16, 4),
-        cframe      = CFrame.new(pos),
-        color       = COL_VIOLET,
-        material    = Enum.Material.Neon,
-        transparency= 0.2,
-        castShadow  = false,
-        parent      = vis("RAL_SouthGate_Atomic"),
-    })
-    CollectionService:AddTag(pv, "RAL_PortalGlyph")
-    local pl = makePart({ name="RAL_LGT_Portal_"..i.."_PL", size=Vector3.new(0.1,0.1,0.1), cframe=CFrame.new(pos), transparency=1, castShadow=false, parent=vis("RAL_SouthGate_Atomic") })
-    makePointLight({ brightness=1.8, range=10, color=Color3.fromRGB(125,43,255), parent=pl })
-end
-
--- Arena gate
-makeMeshPart({
-    name       = "RAL_ArenaGate_A_MSH",
-    size       = Vector3.new(64, 48, 12),
-    cframe     = CFrame.new(0, 74, -198),
-    color      = COL_ONYX,
-    castShadow = true,
-    parent     = vis("RAL_SouthGate_Atomic"),
-})
-
--------------------------------------------------
--- SOUTHEAST TRAINING
--------------------------------------------------
-local trainingCol = makePart({ name="RAL_TrainingArena_A_COL", size=Vector3.new(4,64,64), cframe=CFrame.new(140,47,-170)*CFrame.Angles(0,0,math.pi/2), canCollide=true, transparency=1, parent=col("RAL_SoutheastTraining_Atomic") })
-trainingCol.Shape = Enum.PartType.Cylinder
-local trainingVis = makePart({ name="RAL_TrainingArena_A_MSH", size=Vector3.new(4.02,64,64), cframe=CFrame.new(140,47.01,-170)*CFrame.Angles(0,0,math.pi/2), color=COL_MARBLE, castShadow=true, parent=vis("RAL_SoutheastTraining_Atomic") })
-trainingVis.Shape = Enum.PartType.Cylinder
-
--------------------------------------------------
--- SOUTHWEST PROGRESSION
--------------------------------------------------
-makePart({ name="RAL_BattlePassHall_A_COL", size=Vector3.new(72,4,48), cframe=CFrame.new(-140,47,-170), canCollide=true, transparency=1, parent=col("RAL_SouthwestProgression_Atomic") })
-makePart({ name="RAL_BattlePassHall_A_MSH", size=Vector3.new(72,4,48), cframe=CFrame.new(-140,47.01,-170), color=COL_MARBLE, castShadow=true, parent=vis("RAL_SouthwestProgression_Atomic") })
-
--------------------------------------------------
--- VFX ATTACHMENTS + PARTICLES
--------------------------------------------------
-local vfxRoot = makeFolder("VFX_Attachments", lobbyRoot)
-
--- Helper: place attachment on a small invisible anchor Part
-local function makeVFXAnchor(name, position, parent)
-    local anchor = makePart({
-        name        = name .. "_Anchor",
-        size        = Vector3.new(0.1,0.1,0.1),
-        cframe      = CFrame.new(position),
-        transparency= 1, castShadow=false,
-        parent      = parent or vfxRoot,
-    })
-    return makeAttachment(name, Vector3.new(0,0,0), anchor)
-end
-
--- Corruption mist (4 cardinal attachments at ring radius 13, Y 52.8)
-local MIST_ANGLES = {0, math.pi/2, math.pi, math.pi*1.5}
-for i, angle in ipairs(MIST_ANGLES) do
-    local att = makeVFXAnchor("RAL_VFX_CorruptionMist_0" .. i .. "_ATT",
-        Vector3.new(math.cos(angle)*13, 52.8, math.sin(angle)*13))
-    makeParticle({
-        rate=8, lifetimeMin=2.5, lifetimeMax=4.0, speedMin=0.8, speedMax=1.8,
-        spreadAngle=Vector2.new(20,20), lightEmission=0.35, drag=2,
-        color=ColorSequence.new(COL_VIOLET),
-        sizeStart=0.8, sizePeak=1.8,
-        parent=att,
-    })
-end
-
--- Rune sparks (16 around radius 15, Y 52.7) — burst pattern
-for i = 1, 16 do
-    local angle = (i-1) * (math.pi*2/16)
-    local att = makeVFXAnchor("RAL_VFX_RuneSparks_" .. string.format("%02d",i) .. "_ATT",
-        Vector3.new(math.cos(angle)*15, 52.7, math.sin(angle)*15))
-    local sp = makeParticle({
-        rate=0, lifetimeMin=0.45, lifetimeMax=0.75, speedMin=3, speedMax=6,
-        rotSpeed=NumberRange.new(-120,120),
-        lightEmission=0.8,
-        color=ColorSequence.new(COL_PURPLE),
-        sizeStart=0.15, sizePeak=0.35,
-        enabled=false,
-        parent=att,
-    })
-    -- Burst loop
-    local delay = (i-1) * 0.1
-    task.delay(delay, function()
-        while true do
-            sp.Enabled = true
-            task.wait(0.1)
-            sp.Enabled = false
-            task.wait(math.random() * 0.4 + 1.8)
-        end
-    end)
-end
-
--- Crown motes
-local crownAtt = makeVFXAnchor("RAL_CrownMote_01_ATT", Vector3.new(0, 90, 0))
-makeParticle({
-    rate=10, lifetimeMin=1.2, lifetimeMax=2.0, speedMin=0.2, speedMax=0.8,
-    lightEmission=0.6,
-    color=ColorSequence.new(COL_GOLD),
-    sizeStart=0.15, sizePeak=0.35,
-    parent=crownAtt,
-})
-
--- Chandelier dust (4)
-for i, pos in ipairs(CHANDELIER_POS) do
-    local att = makeVFXAnchor("RAL_VFX_ChandelierDust_0" .. i .. "_ATT",
-        pos + Vector3.new(0, -8, 0))
-    makeParticle({
-        rate=2, lifetimeMin=3, lifetimeMax=5, speedMin=0.1, speedMax=0.3,
-        lightEmission=0,
-        color=ColorSequence.new(Color3.fromRGB(200,190,160)),
-        sizeStart=0.1, sizePeak=0.2,
-        parent=att,
-    })
-end
-
--- Storm streaks (8 outer ring at Y=118)
-for i = 1, 8 do
-    local angle = (i-1) * (math.pi*2/8)
-    local att = makeVFXAnchor("RAL_VFX_StormStreak_0" .. i .. "_ATT",
-        Vector3.new(math.cos(angle)*72, 118, math.sin(angle)*72))
-    makeParticle({
-        rate=2, lifetimeMin=1.8, lifetimeMax=2.4, speedMin=6, speedMax=10,
-        spreadAngle=Vector2.new(12,12), lightEmission=0.6,
-        color=ColorSequence.new(COL_PURPLE),
-        sizeStart=0.1, sizePeak=0.25,
-        parent=att,
-    })
-end
-
--- Abyss drift (12 around outer edge underside)
-for i = 1, 12 do
-    local angle = (i-1) * (math.pi*2/12)
-    local att = makeVFXAnchor("RAL_VFX_AbyssDrift_" .. string.format("%02d",i) .. "_ATT",
-        Vector3.new(math.cos(angle)*58, 48, math.sin(angle)*58))
-    makeParticle({
-        rate=1.5, lifetimeMin=4, lifetimeMax=7, speedMin=0.2, speedMax=0.6,
-        lightEmission=0,
-        color=ColorSequence.new(Color3.fromRGB(40,20,60)),
-        sizeStart=0.5, sizePeak=1.2,
-        parent=att,
-    })
+local vfxRoot = vfx("RAL_Core_Persistent")
+for _, pos in ipairs({
+    Vector3.new( 12, 53.4,   0),
+    Vector3.new(-12, 53.4,   0),
+    Vector3.new(  0, 53.4,  12),
+    Vector3.new(  0, 53.4, -12),
+}) do
+    makeParticle(makeAttachmentAnchor("RAL_VFX_CorruptionMist_ATT", pos, vfxRoot), COLORS.VIOLET, 3, 1.2)
 end
 
 -------------------------------------------------
--- GLOBAL LIGHTING
+-- LIGHTING  (Master V3 anti-reflective settings)
 -------------------------------------------------
-Lighting.Brightness              = 2.2
-Lighting.ExposureCompensation    = 0.05
+pcall(function() Lighting.Technology               = Enum.Technology.Future       end)
+pcall(function() Lighting.LightingStyle            = Enum.LightingStyle.Realistic  end)
+pcall(function() Lighting.PrioritizeLightingQuality= true                          end)
+
+Lighting.Brightness              = 1.1
+Lighting.ExposureCompensation    = 0
 Lighting.GlobalShadows           = true
 Lighting.ShadowSoftness          = 0.18
 Lighting.ClockTime               = 21.4
-Lighting.GeographicLatitude      = 41
-Lighting.Ambient                 = Color3.fromRGB(18, 18, 24)
-Lighting.OutdoorAmbient          = Color3.fromRGB(38, 42, 52)
-Lighting.ColorShift_Top          = Color3.fromRGB(18, 8, 36)
-Lighting.ColorShift_Bottom       = Color3.fromRGB(6, 0, 18)
-Lighting.EnvironmentDiffuseScale = 0.35
-Lighting.EnvironmentSpecularScale= 1.0
-Lighting.FogColor                = Color3.fromRGB(112, 104, 144)
-Lighting.FogStart                = 200
-Lighting.FogEnd                  = 500
+Lighting.Ambient                 = Color3.fromRGB(30,  24,  40)
+Lighting.OutdoorAmbient          = Color3.fromRGB(20,  16,  30)
+Lighting.ColorShift_Bottom       = Color3.fromRGB(40,  20,  80)
+Lighting.ColorShift_Top          = Color3.fromRGB(55,  45,  90)
+Lighting.EnvironmentSpecularScale= 0.08
+Lighting.EnvironmentDiffuseScale = 0.25
+Lighting.FogColor                = Color3.fromRGB(42,  26,  74)
+Lighting.FogStart                = 80
+Lighting.FogEnd                  = 260
 
--- Remove any existing atmosphere/effects first
-for _, child in Lighting:GetChildren() do
+for _, child in ipairs(Lighting:GetChildren()) do
     if child:IsA("Atmosphere") or child:IsA("BloomEffect")
-       or child:IsA("ColorCorrectionEffect") or child:IsA("DepthOfFieldEffect") then
+    or child:IsA("ColorCorrectionEffect") or child:IsA("DepthOfFieldEffect") then
         child:Destroy()
     end
 end
 
-local atmo = Instance.new("Atmosphere")
-atmo.Density   = 0.24
-atmo.Offset    = 0.15
-atmo.Color     = Color3.fromRGB(112, 104, 144)
-atmo.Decay     = Color3.fromRGB(76, 68, 112)
-atmo.Glare     = 0.05
-atmo.Haze      = 1.4
-atmo.Parent    = Lighting
+local atmosphere      = Instance.new("Atmosphere")
+atmosphere.Density    = 0.35
+atmosphere.Offset     = 0.1
+atmosphere.Color      = Color3.fromRGB(42, 26, 74)
+atmosphere.Decay      = Color3.fromRGB(22, 12, 44)
+atmosphere.Glare      = 0.04
+atmosphere.Haze       = 1.8
+atmosphere.Parent     = Lighting
 
-local bloom = Instance.new("BloomEffect")
-bloom.Intensity  = 0.65
-bloom.Size       = 48
-bloom.Threshold  = 0.90
-bloom.Parent     = Lighting
+local bloom           = Instance.new("BloomEffect")
+bloom.Intensity       = 0.45
+bloom.Size            = 32
+bloom.Threshold       = 1.0
+bloom.Parent          = Lighting
 
-local cc = Instance.new("ColorCorrectionEffect")
-cc.Brightness = 0.01
-cc.Contrast   = 0.12
-cc.Saturation = -0.02
-cc.TintColor  = Color3.fromRGB(230, 225, 255)
-cc.Parent     = Lighting
+local correction          = Instance.new("ColorCorrectionEffect")
+correction.Brightness     = 0
+correction.Contrast       = 0.1
+correction.Saturation     = -0.03
+correction.TintColor      = Color3.fromRGB(230, 225, 255)
+correction.Parent         = Lighting
 
 -------------------------------------------------
--- ANIMATIONS (RunService.Heartbeat)
+-- ANIMATION  (all on server Heartbeat)
 -------------------------------------------------
-local t = 0
-local crownBaseCFrame = CFrame.new(0, 90, 0)
+local timeAcc  = 0
+local crownSpin= 0
 
 RunService.Heartbeat:Connect(function(dt)
-    t = t + dt
+    timeAcc   += dt
+    crownSpin += math.rad(8) * dt
 
-    -- Corruption ring: 8 deg/s clockwise (Y axis)
-    for _, part in CollectionService:GetTagged("RAL_CorruptionRing") do
-        if part and part.Parent then
-            part.CFrame = part.CFrame * CFrame.Angles(0, math.rad(8) * dt, 0)
+    for _, part in ipairs(CollectionService:GetTagged("RAL_CorruptionRing")) do
+        if part.Parent then
+            part.CFrame *= CFrame.Angles(0, math.rad(16) * dt, 0)
         end
     end
 
-    -- Crown: counter-rotate 4 deg/s + 0.6 stud bob on 4.5s sine
-    for _, part in CollectionService:GetTagged("RAL_Crown") do
-        if part and part.Parent then
-            local bobY = 0.6 * math.sin((2 * math.pi * t) / 4.5)
-            part.CFrame = CFrame.new(0, 90 + bobY, 0)
-                * CFrame.Angles(0, math.rad(-4) * dt, 0)
-                * CFrame.Angles(0, part.CFrame:ToEulerAnglesXYZ(), 0)
+    for _, part in ipairs(CollectionService:GetTagged("RAL_Crown")) do
+        if part.Parent then
+            part.CFrame = CFrame.new(0, 83 + math.sin(timeAcc * 1.4) * 0.35, 0) * CFrame.Angles(0, crownSpin, 0)
         end
     end
 
-    -- Corruption beam pulse: brightness oscillates on 6s cycle
-    for _, part in CollectionService:GetTagged("RAL_BeamPulse") do
-        if part and part.Parent then
-            part.Transparency = 0.15 + 0.2 * math.abs(math.sin(math.pi * t / 6.0))
+    for _, part in ipairs(CollectionService:GetTagged("RAL_BeamPulse")) do
+        if part.Parent then
+            part.Transparency = 0.05 + math.abs(math.sin(timeAcc)) * 0.18
         end
     end
 
-    -- Banners: 2.5 deg amplitude, 3.5s period, per-banner phase offsets
-    local banners = CollectionService:GetTagged("RAL_Banner")
-    for i, part in ipairs(banners) do
-        if part and part.Parent then
-            local phase = (i - 1) * 0.785  -- ~45 deg phase steps
-            local sway  = math.rad(2.5) * math.sin((2 * math.pi * t / 3.5) + phase)
-            local orig  = CFrame.new(part.Position)
-            part.CFrame = orig * CFrame.Angles(0, sway, 0)
+    for _, part in ipairs(CollectionService:GetTagged("RAL_Banner")) do
+        if part.Parent then
+            part.CFrame *= CFrame.Angles(0, math.sin(timeAcc * 0.8) * math.rad(0.04), 0)
         end
     end
 
-    -- Portal glyphs: 12 deg/s
-    for _, part in CollectionService:GetTagged("RAL_PortalGlyph") do
-        if part and part.Parent then
-            part.CFrame = part.CFrame * CFrame.Angles(0, math.rad(12) * dt, 0)
-        end
-    end
-
-    -- Reward wheel idle: 3 deg/s
-    for _, part in CollectionService:GetTagged("RAL_RewardWheel") do
-        if part and part.Parent then
-            part.CFrame = part.CFrame * CFrame.Angles(0, math.rad(3) * dt, 0)
+    for _, part in ipairs(CollectionService:GetTagged("RAL_RewardWheel")) do
+        if part.Parent then
+            part.CFrame *= CFrame.Angles(0, 0, math.rad(18) * dt)
         end
     end
 end)
 
--- Announce crown proximity to players (integrates with CrownService)
--- CrownService already looks for workspace.CrownSpawn — now it exists.
-
-print("[CrownChaos] WorkspaceSetup: Royal Ascension Lobby built successfully.")
-print("[CrownChaos]   Districts:  " .. #DISTRICTS)
-print("[CrownChaos]   Pillars:    8")
-print("[CrownChaos]   Stairs:     " .. STAIR_COUNT)
-print("[CrownChaos]   Portals:    3")
+print("[CrownChaos] WorkspaceSetup: Royal Ascension Lobby V3 master built.")
+print("[CrownChaos]   Footprint: 96 x 96 studs | Ceiling: 28 studs | Neon: route/portal/hub only")

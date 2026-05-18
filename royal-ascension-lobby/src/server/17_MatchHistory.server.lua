@@ -159,7 +159,7 @@ Bindables.RoundEnd.Event:Connect(function(winner)
 end)
 
 -------------------------------------------------
--- MATCH HISTORY WALL  (West district: 28×16×2 at (-145,58,-55))
+-- MATCH HISTORY WALL  (East district RAL_MatchHistoryWall at (46.5,57,-18) — compact V3)
 -------------------------------------------------
 task.spawn(function()
     task.wait(14)
@@ -168,8 +168,8 @@ task.spawn(function()
     if not wallPart then
         wallPart = Instance.new("Part")
         wallPart.Name        = "RAL_MatchHistoryWall"
-        wallPart.Size        = Vector3.new(0.5, 16, 28)
-        wallPart.CFrame      = CFrame.new(-145, 58, -55)
+        wallPart.Size        = Vector3.new(1, 8, 14)
+        wallPart.CFrame      = CFrame.new(46.5, 57, -18)
         wallPart.Anchored    = true
         wallPart.CanCollide  = false
         wallPart.Color       = Color3.fromRGB(15, 16, 22)

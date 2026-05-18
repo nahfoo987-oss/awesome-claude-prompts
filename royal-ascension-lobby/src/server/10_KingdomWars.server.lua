@@ -36,7 +36,7 @@ local TICK_INTERVAL = 1     -- award 1 pt per second
 
 -------------------------------------------------
 -- LEADERBOARD WALL BUILD
--- West district leaderboard wall: 36×18×2 at (-145,59,55)
+-- East district wall RAL_LeaderboardWall at (46.5,58,18) — compact V3 layout
 -------------------------------------------------
 local wallPart = nil
 task.spawn(function()
@@ -44,11 +44,11 @@ task.spawn(function()
     task.wait(12)
     wallPart = workspace:FindFirstChild("RAL_LeaderboardWall", true)
     if not wallPart then
-        -- Create a simple backing part if WorkspaceSetup didn't name it explicitly
+        -- Fallback backing part matching V3 east wall position
         wallPart = Instance.new("Part")
         wallPart.Name        = "RAL_KingdomBoard"
-        wallPart.Size        = Vector3.new(0.5, 18, 36)
-        wallPart.CFrame      = CFrame.new(-145, 59, 55)
+        wallPart.Size        = Vector3.new(1, 10, 18)
+        wallPart.CFrame      = CFrame.new(46.5, 58, 18)
         wallPart.Anchored    = true
         wallPart.CanCollide  = false
         wallPart.CastShadow  = false

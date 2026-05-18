@@ -1,5 +1,5 @@
 -- RewardWheel | ServerScriptService
--- ProximityPrompt on wheel disc at (145,53,-55).
+-- ProximityPrompt on wheel disc at (18,56,34) — compact V3 layout.
 -- Daily cooldown per player. Server picks prize, fires result after spin delay.
 
 local Players           = game:GetService("Players")
@@ -79,7 +79,7 @@ task.spawn(function()
         wheelPart.Name        = "RAL_RewardWheel_Disc"
         wheelPart.Shape       = Enum.PartType.Cylinder
         wheelPart.Size        = Vector3.new(1, 24, 24)
-        wheelPart.CFrame      = CFrame.new(145, 53, -55) * CFrame.Angles(0, 0, math.pi/2)
+        wheelPart.CFrame      = CFrame.new(18, 56, 34) * CFrame.Angles(0, math.pi / 2, 0)
         wheelPart.Anchored    = true
         wheelPart.CanCollide  = false
         wheelPart.Color       = Color3.fromRGB(120, 40, 200)
@@ -92,7 +92,7 @@ task.spawn(function()
     local pedestal = Instance.new("Part")
     pedestal.Name       = "RAL_WheelPedestal"
     pedestal.Size       = Vector3.new(6, 2, 6)
-    pedestal.CFrame     = CFrame.new(145, 50.5, -55)
+    pedestal.CFrame     = CFrame.new(18, 53.5, 34)
     pedestal.Anchored   = true
     pedestal.CanCollide = true
     pedestal.Color      = Color3.fromRGB(25, 20, 40)

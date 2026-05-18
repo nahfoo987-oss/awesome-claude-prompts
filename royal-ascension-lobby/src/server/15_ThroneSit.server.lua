@@ -1,5 +1,5 @@
 -- ThroneSit | ServerScriptService
--- ProximityPrompt on throne at (0,73.5,98).
+-- ProximityPrompt on throne at (0,56,14) — compact V3 layout.
 -- Requires Robux gamepass ownership. Broadcasts a royal sit event to all clients.
 
 local Players              = game:GetService("Players")
@@ -50,7 +50,7 @@ task.spawn(function()
         throne = Instance.new("Part")
         throne.Name       = "RAL_Throne_Placeholder"
         throne.Size       = Vector3.new(8, 5, 8)
-        throne.CFrame     = CFrame.new(0, 73.5, 98)
+        throne.CFrame     = CFrame.new(0, 56, 14)
         throne.Anchored   = true
         throne.CanCollide = false
         throne.Color      = Color3.fromRGB(80, 64, 24)
@@ -118,7 +118,7 @@ task.spawn(function()
         if char then
             local root = char:FindFirstChild("HumanoidRootPart")
             if root then
-                root.CFrame = CFrame.new(0, 75.5, 96) * CFrame.Angles(0, math.pi, 0)
+                root.CFrame = throne.CFrame * CFrame.new(0, 5, -2) * CFrame.Angles(0, math.pi, 0)
             end
             -- Apply sit state
             local hum = char:FindFirstChildOfClass("Humanoid")

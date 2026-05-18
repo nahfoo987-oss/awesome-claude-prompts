@@ -49,7 +49,7 @@ end)
 
 -------------------------------------------------
 -- TROPHY WALL SETUP
--- South gate archway at (0,74,-198) — horizontal strip on archway face
+-- Trophy strip on east wall at (0,61,-46.2) — compact V3 layout
 -------------------------------------------------
 local trophyWallSG = nil
 
@@ -63,8 +63,8 @@ local function buildTrophyWall()
     else
         wallPart = Instance.new("Part")
         wallPart.Name        = "RAL_TrophyStrip"
-        wallPart.Size        = Vector3.new(0.3, 6, 60)
-        wallPart.CFrame      = CFrame.new(0, 76, -198)
+        wallPart.Size        = Vector3.new(14, 6, 0.3)
+        wallPart.CFrame      = CFrame.new(0, 61, -46.2)
         wallPart.Anchored    = true
         wallPart.CanCollide  = false
         wallPart.Transparency= 0.98

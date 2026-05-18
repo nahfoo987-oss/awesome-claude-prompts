@@ -14,40 +14,40 @@ local FounderSlots = DataStoreService:GetOrderedDataStore(DATASTORE_NAME)
 local FounderData  = DataStoreService:GetDataStore("FounderPlayerData_v1")
 
 -------------------------------------------------
--- PLAQUE WALL — built in Founders Hall pad
--- Position: (-72, 70, 125) per blueprint
+-- PLAQUE WALL — compact V3, inside RAL_NorthThrone_Atomic
+-- Founders Hall panel at (-28, 58, 40), wall faces south (+Z)
 -------------------------------------------------
 local PLAQUE_ROWS  = 10
 local PLAQUE_COLS  = 10
-local PLAQUE_SIZE  = Vector3.new(5, 1.8, 0.25)
-local PLAQUE_START = Vector3.new(-72 - 22, 71.5, 125 - 14)  -- top-left corner of wall
-local PLAQUE_GAP_X = 5.2
-local PLAQUE_GAP_Y = 2.1
+local PLAQUE_SIZE  = Vector3.new(3.6, 1.15, 0.18)
+local PLAQUE_START = Vector3.new(-43.1, 64.2, 39.2)  -- top-left corner
+local PLAQUE_GAP_X = 3.8
+local PLAQUE_GAP_Y = 1.3
 
 local plaqueWallModel = Instance.new("Model")
 plaqueWallModel.Name   = "RAL_FounderPlaqueWall"
 plaqueWallModel.Parent = workspace
 
 -- Guardian statue placeholders (either side)
-for _, xOffset in ipairs({ -26, 26 }) do
+for _, xOffset in ipairs({ -22, 22 }) do
     local statue = Instance.new("MeshPart")
-    statue.Name            = "RAL_GuardianStatue_MSH"
-    statue.Size            = Vector3.new(6, 16, 6)
-    statue.CFrame          = CFrame.new(-72 + xOffset, 78, 125)
-    statue.Color           = Color3.fromRGB(30, 28, 35)
-    statue.Material        = Enum.Material.SmoothPlastic
-    statue.Anchored        = true
-    statue.CanCollide      = false
-    statue.MeshId          = ""  -- replace with uploaded statue mesh ID
+    statue.Name              = "RAL_GuardianStatue_MSH"
+    statue.Size              = Vector3.new(4, 10, 4)
+    statue.CFrame            = CFrame.new(-28 + xOffset, 63, 39.5)
+    statue.Color             = Color3.fromRGB(30, 28, 35)
+    statue.Material          = Enum.Material.SmoothPlastic
+    statue.Anchored          = true
+    statue.CanCollide        = false
+    statue.MeshId            = ""  -- replace with uploaded statue mesh ID
     statue.CollisionFidelity = Enum.CollisionFidelity.Box
-    statue.Parent          = plaqueWallModel
+    statue.Parent            = plaqueWallModel
 end
 
 -- Wall backing
 local wallBack = Instance.new("Part")
 wallBack.Name        = "RAL_FounderWallBacking"
-wallBack.Size        = Vector3.new(55, 22, 0.5)
-wallBack.CFrame      = CFrame.new(-72, 74, 125 - 0.5)
+wallBack.Size        = Vector3.new(42, 16, 0.35)
+wallBack.CFrame      = CFrame.new(-28, 58, 39.5)
 wallBack.Color       = Color3.fromRGB(15, 16, 22)
 wallBack.Material    = Enum.Material.SmoothPlastic
 wallBack.Anchored    = true
