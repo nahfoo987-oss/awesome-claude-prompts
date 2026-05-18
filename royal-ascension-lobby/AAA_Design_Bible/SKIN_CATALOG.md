@@ -243,6 +243,173 @@ This document defines every cosmetic skin available at launch across four equipm
 
 ---
 
+## Hero Set — Onyx Sovereign
+
+> *This is the face of the game. Push it in every marketing asset, thumbnail, and trailer.*
+
+The **Onyx Sovereign** line is the first complete iconic set. It should be recognizable at a glance from across the arena.
+
+| Slot | id | Visual |
+|---|---|---|
+| Crown | `crown_onyx_sovereign` | Black onyx 8-blade crown, void center eye |
+| Body | `body_onyx_sovereign` | Black layered plate, gold edge trim |
+| Sword | `sword_onyx_sovereign_blade` | Black onyx blade, gold cross-guard |
+| Trail | `trail_onyx_throne_pulse` | Slow dark pulse rings, cold heartbeat |
+
+**Why this set works:**
+- Clear silhouette at distance — crown spikes, shoulder width, sword length
+- Black-gold contrast is readable at any render distance
+- Pulse aura communicates "dangerous player holding power" without noise
+- All four slots share the same lore identity (Onyx Court)
+
+Set bonus (future): equipping all 4 triggers a combined idle animation — the void center eye of the crown opens, the pulse rings sync to heartbeat, the sword edge darkens.
+
+---
+
+## Meme / Viral Skins
+
+> *Contrast is what makes the serious skins feel serious. These should be intentionally absurd — but never cheap.*
+> *Limited availability. No Robux pricing. Coin-only or event-exclusive.*
+
+### Crown — Chaos Tier
+
+| id | Name | Description | Unlock | Cost |
+|---|---|---|---|---|
+| `crown_cardboard_king` | Cardboard King | Cut from a cereal box and held together with determination and spite. | Crown Coins | 50 |
+| `crown_party_plastic` | Plastic Party Crown | Won at a child's birthday party. Somehow ended up here. | Event (Birthday Season) | Free |
+| `crown_traffic_cone` | Traffic Cone | Nobody was using it. | Crown Coins | 75 |
+| `crown_broken_halo` | Broken Halo | The halo snapped in half a long time ago. You kept wearing it anyway. | Achievement: Die 100 times | Free |
+
+### Body — Chaos Tier
+
+| id | Name | Description | Unlock | Cost |
+|---|---|---|---|---|
+| `body_the_pretender` | The Pretender | Cardboard plate armor painted gold with a household brush. The paint is still wet. | Crown Coins | 100 |
+| `body_jester_revenant` | Jester Revenant | The royal fool outlived the king. Now the fool wears the crown. | Event (Eclipse Season) | Event reward |
+| `body_tax_collector` | The Tax Collector | Bureaucratic armor worn by men who were somehow more feared than soldiers. | Achievement: Steal crown 50 times | Free |
+
+### Sword — Chaos Tier
+
+| id | Name | Description | Unlock | Cost |
+|---|---|---|---|---|
+| `sword_giant_spoon` | The Judgment Spoon | It is large. It is a spoon. It wins arguments. | Crown Coins | 50 |
+| `sword_broken_signpost` | Broken Signpost | The sign used to say "EXIT." You are not taking the exit. | Crown Coins | 75 |
+| `sword_royal_ban_appeal` | Royal Ban Appeal | A document rolled tight and wielded with the fury of someone who feels misunderstood. | Achievement: Lose 200 rounds | Free |
+
+### Trail — Chaos Tier
+
+| id | Name | Description | Unlock | Cost |
+|---|---|---|---|---|
+| `trail_lag_aura` | Lag Aura | You teleport slightly. Just slightly. | Crown Coins | 50 |
+| `trail_missing_texture` | Missing Texture | The asset didn't load. It's a feature now. | Achievement: Play 500 matches | Free |
+| `trail_fake_admin` | Fake Admin Commands | Text floats around you. `:kick all`. `:god`. `:fly`. None of them work. | Event-exclusive | Event reward |
+
+---
+
+## Reactive Skins
+
+> *These skins change state during a match based on what the player is doing.*
+> *Reactive behavior is client-side visual only — no gameplay advantage.*
+
+### How Reactive Skins Work
+
+Each reactive skin has a **base state** and one or more **trigger states**. Triggers are driven by existing game events already firing from the server (crown hold time, kill streak, HP level, bandit mode).
+
+| Skin | Base State | Trigger | Reactive State |
+|---|---|---|---|
+| `crown_void_emperor` | Black void, low pulse | Holding crown 60+ seconds | Gold ring burns brighter, pulse rate doubles |
+| `body_violet_corruptor` | Violet veins at 20% brightness | Each elimination | Veins pulse full brightness for 3s |
+| `body_fallen_emperor` | Particle decay at low rate | HP below 30% | Armor fracture effect increases, faster decay |
+| `trail_violet_corruption` | Slow wisps | While in Bandit mode | Wisps turn crimson, speed triples |
+| `sword_void_arbiter` | Dark rune edge, slow pulse | After 5 eliminations in a round | Blade turns full void-black, runes animate |
+| `trail_the_last_kingdom` | Gold-black layered aura | Holding crown — live | Falling crown debris rate scales with hold time |
+
+### Implementation Note
+
+Reactive state changes are driven by `CollectionService` tags already applied by game systems:
+- `RAL_CrownHolder` — applied by CrownService when player picks up crown
+- `RAL_BanditMode` — applied by BanditSystem
+- `RAL_KillStreak_[n]` — applied by CrownService on eliminations
+
+Client-side `WeatherFX` or a new `ReactiveCosmetics.client.lua` reads these tags via `CollectionService:GetTagged()` and swaps particle/tween states locally.
+
+---
+
+## Evolution Skin — Ascendant King
+
+> *One skin. Five stages. Earned entirely through playing.*
+
+The **Ascendant King** is a progressive evolution cosmetic spanning the full body slot. It changes permanently as the player accumulates crown hold time across all matches (server-side stat tracked in DataStore).
+
+| Stage | Name | Trigger | Visual |
+|---|---|---|---|
+| 1 | Iron Claimant | Start | Dark iron plate, no glow, rough finish |
+| 2 | The Gilded | Hold crown 30 total min | Gold trim appears on shoulders and chest |
+| 3 | Crowned in Void | Hold crown 120 total min | Crown spikes extend, violet veins emerge |
+| 4 | Void Incarnate | Hold crown 300 total min | Armor partially dissolves, void core visible |
+| 5 | Ascendant King | Hold crown 600 total min | Full arena-presence: cape tears reality, aura unstable |
+
+- Unlocked at Stage 1 via Battle Pass Tier 10
+- Progress is permanent and survives seasons
+- Stage 5 is equivalent to Legendary tier visually
+- Each stage transition triggers a server-broadcast notification: *"[Player] has ascended to Stage 3 — Crowned in Void"*
+
+---
+
+## Prestige Flex — The Empty Throne
+
+> *The impossible cosmetic. Not the flashiest. The most terrifying.*
+
+| id | Name | Description | Rarity | Unlock | Visual |
+|---|---|---|---|---|---|
+| `body_the_empty_throne` | The Empty Throne | They searched every kingdom. Every ruin. Every grave. The throne was always empty. They finally understood why. | Prestige | Top 100 players at season end (leaderboard rank) | Crown floats above head. Body partially dissolves. Footsteps fracture floor tiles. Music muffles within 15 studs. Subtle black hole distortion warps nearby geometry. |
+
+**Design rules for The Empty Throne:**
+- NOT flashy. Terrifying.
+- Low particle count — the effect is *absence*, not excess
+- The muffled audio radius is the key read: players nearby hear the atmosphere shift
+- Floor fracture decals are client-side only, reset on respawn
+- One per season. Never sold. Never gifted.
+
+---
+
+## Seasonal Identity
+
+> *Each season changes the battle pass, map lighting, cosmetics, and atmosphere.*
+> *Seasons run 10 weeks. All seasonal cosmetics are obtainable only during that season's battle pass.*
+
+| Season | Name | Theme | Primary Color | Map Lighting Change | Exclusive Set |
+|---|---|---|---|---|---|
+| S1 | **Eclipse Season** | The sun failed. The void took its place. | Deep violet `#3D0070` | Atmosphere darkens, violet fog, no sun glare | Jester Revenant body, Eclipse Orbit trail |
+| S2 | **Cathedral Season** | The church fell. What replaced it is worse. | Marble white + crimson `#7A1B1B` | Dawn-amber wash, long cathedral shadows | Cathedral Knight body, Gilded Ruin crown |
+| S3 | **Abyss Season** | The floor dropped. The throne is still here. | Void black `#050505` | Near-zero ambient, bioluminescent accents only | Void Stalker body, Last Kingdom trail |
+| S4 | **Blood Moon Season** | It hasn't set in forty days. Nobody is asking questions. | Crimson `#8B0000` + iron | Full red tint, moon visible at noon | Bloodmetal Horns crown, Dusk Impaler sword |
+| S5 | **Frozen Throne Season** | A king was encased in ice mid-sentence. The crown is still warm. | White marble + steel blue | Snow particle overlay, pale blue ambient | Marble Regent body, Silver Verdict sword |
+
+---
+
+## Sound Identity
+
+> *Every rarity tier should be distinguishable by audio alone.*
+> *Sound design is a missed opportunity in almost every Roblox game. This is how we win it.*
+
+| Rarity | Equip Sound | Ambient Loop | Swing / Footstep |
+|---|---|---|---|
+| Common | Soft cloth/metal settle | None | Normal Roblox default |
+| Rare | Clean metallic ring, 0.3s | Faint resonance | Slightly heavier step |
+| Epic | Low bass hit + high shimmer, 0.5s | Subtle energy hum | Stone or dense metal |
+| Legendary | Deep bass pulse + reverb tail, 0.8s | Distinct low ambient | Floor vibration on step |
+| Mythic | Sub-bass drop, silence, then full resonance, 1.2s | Persistent aura tone (spatial, 3D) | Each step echoes once |
+
+**Specific sounds:**
+- Mythic crown equip: low bass pulse, single deep bell
+- Void sword swing: reality-tear / paper-rip layered with wind
+- Marble armor footstep: heavy stone click, short reverb
+- The Empty Throne aura: barely audible whisper loop, spatial falloff 15 studs
+- Ascendant King Stage 5: ambient crackling energy, pitch rises with hold time
+
+---
+
 ## Visual Style Notes for Art Team
 
 **Palette constraints (strictly enforced):**
