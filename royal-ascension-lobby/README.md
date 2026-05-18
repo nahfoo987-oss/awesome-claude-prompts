@@ -57,7 +57,8 @@ The lobby uses a small persistent core plus atomic side districts so the crown/t
 
 ## AI Reference Models
 
-- `artifacts/lobby_previews/ai_reference/LobbyStructure_AIRef_v1.fbx` — AI-generated lobby structure reference (FBX 7500, 29MB). Use as visual direction for pillar kit, arch spans, wall segments, corner towers, and gate frames. **Do not import directly into Studio** — clean up in Blender first (fix normals, retopologize, apply materials from the palette, snap pivots to grid).
+- `artifacts/lobby_previews/ai_reference/LobbyStructure_AIRef_v1.fbx` — AI-generated lobby structure reference (FBX 7500, 29MB, raw). Original 240k faces — do not import directly into Studio.
+- `artifacts/lobby_previews/ai_reference/LobbyStructure_AIRef_v1_clean.glb` — Decimated + scaled reference (GLB, 252KB, **use this one**). 12k faces, centered at origin, floor at Y=0, footprint X=84 × Z=100 studs (fits the 96×96 locked coordinate system). Import into Blender as shape reference for pillar kit, arch spans, wall segments, corner towers, and gate frames. Retopologize clean geo on top, apply V3 palette materials, snap pivots to grid, then export per-piece for Studio.
 
 ## Build Command
 
