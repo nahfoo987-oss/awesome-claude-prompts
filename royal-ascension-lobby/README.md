@@ -55,6 +55,10 @@ The lobby uses a small persistent core plus atomic side districts so the crown/t
 - Roblox/GLB reference: `artifacts/lobby_previews/master_v3/RoyalAscension_Lobby_MasterV3.glb`
 - Preview renders: `artifacts/lobby_previews/master_v3/RoyalAscension_Lobby_MasterV3_Hero.png`, `RoyalAscension_Lobby_MasterV3_Overview.png`, `RoyalAscension_Lobby_MasterV3_Districts.png`
 
+## AI Reference Models
+
+- `artifacts/lobby_previews/ai_reference/LobbyStructure_AIRef_v1.fbx` — AI-generated lobby structure reference (FBX 7500, 29MB). Use as visual direction for pillar kit, arch spans, wall segments, corner towers, and gate frames. **Do not import directly into Studio** — clean up in Blender first (fix normals, retopologize, apply materials from the palette, snap pivots to grid).
+
 ## Build Command
 
 ```bash
