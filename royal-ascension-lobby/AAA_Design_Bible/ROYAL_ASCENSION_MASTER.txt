@@ -1,0 +1,1252 @@
+ROYAL ASCENSION
+Lobby Design & Build Master Document
+Crown Chaos  ·  Production V3
+Floating Corrupted Royal Fortress  ·  96×96 Studs  ·  28-Stud Ceiling
+This document consolidates all design sessions: original spec, rebuild specification, material & texture system, Anime Awakening applied lessons, and lighting system. It is the single source of truth for the Royal Ascension lobby.
+1. Project Overview
+The Royal Ascension is the premium social lobby for Crown Chaos. It is a floating corrupted royal fortress suspended above an abyss, designed to make players feel like they are entering a serious competitive world built around status, spectacle, and the ambition to become king.
+1.1 Emotional Goals
+This game is serious.
+This world is huge.
+I want to become the king.
+Everything here feels expensive.
+1.2 Core Design Goals
+Make the lobby feel like a royal fortress hub — not a messy sculpture pile.
+One dominant center focal point, then 3–4 clearly separated wings.
+Symmetrical or near-symmetrical layout so players instantly understand where to go.
+Every key area visible from the spawn point — no navigation confusion.
+Avoid overloading with too many tall objects, thin pillars, or random diagonal neon bars.
+Every object must have a purpose: center, path, wing, landmark, portal, or decoration.
+No simulator clutter. No random bright kiosks. Every feature looks like part of the royal fortress.
+1.3 Implementation File
+Implemented in:
+src/server/08_WorkspaceSetup.server.lua  →  TheRoyalAscension_Lobby
+2. Master Dimensions & Layout
+2.1 Overall Footprint
+Property
+Value
+Notes
+Main lobby footprint
+96 × 96 studs
+Floor slab base
+Ceiling height
+28 studs
+Top of tallest walkable arch
+Center focal area
+24 × 24 studs
+Raised hub platform
+Main walkable ring width
+8 studs
+All main circulation paths
+Wing platform pads
+16 × 16 studs
+One per wing, 4 total
+Portal zone spacing
+16 studs
+Between major zones
+Min gap between objects
+6–8 studs
+Open walking clearance
+Outer wall thickness
+2 studs
+—
+Interior trim thickness
+1 stud
+—
+2.2 Foundation Parts
+Part
+Size (X×Y×Z studs)
+Material
+Notes
+Main floor slab
+96 × 1 × 96
+Dark basalt / SmoothPlastic
+Lay first. Matte, dark charcoal.
+Outer rim border
+96 × 0.5 × 2 (×4 edges)
+Gold trim
+2-stud gold frame around perimeter
+Central raised hub
+24 × 2 × 24
+Dark basalt
+Centered, 2 studs raised
+Spawn dais
+12 × 2 × 12
+Lighter charcoal / moonlit stone
+South of hub, violet sigil decal on top
+Throne base
+10 × 2 × 10
+Dark basalt + gold cap
+North of hub, offset 4 studs back
+Side platform pads
+16 × 1 × 16
+Dark basalt
+One per wing entrance, 4 total
+Stair blocks
+4 × 1 × 2 each
+Gold trim edge
+Max 3 steps per rise
+Support plinths
+4 × 2 × 4
+Near-black steel
+Corner accents only
+2.3 Walls & Shells
+Part
+Size
+Material
+Notes
+Outer wall segments
+16 × 24 × 2
+Near-black steel
+8 total around perimeter
+Corner buttresses
+6 × 24 × 6
+Dark basalt
+4 corners — structural mass
+Main arch frames
+14 × 18 × 2
+Gold trim
+Over each wing entrance
+Inner divider walls
+8 × 18 × 2
+Near-black steel
+Separate wing zones
+Gallery railings
+1 × 6 × 12
+Near-black steel
+Along elevated paths only
+Floor ribs / trim strips
+1 × 0.5 × 16
+Gold trim
+Every 8 studs on main paths
+2.4 Vertical Landmarks — Maximum 6–8 Total
+Part
+Size
+Material
+Count
+Crown beam (center)
+4 × 30 × 4
+Gold shell + violet neon core
+1 — dead center only
+Main corner towers
+4 × 26 × 4
+Dark basalt + gold cap
+4 — one per corner buttress
+Secondary wing towers
+3 × 18 × 3
+Near-black steel
+Max 4 — wing flanks only
+Accent spires
+2 × 12 × 2
+Near-black steel
+Max 4 — corner decorative
+Hanging banners
+2 × 10 × 1
+Deep crimson Fabric
+8 — near towers, not over paths
+Floating debris blocks
+1–3 × 1–3 × 1–3
+Cracked basalt
+6–10 scattered beyond floor edge
+2.5 Major Feature Frames
+Feature
+Frame Size
+Glow Color
+Position
+Shop Cathedral entrance
+14 × 16 × 2
+Gold + violet
+North wing
+Guild Hall entrance
+14 × 16 × 2
+Gold + crimson
+West wing
+Ranked Portal frame
+12 × 14 × 2
+Violet + pale blue
+East wing
+Training / Battle gate
+14 × 16 × 2
+Crimson + violet
+South wing
+Leaderboard wall
+18 × 10 × 1
+Gold highlight
+East wall interior
+Seasonal event wall
+14 × 8 × 1
+Crimson
+West wall interior
+Reward wheel base
+8 × 2 × 8
+Gold
+Near shop north
+Emote circle
+10-stud diameter
+Soft violet ring
+Open area near spawn
+3. Material & Texture System
+9 distinct surface types. Each has a different roughness, reflectance, and texture behavior. The variation between surfaces is what makes the lobby feel premium.
+3.1 Surface Material Definitions
+Surface 1 — Cracked Dark Marble
+Usage: Main floor · Central hub · Throne base · Stair treads
+Ancient, cold, cracked. Slight reflectance picks up violet neon glow without being shiny. Crack lines break up flatness and sell age.
+Property
+Value
+Roblox Material
+SmoothPlastic
+Part Color
+#1c1c1c
+Reflectance
+0.08
+Tile Size
+8 × 8 studs
+Roughness (PBR)
+0.75
+Metalness (PBR)
+0.0
+SurfaceAppearance layers:
+L1 — ColorMap: Dark cracked marble diffuse. Must show tonal variation across 96×96 surface.
+L2 — NormalMap: Stone crack normal, intensity 0.8. Crack depth visible at 20-stud range.
+L3 — Part.Color #1c1c1c pushes diffuse darker. Reflectance 0.08 catches neon bounce.
+Surface 2 — Rough Basalt Stone
+Usage: Fortress outer walls · Corner buttresses · Inner dividers · Wing chambers
+Heavier and coarser than the floor marble. Purely matte, pitted surface. No reflectance — stone absorbs light.
+Property
+Value
+Roblox Material
+Basalt (built-in)
+Part Color
+#141414
+Reflectance
+0.0 — fully matte
+Tile Size
+4 × 4 studs
+Roughness (PBR)
+0.95
+Metalness (PBR)
+0.0
+Notes:
+Use Roblox built-in Basalt material directly. Tint Part.Color to #141414. SurfaceAppearance here wastes GPU budget.
+Edge highlight trick: 0.5-stud SmoothPlastic strip at #1e1e1e with reflectance 0.05 on exposed wall edges — subtle worn-edge glint.
+Rivet detail: 0.5×0.5×0.5 SmoothPlastic cubes at panel corners in #1a1a1a.
+Surface 3 — Blackened Steel
+Usage: Support beams · Railings · Secondary towers · Gate frames · Chains
+Near-black metal with just enough reflectance to read as metal. Picks up purple and gold light bounces. Vertical brushed grain — looks forged, not cast.
+Property
+Value
+Roblox Material
+Metal
+Part Color
+#0e0e0e
+Reflectance
+0.12 (max)
+Tile Orientation
+2×4 portrait — vertical grain
+Roughness (PBR)
+0.55
+Metalness (PBR)
+0.85
+Roblox Metal material + #0e0e0e gives automatic metallic sheen in Future lighting — already premium with zero SurfaceAppearance.
+SurfaceAppearance upgrade: brushed metal diffuse, metalness 1.0, roughness 0.5. Tile portrait so grain runs vertically.
+Surface 4 — Muted Royal Gold / Aged Brass
+Usage: Arch frames · Crown beam shell · Stair edges · Rim borders · Trophy accents
+Not shiny yellow gold — aged, tarnished, heavy brass. Slight tonal variation across the surface is what sells it. Never use flat bright gold SmoothPlastic — it reads as a toy.
+Property
+Value
+Main Color
+#C7A65A
+Shadow / Underside
+#8a6e2e
+Roblox Material
+SmoothPlastic
+Reflectance
+0.18 (hard cap — see Anti-Reflective rules)
+Roughness (PBR)
+0.45
+Metalness (PBR)
+0.75
+L1 — ColorMap: Aged brass diffuse with tarnish variation. Must show color variation, not flat gold. Tile 2×2 on strips, 4×4 on arches.
+L2 — Two-tone trick: #C7A65A for main trim, #8a6e2e for recessed and underside pieces. Contrast reads as depth and luxury.
+L3 — Crown beam: gold shell reflectance 0.25 + violet neon inner core. Two materials together = corrupted royal crown read.
+L4 — Roughness map: lighter in recesses (worn), darker on raised edges (polished). Automatic aged look from the map alone.
+Surface 5 — Corruption Crystal / Violet Neon
+Usage: Hub energy ring · Portal frames · Spawn sigil · Floor route guides
+Not just purple neon — unstable magical energy crystallized into matter. Use faceted wedge or union shapes, not cylinders. Crystal vs plastic tube. 10% visual budget maximum.
+Property
+Value
+Core Color
+#8B2EFF
+Glow Halo Color
+#5500cc
+Roblox Material
+Neon
+Reflectance
+1.0 (emissive — always)
+Part Width
+0.5–1 stud for guides, 1–2 studs for portal edges
+PointLight child
+Range 12, Brightness 1.5, Color #6B1EDF
+Glow halo: behind each Neon part, a slightly larger SmoothPlastic at #2a0066, transparency 0.6 — soft bloom without PostEffect bloom.
+PointLight child on every major Neon cluster — casts real colored light onto nearby surfaces.
+Never add SurfaceAppearance to Neon parts. Emissive material ignores all texture maps.
+Surface 6 — Corruption-Veined Stone
+Usage: Central hub · Throne platform · 3–4 key pillars ONLY
+Dark stone with thin violet veins — corruption crystallized inside the rock. Used ONLY on the most important structural elements. Overuse destroys impact.
+Property
+Value
+Stone Base
+#1a1520
+Vein Color
+#3d1a66
+Roblox Material
+SmoothPlastic
+Reflectance
+0.05
+Tile Size
+6 × 6 studs
+EmissiveMap Power
+0.15 — faint glow, not Neon-level
+Diffuse: dark veined marble texture, Part.Color #1a1520. Purple-black tint shifts natural veining toward violet.
+EmissiveMap: white where veins are, black everywhere else. Only works with SurfaceAppearance.
+Surface 7 — Aged Crimson Fabric
+Usage: Hanging banners · Throne drapery · Guild Hall decoration
+Deep desaturated crimson — old blood-red, not bright red. Heavy and aged. Two-tone split banner (gold top 30% / crimson 70%) gives heraldic read instantly.
+Property
+Value
+Main Color
+#4a0e0e
+Shadow Color
+#2d0808
+Roblox Material
+Fabric (built-in)
+Reflectance
+0.0 — cloth, zero specular
+Crown decal
+Pale gold #C7A65A symbol on crimson field
+Two-tone split
+Gold top 30% / Crimson bottom 70%
+Surface 8 — Moonlit Stone
+Usage: Spawn platform · Emote circle · Main path center strip
+Slightly lighter than the main floor — just enough contrast for players to read 'walk here.' Cool blue-tinged stone. Exists purely for navigation readability. Never use Neon here.
+Property
+Value
+Color
+#2a2a38
+Roblox Material
+SmoothPlastic or Slate
+Reflectance
+0.04
+Purpose
+Readability only — no texture needed
+Surface 9 — Rusted Iron Chain
+Usage: Giant chains · Chandelier suspension · Portal anchors
+Older and more corroded than Blackened Steel. Brown-black rust tones. Alternate link colors for two-tone aged look. Chains that look used say 'this fortress has been here forever.'
+Property
+Value
+Main Color
+#1e1410
+Rust Tint (alternate links)
+#2e1e0e
+Roblox Material
+Metal
+Reflectance
+0.06
+Major chain link diameter
+3–4 stud torus
+Small chain diameter
+1–2 stud torus
+4. Full Color Palette — 20 Values
+70% dark base · 20% metal and gold · 8% glow · 2% danger and crimson
+4.1 Dark Base Colors (70%)
+#1c1c1c
+Marble Floor
+Main walkable floor surface
+#141414
+Basalt Wall
+Outer fortress walls
+#0e0e0e
+Black Steel
+Support beams, railings, gates
+#1a1520
+Corruption Stone
+Hub, throne, key pillars
+#1e1e26
+Path Stone
+Main walk path strips
+#2a2a38
+Moonlit Stone
+Spawn dais, emote circle
+4.2 Metal & Gold Colors (20%)
+#C7A65A
+Royal Gold
+Primary trim, arch caps
+#a88940
+Aged Brass
+Underside shadow trim
+#8a6e2e
+Tarnished Gold
+Recessed, worn areas
+#e8c96a
+Bright Crown Gold
+Crown beam top cap ONLY
+#1e1410
+Rusted Iron
+Chains, aged metal
+#2e1e0e
+Rust Tint
+Alternate chain links
+4.3 Glow Colors (8%)
+#8B2EFF
+Corruption Core
+Neon — portal, ring, hub
+#5500cc
+Deep Corruption
+Neon glow halos
+#3d1a66
+Corruption Vein
+Stone vein dark tone
+#AAB6FF
+Moonlight
+Highlights, spawn glow
+#6e7dcc
+Cool Blue
+Ranked portal secondary outline
+4.4 Danger & Crimson Colors (2%)
+#4a0e0e
+Aged Crimson
+Banners, fabric
+#7A1B1B
+Blood Red
+Training gate, warning accents
+#cc3333
+Danger Neon
+Boss portal edge neon ONLY
+5. PBR & SurfaceAppearance Setup
+Performance warning — apply SurfaceAppearance to main visible surfaces first. If low-end devices drop frames, remove from secondary towers and wing interiors. Always keep it on floor, throne, and hub.
+5.1 Priority Surface Setups
+Floor — Cracked Dark Marble (highest priority)
+Channel
+Setting
+ColorMap
+Dark cracked marble diffuse. Tile 8 studs. Must show variation across 96×96.
+NormalMap
+Stone crack normal. Intensity 0.8. Crack depth visible at 20-stud range.
+RoughnessMap
+Lighter around cracks (exposed), darker on flat areas.
+MetalnessMap
+All black — stone, zero metal.
+Part.Color
+#1c1c1c
+Part.Reflectance
+0.08 — catches neon bounce on floor surface
+Hub + Throne — Corruption-Veined Stone
+Channel
+Setting
+ColorMap
+Dark veined marble, clearly visible veins. Tile 6 studs.
+NormalMap
+Intensity 0.6 — smoother, more worked stone than raw floor.
+MetalnessMap
+0 everywhere except vein channels at 0.2 — subtle crystalline sheen.
+EmissiveMap
+White on vein paths, black elsewhere. Power 0.15 — faint glow.
+Part.Color
+#1a1520 purple-black
+Steel Towers + Beams — Blackened Brushed Metal
+Channel
+Setting
+ColorMap
+Brushed metal diffuse, directional grain. Tile portrait 2×4. Tint #0e0e0e.
+NormalMap
+Metal brush normal, subtle directional scratches. Intensity 0.4.
+RoughnessMap
+0.4–0.6 variation — edges more reflective (wear pattern).
+MetalnessMap
+Near white at 0.85 — actual metal.
+Part.Reflectance
+0.12 — catches portal PointLight
+Gold Trim — Aged Brass
+Channel
+Setting
+ColorMap
+Aged brass diffuse with tarnish variation. Tile 2×2 strips, 4×4 arches.
+NormalMap
+Intensity 0.3 — worked smooth, not rough stone feel.
+RoughnessMap
+0.35–0.5 — polished at edges, matte in recesses (tarnish accumulates).
+MetalnessMap
+0.75 — aged gold has oxidation reducing metalness vs pure gold.
+Part.Color
+#C7A65A main / #8a6e2e shadow pieces
+5.2 Built-In Materials — Skip SurfaceAppearance
+Basalt: outer walls, tint #141414. Built-in pitted texture reads perfectly at fortress scale. SA wastes GPU here.
+Fabric: banners, tint #4a0e0e. Built-in weave ideal for banners. Only add a crown decal on top.
+Metal: railings and chains, tint #0e0e0e or #1e1410. Future lighting makes built-in Metal already look premium.
+Neon: NEVER add SurfaceAppearance to Neon parts. Emissive material ignores all texture maps.
+6. Anti-Reflective Lighting System
+Lesson from Anime Awakening: their buildings got blown-out white reflective patches because EnvironmentSpecularScale was too high and surfaces had Reflectance above 0.2 near strong PointLights. Royal Ascension must not repeat this.
+6.1 Safe Reflectance Values — Every Surface
+Surface
+Safe Max Reflectance
+Rule
+Dark marble floor
+0.08
+Only enough to catch neon bounce
+Basalt walls
+0.0
+Fully matte — stone absorbs light
+Blackened steel towers
+0.12
+Reads as metal via Metalness, not Reflectance
+Gold trim (open)
+0.18
+Aged brass — not mirror-bright
+Gold trim (near PointLight)
+0.10
+Any trim within 15 studs of a PointLight
+Crown beam top cap only
+0.22
+One exception — catches the god-ray
+Corruption crystal neon
+1.0
+Neon is always fully emissive
+Moonlit stone spawn
+0.04
+Readability via color, not reflectance
+Crimson fabric banners
+0.0
+Cloth has zero specular
+Rusted chain
+0.06
+Aged metal absorbs more than fresh steel
+6.2 Global Lighting Anti-Reflective Settings
+Property
+Value
+Why
+Ambient
+[30, 24, 40]
+Deep violet-grey base
+Outdoor Ambient
+[20, 16, 30]
+Even darker outdoors
+Brightness
+1.1
+Not 1.5 — causes blowout at high value
+ColorShift_Bottom
+[40, 20, 80]
+Purple from the abyss below
+ColorShift_Top
+[55, 45, 90]
+Moonlit purple sky tone
+EnvironmentSpecularScale
+0.08 — CRITICAL
+Default 0.5 causes blown-out white patches
+EnvironmentDiffuseScale
+0.25
+Subtle fill light
+Technology
+Future
+Required for shadows and PBR
+Atmosphere Color
+#2a1a4a
+Deep purple haze
+Atmosphere Density
+0.35
+Misty distance — fortress feels suspended
+EnvironmentSpecularScale 0.08 is the single most critical number in the lighting setup. This is what causes blown-out white patches on gold and steel when set too high. Lock it at 0.08 before touching any texture.
+6.3 The Proximity Rule
+For every Part within 15 studs of a PointLight, subtract 0.06 from its Reflectance value. A gold trim at 0.18 in open air becomes 0.12 if it is near the crown beam PointLight.
+Anti-reflective test method:
+Place a temporary PointLight Brightness 4, Range 20 at the crown beam top.
+Walk around the lobby. Any surface showing a pure white patch needs its Reflectance dropped.
+Remove the test light after. This test must be done before final texture pass.
+Two-material trick for arch frames:
+Front face of arch frame (lit by SpotLight): #a88940 aged brass at Reflectance 0.10.
+Sides and back face: #C7A65A at Reflectance 0.18.
+Creates natural lit/shadow side without any extra lighting work.
+7. Interior Lighting System
+Every enclosed or semi-enclosed wing needs its own light sources. Global ambient does not penetrate interiors correctly. A wing with zero dedicated lights will look flat grey regardless of how good the textures are.
+7.1 Center Hub — 5 Light Sources
+Light
+Type
+Color
+Range
+Brightness
+Notes
+Crown beam
+PointLight
+#8B2EFF
+35
+2.5
+Primary hub atmosphere — violet cast on everything nearby
+Throne
+SpotLight
+#C7A65A
+20
+2.0
+Angle 45°, pointing down onto throne. Gold prestige read.
+Corruption ring
+PointLight
+#6B1EDF
+18
+1.5
+Inside ring Part. Rotates with ring if attached correctly.
+Chandelier ×2
+SpotLight
+#C7A65A
+15
+1.2
+Angle 60°, pointing down. Warm gold pool on hub floor.
+Spawn fill
+PointLight
+#AAB6FF
+22
+0.8
+Under spawn dais pointing up. Cool blue ambient on spawn.
+7.2 Shop Cathedral — 4 Light Sources
+Light
+Type
+Color
+Range
+Brightness
+Notes
+Dome overhead
+SpotLight
+#C7A65A
+30
+2.0
+Angle 80°, dome center pointing down. Fills chamber with warm gold.
+Legendary column
+PointLight
+#8B2EFF
+22
+2.0
+Casts violet on all nearby walls and pedestal faces.
+Item pedestals ×6
+PointLight
+Per rarity
+8
+1.5
+Blue/violet/gold per rarity tier. One per pedestal.
+Entrance arch
+SpotLight
+#C7A65A
+20
+1.5
+Pointing inward. Frames entrance — lit interior visible from outside.
+7.3 Guild Hall — 5 Light Sources
+Light
+Type
+Color
+Range
+Brightness
+Notes
+Pillar tops ×4
+SpotLight
+#C7A65A
+18
+1.5
+Angle 50°, one per pillar pointing down. Cathedral column-lit feel.
+Throne section
+PointLight
+#8B2EFF
+16
+1.8
+Violet wash on throne section wall.
+Duel circle
+PointLight
+#8B2EFF
+12
+1.2
+From floor neon ring. Local fight zone glow.
+War table
+PointLight
+#C7A65A
+10
+0.8
+Gold pool on table face — reads as important meeting point.
+Trophy wall
+PointLight
+#7A1B1B
+12
+0.6
+Crimson backlight. Prestige and danger feel.
+7.4 Ranked Portal — 3 Light Sources
+Light
+Type
+Color
+Range
+Brightness
+Notes
+Portal face
+PointLight
+#8B2EFF
+25
+3.0
+Highest brightness in lobby. Portal is supposed to be blinding.
+Platform floor ×2
+SpotLight
+#AAB6FF
+14
+1.2
+Pale blue, either side. Cool floor light frames approach walk.
+Chains
+(none)
+—
+—
+—
+Stay dark and silhouetted against portal glow. Resist adding light here.
+7.5 Training Gate — 2 Light Sources Only
+Light
+Type
+Color
+Range
+Brightness
+Notes
+Gate arch ×2
+SpotLight
+#7A1B1B
+20
+2.0
+Angle 55°, pointing down from arch. Red light = danger zone.
+No fill lights
+(intentional)
+—
+—
+—
+Training zone deliberately underlit. Underlit = threatening.
+Training Gate has 2 lights while every other wing has 4–5. That contrast in brightness tells players this is the danger zone without any UI text. Every lobby needs at least one deliberately underlit space.
+8. Neon Placement Rules
+Maximum 12 Neon part groups in the entire lobby. Every neon piece must justify its existence. If it does not guide a player or frame an interactive element, delete it.
+8.1 Approved Neon Locations
+Location
+Color
+Size / Shape
+Rule
+Corruption energy ring
+#8B2EFF
+24-stud Ø, 1 stud thick, wedge union
+The hero neon piece. Spinning via TweenService.
+Crown beam core
+#8B2EFF
+1×28×1 inner part inside gold shell
+Vertical violet glow core only.
+Spawn sigil ring
+#6B1EDF
+0.5-stud thin ring at dais edge
+Softer, darker violet than hub ring.
+Ranked portal frame
+#8B2EFF
+1-stud wide strip, inner portal edge
+Frames the portal interior only.
+Shop item rarity ×6
+Per rarity tier
+Small PointLight + Neon per pedestal
+Blue/violet/gold/crimson per rarity.
+Guild duel circle
+#8B2EFF
+0.5-stud ring, 10-stud Ø floor
+Fight zone marker only.
+Floor route guides ×4
+#8B2EFF
+1 × 0.5 × 8 strip per main path
+One strip per path, centered. That is it.
+Training gate edge
+#cc3333
+1-stud wide on gate frame inner edge
+Crimson only here. Not floor, not towers.
+Chandelier crystals
+#8B2EFF
+4–6 wedge shards pointing down
+Faceted crystal shapes, not cylinders.
+8.2 Neon Color by Zone
+Zone
+Approved Neon Colors
+Center hub + paths
+#8B2EFF violet only
+Shop Cathedral
+Per rarity: gray / blue / violet / gold / pink
+Guild Hall
+Violet duel ring + crimson accent trim only
+Ranked Portal
+Violet frame + pale blue #AAB6FF secondary outline
+Training Gate
+#cc3333 crimson only — zero violet here
+Spawn dais
+Soft violet #6B1EDF — darker than hub ring
+8.3 What Replaces the Diagonal Neon Bars
+Gold trim strips guide players: 1×0.5×16 gold SmoothPlastic strips along path edges. Slight reflectance catches ambient light. No neon needed.
+Height changes replace neon markers: 2-stud raised hub, 1-stud raised pads, spawn dais already communicate 'important area.' Neon on top of raised geometry is redundant.
+SpotLights replace ambient neon glow: SpotLights above each wing entrance, pointing down, color #C7A65A. A real directed light creates the 'special area' feeling better than scattered neon bars.
+9. Decals & Signage System
+9.1 Decal Specifications
+Decal
+Size
+Colors
+Placement
+Object Type
+Spawn Sigil
+512×512
+Violet on black — crown + 8-point star ring
+Top face of spawn dais
+Decal — transparency 0.1
+Banner Crown Symbol
+512×512
+Gold #C7A65A on crimson field
+Front face of banner parts
+Decal — bold, readable at 20+ studs
+Ranked Portal Glyph
+512×512
+Violet bg + pale blue-white geometric lines
+Inner face of portal frame
+Decal — single centered, no tiling
+Training Gate Warning Rune
+256×256
+Deep crimson
+Above gate arch panel
+Decal — crossed swords or rune symbol
+Hub Floor Crest
+1024×1024
+Pale gold on dark stone
+Top face of hub center
+Texture — tiling OFF, 14×14 stud size
+Guild Trophy Plaques
+256×256
+Gold frame, clan name slot
+Pedestal sides in Guild Hall
+SurfaceGui — dynamic content
+9.2 Decal Rules
+Texture object for repeating patterns (floor marble). Decal for single centered images (spawn sigil, portal glyph). Wrong choice causes bad scaling.
+Stone floor decals at transparency 0.1–0.2 so they blend in rather than float on top.
+512×512 for close-range items (throne sigil, portal glyph). 256×256 fine for banners at medium distance.
+Use SurfaceGui for interactive elements (leaderboard, shop signs) — lets scripts update content dynamically.
+No floating text Parts anywhere in the 3D world. All text lives in SurfaceGui or BillboardGui.
+Building labels go on SurfaceGui panels — never extruded letter Parts.
+Use crown symbols, runes, and geometric crests instead of readable words on structure walls.
+10. Wing-by-Wing Detail Specs
+10.1 Center Hub
+Element
+Size
+Material
+Color
+Hub floor
+24 × 2 × 24
+Corruption-veined stone SA
+#1a1520
+Crown beam
+4 × 30 × 4
+Gold shell + neon core
+Shell #C7A65A / Core #8B2EFF
+Corruption energy ring
+24-stud Ø, 1 thick
+Neon, wedge union
+#8B2EFF — spinning
+Inner ring border trim
+2-stud wide × 0.5
+Gold SmoothPlastic
+#C7A65A around hub edge
+Throne body
+10 × 8 × 10
+Corruption-veined stone
+#1a1520
+Throne arm caps
+Thin gold strips
+SmoothPlastic
+#e8c96a reflectance 0.3
+Chandelier frame
+8 × 4 × 8
+Near-black steel
+#0e0e0e Metal material
+Chandelier crystals
+4–6 wedge shards
+Neon
+#8B2EFF pointing downward
+Gold chains
+1.5-stud torus
+SmoothPlastic
+#C7A65A
+10.2 Shop Cathedral (North Wing)
+Area
+Material
+Color / Notes
+Chamber walls
+Basalt material
+#141414 — no SurfaceAppearance needed
+Arch frames
+Aged brass SA
+#a88940 base with tarnish variation
+Dome ceiling
+Basalt, wedge segments
+#111111 — angled wedge segments forming dome
+Item pedestals (legendary)
+Corruption-veined stone SA
+Reserved for legendary tier only
+Item pedestals (common)
+Basalt
+#141414 — plain dark stone for common items
+Floor
+Cracked dark marble SA
+Matches main lobby floor tile — same asset
+Legendary column
+Neon violet core + gold shell
+Same construction as crown beam
+Rarity neon
+6 PointLight + Neon pairs
+One per pedestal, color matched to rarity tier
+10.3 Guild Hall (West Wing)
+Area
+Material
+Color / Notes
+Walls
+Basalt main, steel panels east/west
+#141414 main, #0e0e0e panels
+Giant pillars ×4
+Basalt body + gold cap + gold base ring
+4 × 20 × 4 each
+Banners on pillars
+Aged crimson Fabric
+Crown decal, gold top 30% / crimson 70% split
+War table
+Blackened steel top + rusted iron legs
+Steel #0e0e0e / Legs #1e1410
+Trophy pedestals
+Gold trim SmoothPlastic
+#C7A65A — no SA needed at this scale
+Duel circle floor
+Moonlit stone inside, violet neon ring edge
+#2a2a38 floor / #8B2EFF neon ring
+Throne section
+Corruption-veined stone, raised 2 studs
+Gold trim + crimson banner behind
+10.4 Ranked Portal (East Wing)
+Area
+Material
+Color / Notes
+Portal frame outer
+Blackened steel, brushed SA
+#0e0e0e — Metal material
+Portal frame inner edge
+Neon strip, 1 stud wide
+#8B2EFF violet
+Frame outline cap
+SmoothPlastic
+#AAB6FF pale blue, 0.5 stud, reflectance 0.15
+Portal fill
+Neon, transparency 0.3
+#8B2EFF — gives portal depth
+Platform pad
+Blackened steel
+#0e0e0e — slightly lower reflectance than frame
+Chains
+Rusted iron torus
+Alternating #1e1410 / #2e1e0e per link
+Flanking towers
+Blackened steel
+Secondary size 3 × 18 × 3
+10.5 Training Gate (South Wing)
+Area
+Material
+Color / Notes
+Gate frame outer
+Blackened steel
+#0e0e0e — bulk structure
+Gate frame inner edge
+Crimson neon, 1 stud wide
+#cc3333 — danger signal
+Floor approach
+Cracked dark marble
+#1c1c1c — same as main lobby floor
+Floor route guides
+Violet neon strips
+1 × 0.5 × 8, two parallel lines leading to gate
+Warning rune above gate
+Crimson decal on basalt panel
+Ancient rune or crossed swords symbol
+Flanking towers
+Basalt
+#141414, size 3 × 16 × 3, gold cap top only
+No banners
+(intentional)
+Training = raw and dangerous. Zero decoration.
+11. Essential Plugins & Workflow
+11.1 Required Plugin Stack
+Plugin
+Priority
+Royal Ascension Use Case
+Add Easy Textures
+Must Have
+Filter by 'stone', 'marble', 'metal' and apply directly to Parts. Fix seam alignment on 96×96 floor with texture move tool.
+Archimedes Two
+Must Have
+Gothic arch frames over each wing entrance. Corruption energy ring (360° arc, 24-stud radius). Shop Cathedral dome ceiling. Nothing curved without this.
+Stravant's Resize Align
+Must Have
+Resize all 4 corner towers to exact same height. Align arch frames perfectly over entrances. Essential for symmetry.
+GapFill
+Must Have
+Fill gaps between floor slab tiles. Remove visible cracks between wall segments. Use after every major structure placement.
+Atrazine's Part Color Picker
+Highly Recommended
+Apply exact hex values (#C7A65A, #8B2EFF, #1c1c1c) to Parts. Faster and more accurate than the color wheel slider.
+Color Tools (HSL)
+Highly Recommended
+Bulk desaturate gold trim after lighting is locked (-10 to -15 saturation). Push steel slightly cooler. Do this as a final color pass.
+Brush Tool
+Recommended
+Scatter corruption debris blocks (1–3 stud cubes) along abyss edge with random rotation and scale. Scatter corruption crystal shards around hub base.
+Generate Waterfall
+Recommended
+Corruption energy cascade at floor corners pointing into the abyss. Style: Cartoon, Color: #8B2EFF, Width: 4, Speed: 0.8. Sells the 'floating above danger' feeling.
+Weld Constraint Tool
+Recommended
+Quickly weld towers and arches into stable structures after building each wing. Prevents drift in play mode.
+11.2 Plugin Workflows — Specific Steps
+Archimedes Two — Corruption Ring
+Select a Part → Archimedes Two → Part Count: 16 → Radius: 12 → Angle: 360° → Generate → Union the result → Apply Neon material → Color #8B2EFF → Add TweenService rotation script.
+Archimedes Two — Gothic Arch Frames
+Select a wedge Part → Archimedes Two → Part Count: 8 → Radius: 7 → Angle: 180° → Generate → Union → Apply gold SmoothPlastic → Color #a88940 → Place over wing entrance.
+Add Easy Textures — Floor
+Select all floor Parts → Add Easy Textures → search 'dark marble' or 'cracked stone' → apply → use texture move tool → align seams across all tiles → set tile size 8×8.
+Brush Tool — Abyss Debris
+Create basalt 2×2×2 cube → Brush Tool → Radius: 6 → Density: low → Scale variation: 0.5–1.5 → Rotation: random → paint along outer floor perimeter → 6–10 pieces total.
+Color Tools — Final Gold Pass
+Group all gold trim Parts → Color Tools → Saturation: -12 to -15 → this ages the gold under violet ambient without manual recoloring → confirm → repeat for steel with Luminance: -5.
+12. Build & Revamp Order
+Lesson from Anime Awakening: working on textures and lighting simultaneously causes reflective whites problems. Lock lighting first, then surfaces, then details.
+12.1 The 6-Phase Revamp Plan
+Phase 1 — Lock Global Lighting
+Set all Lighting properties, Atmosphere, and Sky. Do not touch again after this point.
+Lighting: Ambient, Brightness, ColorShift_Top/Bottom, EnvironmentDiffuseScale, EnvironmentSpecularScale 0.08, Technology Future.
+Atmosphere: Density 0.35, Color #2a1a4a, Offset 0.1.
+Sky: dark void/abyss skybox — the floating fortress feeling lives or dies in the sky.
+Nothing changes global lighting after Phase 1. If something looks slightly off, fix the Part — not the global light.
+Phase 2 — Place All Permanent Light Sources
+Every PointLight and SpotLight from Section 7 goes in now, at its final position. Textures are designed against this lighting.
+Crown beam PointLight #8B2EFF Range 35.
+Throne SpotLight gold Range 20.
+All 4 wing entrance SpotLights.
+Portal PointLight #8B2EFF Range 25 Brightness 3.
+Training gate crimson SpotLights.
+Phase 3 — Apply Floor SurfaceAppearance
+The 96×96 floor with cracked dark marble is the test surface for the entire lighting setup. If it looks correct — dark, textured, picks up violet neon glow, no blown-out patches — everything else will work. If the floor looks wrong, fix lighting before touching anything else.
+Phase 4 — Apply SurfaceAppearance to Hub, Throne, Walls
+In order of player visibility: central hub corruption-veined stone, throne, corner buttresses, outer walls. Use Add Easy Textures plugin. Use texture move tool to fix seams on walls after applying.
+Phase 5 — Gold Trim and Steel — Anti-Reflective Check
+Apply aged brass SurfaceAppearance to all arch frames and trim strips. Then run the reflective whites test (temp PointLight Brightness 4 near the crown beam). Lower Reflectance on any piece that blows out. Remove temp light. This phase cannot be rushed.
+Phase 6 — Final Detail Pass
+Upload and place all decals (spawn sigil, crown banner, portal glyph). Add Fabric banners. Scatter debris with Brush Tool. Add corruption waterfall cascade at floor edges with Generate Waterfall plugin. Add all neon strips last — exactly as defined in Section 8.
+12.2 Build Order for New Construction
+Skybox + Atmosphere first — before placing any Part.
+Lock all Lighting values — commit to these permanently.
+Floor slab 96×96×1 — apply dark basalt, add gold rim border.
+Central hub 24×24×2 — dead center, add gold inner ring trim.
+Crown beam + corruption ring — hero piece, spend time here.
+Throne — 4 studs north of hub center, visible from spawn.
+Four wing platform pads at N, S, E, W — equidistant.
+Wing entrance arches — use Archimedes Two plugin.
+Outer walls + corner buttresses — closes fortress feel.
+4 corner main towers only — no more than 4 at this point.
+Spawn dais — violet sigil decal, gold border trim.
+Wing interiors — Shop, Guild, Portal, Training Gate.
+Secondary towers — max 4, wing flanks only. Check sightlines.
+Banners + floating debris — Brush Tool for debris.
+Gold trim pass — 1×0.5×16 strips along all path edges.
+SurfaceAppearance pass — follow Phase 3–5 order above.
+Neon pass — LAST. Max 12 groups. Every piece must justify itself.
+Sightline test — stand at spawn, rotate 360°. Fix before details.
+Walkability test — every path ≥8 studs wide, ≤3 stair steps.
+13. Kill List — Remove Immediately
+These elements must be removed before any texture or lighting work begins. They cannot coexist with the correct material system.
+Remove
+Why
+Replace With
+All diagonal neon bars
+Zero function — pure visual noise
+Gold trim strips along path edges
+Any magenta / hot-pink neon
+Wrong color — breaks the palette
+Violet #8B2EFF neon only
+Neon not attached to portal / hub ring / spawn / path
+Clutter — unjustified neon
+Delete. Nothing replaces it.
+Thin pillars under 2×2 stud footprint
+Structural noise
+Widen to min 3×3 or remove entirely
+Tiny isolated floor blocks under 4×4
+Clutter
+Delete completely
+Chambers narrower than 10 studs
+Unnavigable
+Merge or remove chamber
+Towers blocking N–S spawn sightline
+Kills readability from spawn
+Move to diagonal (NE/NW/SE/SW)
+Raw grey default sky
+Destroys atmosphere entirely
+Void/abyss skybox + Atmosphere object
+Any mid-saturation colored surface
+Breaks 70% dark rule
+Recolor to dark palette
+Pyramid/cone center shapes
+Wrong geometry for crown centerpiece
+Replace with crown beam + throne
+Pure black #000000 Parts
+Renders as a void hole in Future lighting
+Minimum #111111 on any Part
+Floating white or grey screen panels
+Reads as dev asset, not royal fortress
+Replace with SurfaceGui on dark Part
+Unwelded stacked parts
+Drift in play mode
+Weld Constraint Tool on all structures
+Extruded letter Parts as signs
+Low-budget appearance
+Replace with SurfaceGui or Decal
+13.1 Quick Lua Cleanup — Diagonal Neon Detection
+Paste in Command Bar to find diagonal neon bars. Does not delete until the destroy line is uncommented.
+-- Find all diagonal (off-axis) Neon parts in Workspace
+local toDelete = {}
+for _, d in ipairs(game.Workspace:GetDescendants()) do
+if d:IsA('BasePart') and d.Material == Enum.Material.Neon then
+local up = (d.CFrame - d.CFrame.Position).UpVector
+local axisAligned = math.abs(up.X) > 0.99 or math.abs(up.Y) > 0.99 or math.abs(up.Z) > 0.99
+if not axisAligned then table.insert(toDelete, d) end
+end
+end
+print('Found ' .. #toDelete .. ' diagonal neon parts')
+-- Uncomment to delete:
+-- for _, p in ipairs(toDelete) do p:Destroy() end
+14. Code Architecture — Service-Oriented
+Based on professional Roblox SOA patterns. Server validates, client requests. Never trust the client with currency, RNG, or teleportation.
+14.1 Service Structure
+Service
+Location
+Responsibility
+LobbyService
+ServerScriptService
+Spawn management, zone detection, player flow
+ShopService
+ServerScriptService
+Item data, purchase validation, currency deduction
+RewardService
+ServerScriptService
+Wheel spin logic, server-side RNG, reward delivery
+LeaderboardService
+ServerScriptService
+Fetch leaderboard data, fire client updates every 30s
+PortalService
+ServerScriptService
+Ranked match entry validation, server-side teleport
+GuildService
+ServerScriptService
+Clan data, trophy wall state, guild membership
+SeasonalService
+ServerScriptService
+Active seasonal config, event wall content
+EmoteService
+ServerScriptService
+Emote circle detection, animation validation
+UIModule
+ReplicatedStorage
+Top-level UI initializer — manages all sub-UI modules
+ShopUI
+ReplicatedStorage
+Item display SurfaceGui, rarity colors, prices
+LeaderboardUI
+ReplicatedStorage
+Leaderboard wall SurfaceGui — updates on server event
+SeasonalEventUI
+ReplicatedStorage
+Seasonal wall appearance and content
+14.2 Networking Rules — Client Requests, Server Validates
+Action
+Client Sends
+Server Validates
+Client Receives
+Shop purchase
+RequestPurchase + itemId
+Currency balance, item availability
+Success/fail + updated currency
+Reward wheel spin
+RequestSpin
+Cooldown check, server-side RNG
+Outcome — server owns the RNG always
+Portal entry
+RequestMatchEntry
+Rank requirements, queue status
+Teleport call from server only
+Leaderboard
+(passive)
+Fetch every 30s server-side
+Client event → SurfaceGui update
+Emote
+RequestEmote + emoteId
+Player position in emote circle
+Animation play — server validates position
+14.3 Reusable Packages
+Janitor — cleanup on lobby exit, prevents memory leaks.
+Signal — zone enter/exit events for wing detection.
+DataService / ProfileService — persist player currency and cosmetics.
+TweenService — corruption ring spin, reward wheel animation.
+Wall-E — dependency management for services.
+React or Fusion — SurfaceGui dynamic updates for leaderboard and shop.
+14.4 Singleton Init Pattern
+-- Each service follows this pattern
+local LobbyService = {}
+function LobbyService.init()
+-- Setup zone detectors, spawn logic
+UIModule.init()  -- triggers all UI sub-module inits
+end
+return LobbyService
+15. Social Design & Existing Features
+15.1 Social Goals
+The lobby should encourage:
+Flexing cosmetics and showing founder status.
+Waiting with friends, trying emotes.
+Recording clips and inspecting shop items.
+Hype before matches.
+15.2 Current Lobby Features
+Colossal floating crown centerpiece and giant crown beam.
+Rotating corruption energy ring.
+Circular central gathering platform.
+Elevated royal spawn platform with glowing sigils.
+Huge ceremonial stairs and massive visible throne.
+Giant arena gate facing back toward the colosseum.
+Hall of Founders prestige wing.
+Guild Hall war chamber.
+Skin Showcase Chamber.
+Ranked Portal, Shop Cathedral artifact vault, Battle Pass Hall.
+Training Arena and Spectator Balcony.
+Global leaderboard wall and seasonal event wall.
+Spinning reward wheel and social emote circles.
+Floating chandeliers, corruption storm emitters, floating debris and banners.
+Gothic fortress art pass: bridges, balustrades, wall ribs, arch frames, champion statues, brazier lighting, stair rails.
+15.3 Future Production Pass
+Add true lobby spawn/match flow — players start here before teleporting into rounds.
+Add interactable shop camera and cosmetic preview mannequins.
+Add real leaderboard data to wall panels via LeaderboardService.
+Add reward wheel logic and animation.
+Add clan/guild system UI via GuildService.
+Replace blockout statues and walls with custom mesh arches, carved trims, animated statue meshes, and optimized modular kits.
+Add seasonal decoration swaps via SeasonalService.
+Add real lobby music and ambience.
+Add interactable cosmetic preview mannequins in Shop Cathedral.
+16. Sightline & Navigation Rules
+Lesson from Anime Awakening and Anime Adventures: every key area must be visible from the spawn point. Players should never feel lost.
+16.1 Spawn Sightline Audit
+Stand at the spawn dais. Look north toward the throne and crown beam — that view must be completely unobstructed.
+From spawn you must be able to see: the crown beam top, the throne silhouette, at least 2 wing entrance arches, and the leaderboard wall.
+Secondary towers on the N–S axis must be moved to the diagonal (NE, NW, SE, SW) — never directly in the spawn forward view.
+Keep all paths visually open — no parts overhanging lower than 10 studs on path corridors.
+Guild Hall and Ranked Portal entrances must be readable from spawn — use SpotLights above each entrance to make them pop.
+16.2 Placement Rules
+Put the crown centerpiece dead center.
+Put the throne slightly behind center so it frames the hub, not blocks it.
+Place 4 wings at equal 90-degree spacing around the center.
+Keep all portals at least 8 studs away from the main ring edge.
+Never put two tall towers directly in front of each other from the spawn view.
+Limit the scene to 6–8 major towers, not dozens of random vertical pieces.
+Use neon strips only to guide movement or highlight important interaction points.
+Leave 6–8 studs of open walking space between all major objects.
+— End of Document —
