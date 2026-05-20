@@ -1,0 +1,16 @@
+Create an ultra-polished AAA Roblox visual direction inspired by dark fantasy tournament architecture, brutalist medieval megastructures, and supernatural corruption energy.
+
+PRIMARY MATERIALS:
+- Dark Basalt Stone #2A2A2E
+- Blackened Steel #1B1B1E
+- Royal Gold #C8A95B
+- Corruption Purple #8B2EFF
+- Crimson Warning Lights #8E1F1F
+
+LIGHTING:
+- Strong god rays
+- Volumetric fog
+- Heavy cinematic contrast
+- Purple atmospheric fog
+- Dynamic bloom
+- Floating ash particles

@@ -1,0 +1,51 @@
+{
+  "source": "/Users/marissasalinas/Downloads/Generated-Model.fbx",
+  "object_count": 1,
+  "mesh_object_count": 1,
+  "unique_mesh_count": 1,
+  "material_count": 4,
+  "image_count": 5,
+  "total_vertices": 142944,
+  "total_polygons": 240415,
+  "bounds": {
+    "min": [
+      -0.4211,
+      -0.5,
+      -0.278
+    ],
+    "max": [
+      0.4211,
+      0.5,
+      0.278
+    ],
+    "size": [
+      0.8421,
+      1.0,
+      0.5559
+    ],
+    "center": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "largest_objects": [
+    {
+      "name": "meshes[0]",
+      "mesh": "Mesh",
+      "vertices": 142944,
+      "polygons": 240415,
+      "dimensions": [
+        0.8421,
+        0.5559,
+        1.0
+      ]
+    }
+  ],
+  "materials": [
+    "Dots Stroke",
+    "Material",
+    "Material.001",
+    "Material.002"
+  ]
+}
