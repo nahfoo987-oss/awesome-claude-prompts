@@ -4,10 +4,12 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return supabaseResponse
+
+  try {
+    const supabase = createServerClient(url, key, {
       cookies: {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
@@ -18,11 +20,11 @@ export async function middleware(request: NextRequest) {
           )
         },
       },
-    }
-  )
-
-  // Refresh session
-  await supabase.auth.getUser()
+    })
+    await supabase.auth.getUser()
+  } catch {
+    // Allow the request through if Supabase is unreachable
+  }
 
   return supabaseResponse
 }
