@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ghost LA Blendz — Premium Barber · Los Angeles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F5F2;--card:#fff;--text:#111111;--muted:#78716C;--border:#E7E2DB;
+  --stone-100:#EDE9E4;--stone-200:#E7E2DB;--stone-300:#D4CEC5;--stone-400:#A8A099;--stone-500:#78716C;
+}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;font-size:15px;line-height:1.6}
+img{display:block;width:100%;height:100%;object-fit:cover}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:inherit;border:none;background:none}
+
+/* Nav */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s;padding:0 40px}
+.nav.scrolled{background:rgba(247,245,242,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1100px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:500}
+.nav-links{display:flex;align-items:center;gap:36px}
+.nav-links a{font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:500;color:var(--stone-500);transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-links .book-link{color:var(--text);border-bottom:1px solid var(--text);padding-bottom:1px}
+.hamburger{display:none;flex-direction:column;gap:5px;padding:8px;cursor:pointer}
+.hamburger span{display:block;width:20px;height:1px;background:var(--text);transition:all .2s}
+.mobile-nav{display:none;flex-direction:column;gap:20px;padding:16px 40px 20px;background:var(--bg);border-top:1px solid var(--border)}
+.mobile-nav a{font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+@media(max-width:768px){
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  .nav{padding:0 24px}
+}
+
+/* Hero */
+.hero{min-height:100vh;padding-top:64px;display:flex;flex-direction:column;justify-content:center}
+.hero-inner{max-width:1100px;margin:0 auto;padding:80px 40px;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;width:100%}
+.hero-eyebrow{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--stone-400);margin-bottom:24px}
+.hero-title{font-family:'DM Serif Display',serif;font-size:clamp(4rem,9vw,7rem);line-height:.9;letter-spacing:-.02em;margin-bottom:32px}
+.hero-sub{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--stone-400);margin-bottom:48px}
+.hero-btns{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:48px}
+.btn-primary{display:inline-flex;align-items:center;padding:14px 28px;background:var(--text);color:var(--bg);font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;transition:background .2s}
+.btn-primary:hover{background:#333}
+.btn-outline{display:inline-flex;align-items:center;padding:14px 28px;border:1px solid var(--border);font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;color:var(--stone-600,var(--stone-500));transition:all .2s}
+.btn-outline:hover{border-color:var(--stone-400);color:var(--text)}
+.hero-tagline{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--stone-400);font-style:italic}
+.hero-img{position:relative;width:100%;aspect-ratio:4/3;border-radius:2px;overflow:hidden;background:var(--stone-100)}
+.scroll-hint{display:flex;flex-direction:column;align-items:center;gap:8px;opacity:.3;padding-bottom:32px}
+.scroll-hint-line{width:1px;height:32px;background:var(--text)}
+.scroll-hint-label{font-size:9px;letter-spacing:.3em;text-transform:uppercase}
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:1fr;gap:40px;padding:60px 24px}
+  .hero-img{order:-1}
+}
+
+/* Portfolio */
+.section{padding:96px 40px}
+.section-inner{max-width:1100px;margin:0 auto}
+.section-eyebrow{font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--stone-400);margin-bottom:12px}
+.section-title{font-family:'DM Serif Display',serif;font-size:clamp(2rem,5vw,3.5rem);margin-bottom:56px}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.photo-item{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--stone-100);border-radius:2px;cursor:pointer}
+.photo-item img{transition:transform .5s ease}
+.photo-item:hover img{transform:scale(1.05)}
+.photo-item::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,0);transition:background .3s}
+.photo-item:hover::after{background:rgba(0,0,0,.08)}
+@media(max-width:640px){.section{padding:64px 24px}}
+
+/* Lightbox */
+.lightbox{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:32px}
+.lightbox.open{display:flex}
+.lightbox-img{position:relative;max-width:800px;width:100%;aspect-ratio:4/3}
+.lightbox-img img{object-fit:contain;border-radius:2px}
+.lb-close{position:absolute;top:20px;right:20px;color:rgba(255,255,255,.6);font-size:28px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .2s}
+.lb-close:hover{color:#fff}
+.lb-prev,.lb-next{position:absolute;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.6);font-size:32px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .2s;z-index:10}
+.lb-prev:hover,.lb-next:hover{color:#fff}
+.lb-prev{left:12px}.lb-next{right:12px}
+.lb-dots{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.lb-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;transition:background .2s;border:none}
+.lb-dot.active{background:#fff}
+
+/* Services */
+.services{padding:96px 40px;border-top:1px solid var(--border)}
+.services-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start}
+.services-price{font-family:'DM Serif Display',serif;font-size:clamp(2.5rem,6vw,4.5rem);margin-bottom:0}
+.services-price-num{font-family:'DM Serif Display',serif;font-size:clamp(3rem,8vw,6rem);color:var(--text)}
+.services-desc{font-size:14px;color:var(--stone-500);line-height:1.7;margin:24px 0 40px;max-width:320px}
+.includes-label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--stone-400);margin-bottom:24px}
+.includes-list{list-style:none}
+.includes-list li{display:flex;align-items:center;justify-content:space-between;padding:16px 0;font-size:14px;font-weight:500}
+.includes-list li:not(:last-child){border-bottom:1px solid var(--border)}
+.includes-list li span.tag{font-size:10px;color:var(--stone-400);letter-spacing:.1em}
+.location-card{margin-top:32px;padding:20px;background:#fff;border:1px solid var(--border);border-radius:2px}
+.location-label{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--stone-400);margin-bottom:8px}
+.location-name{font-size:14px;font-weight:500}
+.location-note{font-size:12px;color:var(--stone-500);margin-top:4px}
+@media(max-width:900px){
+  .services-inner{grid-template-columns:1fr;gap:40px}
+}
+
+/* CTA strip */
+.cta-strip{padding:80px 40px;background:var(--text);text-align:center}
+.cta-inner{max-width:1100px;margin:0 auto}
+.cta-eyebrow{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--stone-500);margin-bottom:16px}
+.cta-title{font-family:'DM Serif Display',serif;font-size:clamp(3rem,8vw,5rem);color:var(--bg);margin-bottom:8px}
+.cta-price{font-family:'DM Serif Display',serif;font-size:clamp(3.5rem,10vw,6rem);color:var(--stone-500,#78716C);margin-bottom:40px}
+.btn-light{display:inline-flex;align-items:center;padding:16px 32px;background:var(--bg);color:var(--text);font-size:10px;letter-spacing:.25em;text-transform:uppercase;font-weight:500;transition:background .2s}
+.btn-light:hover{background:var(--stone-100)}
+
+/* Booking */
+.booking{padding:96px 40px;min-height:100vh}
+.booking.hidden{display:none}
+.booking-inner{max-width:680px;margin:0 auto}
+.step-indicator{display:flex;align-items:center;gap:12px;margin-bottom:40px}
+.step-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;border:1px solid var(--border);color:var(--stone-400);transition:all .3s;flex-shrink:0}
+.step-dot.active,.step-dot.done{background:var(--text);border-color:var(--text);color:var(--bg)}
+.step-line{width:40px;height:1px;background:var(--border)}
+.step-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--stone-400)}
+.step-label.active{color:var(--text)}
+.calendar-card,.slots-card,.details-card{background:#fff;border:1px solid var(--border);border-radius:2px;padding:24px;margin-bottom:12px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.cal-month{font-size:14px;font-weight:500;letter-spacing:.02em}
+.cal-nav{width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--text);border-radius:2px;transition:background .2s}
+.cal-nav:hover{background:var(--stone-100)}
+.cal-nav.disabled{color:var(--stone-200);cursor:not-allowed}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:8px}
+.cal-day-header{text-align:center;font-size:10px;color:var(--stone-400);letter-spacing:.1em;padding:4px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-cell{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:14px;border-radius:2px;transition:all .2s;position:relative}
+.cal-cell.past{color:var(--stone-200);cursor:not-allowed}
+.cal-cell.available{cursor:pointer}
+.cal-cell.available:hover{background:var(--stone-100)}
+.cal-cell.selected{background:var(--text);color:var(--bg)}
+.cal-cell.today::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--text)}
+.cal-cell.selected.today::after{background:var(--bg)}
+.slots-header{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--stone-400);margin-bottom:16px}
+.slots-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.slot-btn{padding:10px 8px;font-size:11px;font-weight:500;border:1px solid var(--border);border-radius:2px;transition:all .2s;background:#fff}
+.slot-btn:hover:not(:disabled){border-color:var(--stone-400);background:var(--stone-100)}
+.slot-btn.selected{background:var(--text);border-color:var(--text);color:var(--bg)}
+.slot-btn:disabled{color:var(--stone-200);background:var(--stone-100,#f5f5f5);cursor:not-allowed;text-decoration:line-through;border-color:var(--stone-100)}
+.selected-bar{background:#fff;border:1px solid var(--border);border-radius:2px;padding:4px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.selected-bar-info{padding:10px 16px}
+.selected-bar-label{font-size:9px;color:var(--stone-400);text-transform:uppercase;letter-spacing:.2em;margin-bottom:2px}
+.selected-bar-value{font-size:14px;font-weight:500}
+.change-btn{padding:10px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--stone-400)}
+.change-btn:hover{color:var(--text)}
+.form-group{margin-bottom:20px}
+.form-label{display:block;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--stone-500);margin-bottom:8px}
+.form-input,.form-textarea{width:100%;padding:12px 16px;border:1px solid var(--border);font-family:inherit;font-size:14px;background:var(--bg);border-radius:2px;transition:border-color .2s;outline:none}
+.form-input:focus,.form-textarea:focus{border-color:var(--stone-400)}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--stone-300)}
+.form-textarea{resize:none}
+.form-input.readonly{background:var(--stone-100);color:var(--stone-500)}
+.btn-full{width:100%;padding:16px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;transition:all .2s;margin-top:8px}
+.btn-full.primary{background:var(--text);color:var(--bg)}
+.btn-full.primary:hover:not(:disabled){background:#333}
+.btn-full:disabled{background:var(--stone-100);color:var(--stone-300);cursor:not-allowed}
+.form-hint{text-align:center;font-size:10px;color:var(--stone-400);margin-top:16px}
+.success-screen{text-align:center;padding:64px 0;display:none}
+.success-screen.show{display:block}
+.success-icon{width:48px;height:48px;border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px}
+.success-eyebrow{font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--stone-400);margin-bottom:8px}
+.success-title{font-family:'DM Serif Display',serif;font-size:2.5rem;margin-bottom:12px}
+.success-ref{font-size:14px;color:var(--stone-500);margin-bottom:8px}
+.success-ref code{font-family:monospace;color:var(--text);font-size:13px}
+.success-desc{font-size:14px;color:var(--stone-500);max-width:360px;margin:0 auto 32px}
+.book-again-btn{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--stone-500);border-bottom:1px solid var(--stone-300);padding-bottom:2px}
+.book-again-btn:hover{color:var(--text);border-color:var(--text)}
+
+/* Footer */
+footer{border-top:1px solid var(--border);padding:48px 40px}
+.footer-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:32px}
+.footer-brand p:first-child{font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;margin-bottom:4px}
+.footer-brand p:last-child{font-size:11px;color:var(--stone-400);letter-spacing:.1em}
+.footer-links{display:flex;gap:40px;flex-wrap:wrap}
+.footer-links a{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--stone-500);transition:color .2s}
+.footer-links a:hover{color:var(--text)}
+.footer-bottom{max-width:1100px;margin:40px auto 0;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.footer-tagline{font-size:10px;color:var(--stone-400);letter-spacing:.1em;font-style:italic}
+.footer-copy{font-size:10px;color:var(--stone-400)}
+@media(max-width:640px){
+  footer{padding:40px 24px}
+  .footer-inner{flex-direction:column}
+}
+
+/* Page management */
+.page{display:none}
+.page.active{display:block}
+#page-home{display:block}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo" onclick="showPage('home')">Ghost LA Blendz</a>
+    <div class="nav-links">
+      <a href="#" onclick="showPage('home');scrollToSection('work');return false">Work</a>
+      <a href="#" onclick="showPage('home');scrollToSection('services');return false">Services</a>
+      <a href="#" class="book-link" onclick="showPage('book');return false">Book</a>
+      <a href="https://instagram.com/ghostlablendz" target="_blank" rel="noopener">Instagram</a>
+    </div>
+    <div class="hamburger" id="hamburger" onclick="toggleMobile()">
+      <span id="hb1"></span><span id="hb2"></span><span id="hb3"></span>
+    </div>
+  </div>
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="#" onclick="showPage('home');closeMobile();scrollToSection('work');return false">Work</a>
+    <a href="#" onclick="showPage('home');closeMobile();scrollToSection('services');return false">Services</a>
+    <a href="#" onclick="showPage('book');closeMobile();return false">Book</a>
+    <a href="https://instagram.com/ghostlablendz" target="_blank" rel="noopener" onclick="closeMobile()">Instagram</a>
+  </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div id="page-home" class="page active">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <p class="hero-eyebrow">Los Angeles</p>
+        <h1 class="hero-title">Ghost LA<br>Blendz</h1>
+        <p class="hero-sub">Any Cut &nbsp;·&nbsp; $30</p>
+        <div class="hero-btns">
+          <a href="#" class="btn-primary" onclick="showPage('book');return false">Book Appointment</a>
+          <a href="https://instagram.com/ghostlablendz" target="_blank" rel="noopener" class="btn-outline">Instagram</a>
+        </div>
+        <p class="hero-tagline">Clean.&nbsp;&nbsp;Consistent.&nbsp;&nbsp;Precision.</p>
+      </div>
+      <div class="hero-img">
+        <img src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=900&q=85&auto=format&fit=crop&crop=top" alt="Premium fade by Ghost LA Blendz">
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <div class="scroll-hint-line"></div>
+      <span class="scroll-hint-label">Scroll</span>
+    </div>
+  </section>
+
+  <!-- Portfolio -->
+  <section class="section" id="work">
+    <div class="section-inner">
+      <p class="section-eyebrow">Portfolio</p>
+      <h2 class="section-title">Latest Work</h2>
+      <div class="photo-grid">
+        <div class="photo-item" onclick="openLightbox(0)">
+          <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=700&q=85&auto=format&fit=crop" alt="Clean fade">
+        </div>
+        <div class="photo-item" onclick="openLightbox(1)">
+          <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=700&q=85&auto=format&fit=crop" alt="Taper with lineup">
+        </div>
+        <div class="photo-item" onclick="openLightbox(2)">
+          <img src="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=700&q=85&auto=format&fit=crop" alt="Precision blend">
+        </div>
+        <div class="photo-item" onclick="openLightbox(3)">
+          <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=700&q=85&auto=format&fit=crop" alt="Beard taper">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lb-close" onclick="closeLightbox()">×</button>
+    <button class="lb-prev" onclick="lbNav(-1);event.stopPropagation()">‹</button>
+    <div class="lightbox-img" onclick="event.stopPropagation()">
+      <img id="lb-img" src="" alt="">
+    </div>
+    <button class="lb-next" onclick="lbNav(1);event.stopPropagation()">›</button>
+    <div class="lb-dots" id="lb-dots"></div>
+  </div>
+
+  <!-- Services -->
+  <section class="services" id="services">
+    <div class="services-inner">
+      <div>
+        <p class="section-eyebrow">Services</p>
+        <p class="services-price">Any Cut</p>
+        <p class="services-price-num">$30</p>
+        <p class="services-desc">One price. No hidden fees. Walk in knowing exactly what you'll pay. Every client gets the same level of focus and precision.</p>
+        <a href="#" class="btn-primary" onclick="showPage('book');return false">Book Now</a>
+      </div>
+      <div>
+        <p class="includes-label">Includes</p>
+        <ul class="includes-list">
+          <li>Fades <span class="tag">Included</span></li>
+          <li>Tapers <span class="tag">Included</span></li>
+          <li>Lineups <span class="tag">Included</span></li>
+          <li>Beard Touchups <span class="tag">Included</span></li>
+          <li>Basic Designs <span class="tag">Included</span></li>
+        </ul>
+        <div class="location-card">
+          <p class="location-label">Location</p>
+          <p class="location-name">Los Angeles, California</p>
+          <p class="location-note">Address provided upon booking confirmation.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Strip -->
+  <section class="cta-strip">
+    <div class="cta-inner">
+      <p class="cta-eyebrow">Los Angeles</p>
+      <p class="cta-title">Any Cut</p>
+      <p class="cta-price">$30</p>
+      <a href="#" class="btn-light" onclick="showPage('book');return false">Book Appointment</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <p>Ghost LA Blendz</p>
+        <p>Los Angeles, California</p>
+      </div>
+      <div class="footer-links">
+        <a href="#" onclick="showPage('book');return false">Book</a>
+        <a href="https://instagram.com/ghostlablendz" target="_blank" rel="noopener">Instagram</a>
+        <a href="#" onclick="showPage('admin');return false" style="color:#ccc">Admin</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-tagline">Clean. Consistent. Precision.</p>
+      <p class="footer-copy">© 2026 Ghost LA Blendz</p>
+    </div>
+  </footer>
+</div><!-- /page-home -->
+
+<!-- BOOK PAGE -->
+<div id="page-book" class="page">
+  <section class="booking" style="padding-top:100px">
+    <div class="booking-inner">
+      <p class="section-eyebrow" style="margin-bottom:12px">Book</p>
+      <h1 style="font-family:'DM Serif Display',serif;font-size:clamp(2rem,5vw,3rem);margin-bottom:8px">Schedule Your Appointment</h1>
+      <p style="font-size:14px;color:var(--stone-500);margin-bottom:48px">Any Cut · $30 · Los Angeles</p>
+
+      <!-- Step indicator -->
+      <div class="step-indicator" id="step-indicator">
+        <div class="step-dot active" id="dot-1">1</div>
+        <span class="step-label active" id="label-1">Select Date &amp; Time</span>
+        <div class="step-line"></div>
+        <div class="step-dot" id="dot-2">2</div>
+        <span class="step-label" id="label-2">Your Details</span>
+      </div>
+
+      <!-- Success screen -->
+      <div class="success-screen" id="success-screen">
+        <div class="success-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10l4.5 4.5L16 7" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="success-eyebrow">Booking Received</p>
+        <h2 class="success-title">You're on the list.</h2>
+        <p class="success-ref">Reference: <code id="booking-ref">CONF1234</code></p>
+        <p class="success-desc">Your appointment is pending confirmation. You'll receive an email once it's approved.</p>
+        <button class="book-again-btn" onclick="resetBooking()">Book Another</button>
+      </div>
+
+      <!-- Step 1: Date & Time -->
+      <div id="step1">
+        <!-- Calendar -->
+        <div class="calendar-card">
+          <div class="cal-header">
+            <button class="cal-nav" id="cal-prev" onclick="calNav(-1)">‹</button>
+            <span class="cal-month" id="cal-month-label"></span>
+            <button class="cal-nav" onclick="calNav(1)">›</button>
+          </div>
+          <div class="cal-days">
+            <div class="cal-day-header">Su</div>
+            <div class="cal-day-header">Mo</div>
+            <div class="cal-day-header">Tu</div>
+            <div class="cal-day-header">We</div>
+            <div class="cal-day-header">Th</div>
+            <div class="cal-day-header">Fr</div>
+            <div class="cal-day-header">Sa</div>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+
+        <!-- Time slots -->
+        <div class="slots-card" id="slots-card" style="display:none">
+          <p class="slots-header" id="slots-date-label"></p>
+          <div class="slots-grid" id="slots-grid"></div>
+        </div>
+
+        <button class="btn-full primary" id="btn-continue" disabled onclick="goToStep2()">Continue</button>
+      </div>
+
+      <!-- Step 2: Details -->
+      <div id="step2" style="display:none">
+        <div class="selected-bar">
+          <div class="selected-bar-info">
+            <p class="selected-bar-label">Selected</p>
+            <p class="selected-bar-value" id="selected-summary"></p>
+          </div>
+          <button class="change-btn" onclick="goToStep1()">Change</button>
+        </div>
+
+        <div class="details-card">
+          <div class="form-group">
+            <label class="form-label">Full Name <span style="color:#f87171">*</span></label>
+            <input class="form-input" id="f-name" placeholder="Your name" type="text">
+            <p class="form-error" id="err-name" style="color:#f87171;font-size:11px;margin-top:4px;display:none"></p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone <span style="color:#f87171">*</span></label>
+            <input class="form-input" id="f-phone" placeholder="(323) 000-0000" type="tel">
+            <p class="form-error" id="err-phone" style="color:#f87171;font-size:11px;margin-top:4px;display:none"></p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email <span style="font-size:9px;color:var(--stone-400);text-transform:none;letter-spacing:0">(for confirmation)</span></label>
+            <input class="form-input" id="f-email" placeholder="you@example.com" type="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Service</label>
+            <input class="form-input readonly" value="Any Cut — $30" readonly>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Notes <span style="font-size:9px;color:var(--stone-400);text-transform:none;letter-spacing:0">(optional)</span></label>
+            <textarea class="form-textarea" id="f-notes" rows="3" placeholder="Any specific requests, style references, etc."></textarea>
+          </div>
+        </div>
+
+        <button class="btn-full primary" id="btn-submit" onclick="submitBooking()">Confirm Booking</button>
+        <p class="form-hint">Your appointment will be confirmed via email.</p>
+      </div>
+    </div>
+  </section>
+</div><!-- /page-book -->
+
+<!-- ADMIN LOGIN PAGE -->
+<div id="page-admin" class="page">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="width:100%;max-width:360px">
+      <div style="text-align:center;margin-bottom:32px">
+        <p style="font-size:11px;letter-spacing:.25em;text-transform:uppercase;font-weight:500;margin-bottom:4px">Ghost LA Blendz</p>
+        <p style="font-size:10px;color:var(--stone-400);letter-spacing:.1em">Admin</p>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:32px">
+        <h1 style="font-family:'DM Serif Display',serif;font-size:1.75rem;margin-bottom:24px">Sign In</h1>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" type="email" placeholder="admin@ghostlablendz.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" placeholder="••••••••">
+        </div>
+        <button class="btn-full primary" style="margin-top:8px" onclick="showAdminDashboard()">Sign In</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD PAGE -->
+<div id="page-admin-dash" class="page">
+  <div style="min-height:100vh">
+    <!-- Header -->
+    <div style="border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:40">
+      <div style="max-width:1100px;margin:0 auto;padding:0 40px;height:56px;display:flex;align-items:center;justify-content:space-between">
+        <p style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:500">Ghost LA Blendz <span style="color:var(--stone-400);margin-left:4px">/ Admin</span></p>
+        <button style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--stone-400)" onclick="showPage('admin')">Sign Out</button>
+      </div>
+    </div>
+    <!-- Content -->
+    <div style="max-width:1100px;margin:0 auto;padding:32px 40px">
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px">
+        <div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:20px">
+          <p style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--stone-400);margin-bottom:4px">This Week</p>
+          <p style="font-family:'DM Serif Display',serif;font-size:2rem">3</p>
+        </div>
+        <div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:20px">
+          <p style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--stone-400);margin-bottom:4px">This Month</p>
+          <p style="font-family:'DM Serif Display',serif;font-size:2rem">11</p>
+        </div>
+        <div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:20px">
+          <p style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--stone-400);margin-bottom:4px">Pending</p>
+          <p style="font-family:'DM Serif Display',serif;font-size:2rem">2</p>
+        </div>
+        <div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:20px">
+          <p style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--stone-400);margin-bottom:4px">Est. Revenue</p>
+          <p style="font-family:'DM Serif Display',serif;font-size:2rem">$270</p>
+        </div>
+      </div>
+      <!-- Upcoming -->
+      <div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:20px;margin-bottom:24px">
+        <p style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--stone-400);margin-bottom:16px">Upcoming</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="text-align:center;min-width:40px"><p style="font-size:9px;color:var(--stone-400);text-transform:uppercase">Jun</p><p style="font-family:'DM Serif Display',serif;font-size:1.4rem;line-height:1">7</p></div>
+              <div><p style="font-size:14px;font-weight:500">Marcus J.</p><p style="font-size:11px;color:var(--stone-400)">10:00 AM</p></div>
+            </div>
+            <span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:500;background:#fef3c7;color:#b45309;border:1px solid #fde68a">Pending</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="text-align:center;min-width:40px"><p style="font-size:9px;color:var(--stone-400);text-transform:uppercase">Jun</p><p style="font-family:'DM Serif Display',serif;font-size:1.4rem;line-height:1">8</p></div>
+              <div><p style="font-size:14px;font-weight:500">Devon W.</p><p style="font-size:11px;color:var(--stone-400)">2:00 PM</p></div>
+            </div>
+            <span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:500;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0">Approved</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="text-align:center;min-width:40px"><p style="font-size:9px;color:var(--stone-400);text-transform:uppercase">Jun</p><p style="font-family:'DM Serif Display',serif;font-size:1.4rem;line-height:1">9</p></div>
+              <div><p style="font-size:14px;font-weight:500">Jordan P.</p><p style="font-size:11px;color:var(--stone-400)">11:30 AM</p></div>
+            </div>
+            <span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:500;background:#fef3c7;color:#b45309;border:1px solid #fde68a">Pending</span>
+          </div>
+        </div>
+      </div>
+      <!-- Appointment cards -->
+      <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:2px;overflow:hidden;margin-bottom:16px">
+        <button id="tab-all" onclick="setTab('all')" style="flex:1;padding:10px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;font-weight:500;background:var(--text);color:var(--bg);transition:all .2s">All</button>
+        <button id="tab-pending" onclick="setTab('pending')" style="flex:1;padding:10px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;font-weight:500;background:#fff;color:var(--stone-500);transition:all .2s">Pending <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#fef3c7;color:#b45309;font-size:9px;margin-left:4px">2</span></button>
+        <button id="tab-approved" onclick="setTab('approved')" style="flex:1;padding:10px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;font-weight:500;background:#fff;color:var(--stone-500);transition:all .2s">Approved</button>
+        <button id="tab-completed" onclick="setTab('completed')" style="flex:1;padding:10px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;font-weight:500;background:#fff;color:var(--stone-500);transition:all .2s">Completed</button>
+      </div>
+      <div id="appt-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- Page routing ----
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'))
+  document.getElementById('page-' + p).classList.add('active')
+  window.scrollTo(0,0)
+}
+function scrollToSection(id) {
+  setTimeout(() => {
+    const el = document.getElementById(id)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, 50)
+}
+
+// ---- Nav scroll ----
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 24)
+})
+
+// ---- Mobile nav ----
+let mobileOpen = false
+function toggleMobile() {
+  mobileOpen = !mobileOpen
+  document.getElementById('mobile-nav').style.display = mobileOpen ? 'flex' : 'none'
+  const h1=document.getElementById('hb1'), h2=document.getElementById('hb2'), h3=document.getElementById('hb3')
+  h1.style.transform = mobileOpen ? 'rotate(45deg) translate(4px,4px)' : ''
+  h2.style.opacity = mobileOpen ? '0' : '1'
+  h3.style.transform = mobileOpen ? 'rotate(-45deg) translate(4px,-4px)' : ''
+}
+function closeMobile() { mobileOpen=false; document.getElementById('mobile-nav').style.display='none' }
+
+// ---- Lightbox ----
+const PHOTOS = [
+  'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&q=90&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1200&q=90&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=1200&q=90&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=1200&q=90&auto=format&fit=crop',
+]
+let currentLb = 0
+function openLightbox(i) {
+  currentLb = i
+  document.getElementById('lb-img').src = PHOTOS[i]
+  document.getElementById('lightbox').classList.add('open')
+  renderLbDots()
+  document.body.style.overflow = 'hidden'
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open')
+  document.body.style.overflow = ''
+}
+function lbNav(dir) {
+  currentLb = (currentLb + dir + PHOTOS.length) % PHOTOS.length
+  document.getElementById('lb-img').src = PHOTOS[currentLb]
+  renderLbDots()
+}
+function renderLbDots() {
+  const c = document.getElementById('lb-dots')
+  c.innerHTML = PHOTOS.map((_, i) =>
+    `<button class="lb-dot${i===currentLb?' active':''}" onclick="openLightbox(${i})"></button>`
+  ).join('')
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLightbox()
+  if (e.key === 'ArrowLeft') lbNav(-1)
+  if (e.key === 'ArrowRight') lbNav(1)
+})
+
+// ---- Calendar ----
+const SLOTS = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
+  '12:00 PM','12:30 PM','1:00 PM','1:30 PM','2:00 PM','2:30 PM',
+  '3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM','6:00 PM','6:30 PM']
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa']
+
+let calDate = new Date()
+calDate.setDate(1)
+let selDate = null, selTime = ''
+const today = new Date(); today.setHours(0,0,0,0)
+
+function renderCal() {
+  const y = calDate.getFullYear(), m = calDate.getMonth()
+  document.getElementById('cal-month-label').textContent = MONTHS[m] + ' ' + y
+  const firstDay = new Date(y, m, 1).getDay()
+  const daysInMonth = new Date(y, m+1, 0).getDate()
+  const grid = document.getElementById('cal-grid')
+  let html = ''
+  for (let i = 0; i < firstDay; i++) html += '<div></div>'
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d)
+    const isPast = date < today
+    const isToday = date.toDateString() === today.toDateString()
+    const isSelected = selDate && date.toDateString() === selDate.toDateString()
+    let cls = 'cal-cell'
+    if (isPast) cls += ' past'
+    else cls += ' available'
+    if (isToday) cls += ' today'
+    if (isSelected) cls += ' selected'
+    const onclick = isPast ? '' : `onclick="selectDate(${y},${m},${d})"`
+    html += `<div class="${cls}" ${onclick}>${d}</div>`
+  }
+  grid.innerHTML = html
+  // Disable prev if current month
+  const thisMonth = new Date(); thisMonth.setDate(1); thisMonth.setHours(0,0,0,0)
+  document.getElementById('cal-prev').classList.toggle('disabled',
+    calDate.getFullYear()===thisMonth.getFullYear() && calDate.getMonth()===thisMonth.getMonth()
+  )
+}
+
+function calNav(dir) {
+  const thisMonth = new Date(); thisMonth.setDate(1)
+  const newDate = new Date(calDate.getFullYear(), calDate.getMonth() + dir, 1)
+  if (newDate < thisMonth && dir < 0) return
+  calDate = newDate
+  renderCal()
+}
+
+function selectDate(y, m, d) {
+  selDate = new Date(y, m, d)
+  selTime = ''
+  document.getElementById('btn-continue').disabled = true
+  renderCal()
+  renderSlots()
+}
+
+function renderSlots() {
+  if (!selDate) return
+  const card = document.getElementById('slots-card')
+  card.style.display = 'block'
+  const label = selDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})
+  document.getElementById('slots-date-label').textContent = label
+  const now = new Date()
+  const isToday = selDate.toDateString() === today.toDateString()
+  // Simulate a couple booked slots for demo
+  const bookedDemo = ['11:00 AM','2:30 PM']
+  let html = ''
+  SLOTS.forEach(t => {
+    let avail = !bookedDemo.includes(t)
+    if (isToday && avail) {
+      const [h,rest] = t.split(':'); const [min,per] = rest.split(' ')
+      let hr = parseInt(h)
+      if (per==='PM' && hr!==12) hr+=12
+      if (per==='AM' && hr===12) hr=0
+      const st = new Date(); st.setHours(hr,parseInt(min),0,0)
+      if (st <= now) avail = false
+    }
+    const sel = selTime === t ? ' selected' : ''
+    const dis = avail ? '' : ' disabled'
+    html += `<button class="slot-btn${sel}"${dis} onclick="selectTime('${t}')">${t}</button>`
+  })
+  document.getElementById('slots-grid').innerHTML = html
+}
+
+function selectTime(t) {
+  selTime = t
+  renderSlots()
+  document.getElementById('btn-continue').disabled = false
+}
+
+// ---- Step navigation ----
+function goToStep2() {
+  document.getElementById('step1').style.display = 'none'
+  document.getElementById('step2').style.display = 'block'
+  document.getElementById('dot-1').textContent = '✓'
+  document.getElementById('dot-1').classList.add('done')
+  document.getElementById('dot-2').classList.add('active')
+  document.getElementById('label-2').classList.add('active')
+  document.getElementById('label-1').classList.remove('active')
+  const d = selDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
+  document.getElementById('selected-summary').textContent = `${d} · ${selTime}`
+}
+
+function goToStep1() {
+  document.getElementById('step2').style.display = 'none'
+  document.getElementById('step1').style.display = 'block'
+  document.getElementById('dot-1').textContent = '1'
+  document.getElementById('dot-1').classList.remove('done')
+  document.getElementById('dot-2').classList.remove('active')
+  document.getElementById('label-1').classList.add('active')
+  document.getElementById('label-2').classList.remove('active')
+}
+
+// ---- Submit ----
+function submitBooking() {
+  const name = document.getElementById('f-name').value.trim()
+  const phone = document.getElementById('f-phone').value.trim()
+  let valid = true
+  if (!name || name.length < 2) {
+    document.getElementById('err-name').textContent = 'Enter your name'
+    document.getElementById('err-name').style.display = 'block'
+    valid = false
+  } else { document.getElementById('err-name').style.display = 'none' }
+  if (!phone || phone.length < 10) {
+    document.getElementById('err-phone').textContent = 'Enter a valid phone number'
+    document.getElementById('err-phone').style.display = 'block'
+    valid = false
+  } else { document.getElementById('err-phone').style.display = 'none' }
+  if (!valid) return
+  const btn = document.getElementById('btn-submit')
+  btn.textContent = 'Booking...'
+  btn.disabled = true
+  setTimeout(() => {
+    document.getElementById('step2').style.display = 'none'
+    document.getElementById('step-indicator').style.display = 'none'
+    const ref = 'GLB' + Math.random().toString(36).substring(2,8).toUpperCase()
+    document.getElementById('booking-ref').textContent = ref
+    document.getElementById('success-screen').classList.add('show')
+  }, 1200)
+}
+
+function resetBooking() {
+  selDate = null; selTime = ''
+  document.getElementById('success-screen').classList.remove('show')
+  document.getElementById('step-indicator').style.display = 'flex'
+  document.getElementById('step1').style.display = 'block'
+  document.getElementById('step2').style.display = 'none'
+  document.getElementById('dot-1').textContent = '1'
+  document.getElementById('dot-1').classList.remove('done')
+  document.getElementById('dot-2').classList.remove('active')
+  document.getElementById('label-1').classList.add('active')
+  document.getElementById('label-2').classList.remove('active')
+  document.getElementById('f-name').value = ''
+  document.getElementById('f-phone').value = ''
+  document.getElementById('f-email').value = ''
+  document.getElementById('f-notes').value = ''
+  document.getElementById('slots-card').style.display = 'none'
+  document.getElementById('btn-submit').textContent = 'Confirm Booking'
+  document.getElementById('btn-submit').disabled = false
+  renderCal()
+}
+
+// ---- Admin dashboard ----
+const DEMO_APPTS = [
+  { name:'Marcus J.', phone:'(213) 555-0142', email:'marcus@email.com', date:'Jun 7', time:'10:00 AM', status:'pending', notes:'Skin fade, keep the top long' },
+  { name:'Devon W.', phone:'(310) 555-0188', email:'devon@email.com', date:'Jun 8', time:'2:00 PM', status:'approved', notes:'' },
+  { name:'Jordan P.', phone:'(323) 555-0177', email:'', date:'Jun 9', time:'11:30 AM', status:'pending', notes:'First time client' },
+  { name:'Chris M.', phone:'(818) 555-0133', email:'chris@email.com', date:'Jun 3', time:'3:00 PM', status:'completed', notes:'' },
+  { name:'Anthony R.', phone:'(424) 555-0166', email:'ant@email.com', date:'Jun 2', time:'1:00 PM', status:'completed', notes:'Taper fade + beard line' },
+  { name:'Isaiah T.', phone:'(213) 555-0155', email:'', date:'Jun 1', time:'9:00 AM', status:'declined', notes:'' },
+]
+
+const STATUS_CFG = {
+  pending: { label:'Pending', style:'background:#fef3c7;color:#b45309;border:1px solid #fde68a' },
+  approved: { label:'Approved', style:'background:#d1fae5;color:#065f46;border:1px solid #a7f3d0' },
+  declined: { label:'Declined', style:'background:#fee2e2;color:#dc2626;border:1px solid #fca5a5' },
+  completed: { label:'Completed', style:'background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb' },
+  cancelled: { label:'Cancelled', style:'background:#f9fafb;color:#9ca3af;border:1px solid #f3f4f6' },
+}
+
+let apptData = DEMO_APPTS.map((a,i) => ({...a, id:i}))
+let currentTab = 'all'
+
+function setTab(tab) {
+  currentTab = tab
+  ;['all','pending','approved','completed'].forEach(t => {
+    const btn = document.getElementById('tab-' + t)
+    btn.style.background = t === tab ? 'var(--text)' : '#fff'
+    btn.style.color = t === tab ? 'var(--bg)' : 'var(--stone-500)'
+  })
+  renderAppts()
+}
+
+function renderAppts() {
+  const filtered = currentTab === 'all' ? apptData : apptData.filter(a => a.status === currentTab)
+  const container = document.getElementById('appt-list')
+  if (!filtered.length) {
+    container.innerHTML = '<div style="text-align:center;padding:48px;color:var(--stone-400);font-size:14px">No appointments.</div>'
+    return
+  }
+  container.innerHTML = filtered.map(a => {
+    const cfg = STATUS_CFG[a.status] || STATUS_CFG.pending
+    const actions = a.status === 'pending'
+      ? `<button onclick="updateAppt(${a.id},'approved')" style="padding:6px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border-radius:2px;font-weight:500;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;cursor:pointer">Approve</button>
+         <button onclick="updateAppt(${a.id},'declined')" style="padding:6px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border-radius:2px;font-weight:500;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;cursor:pointer">Decline</button>`
+      : a.status === 'approved'
+      ? `<button onclick="updateAppt(${a.id},'completed')" style="padding:6px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border-radius:2px;font-weight:500;background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb;cursor:pointer">Complete</button>
+         <button onclick="updateAppt(${a.id},'cancelled')" style="padding:6px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border-radius:2px;font-weight:500;background:#f9fafb;color:#9ca3af;border:1px solid #f3f4f6;cursor:pointer">Cancel</button>`
+      : ''
+    return `<div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:20px">
+      <div style="display:flex;flex-wrap:wrap;align-items:start;justify-content:space-between;gap:12px;margin-bottom:12px">
+        <div>
+          <p style="font-size:15px;font-weight:500">${a.name}</p>
+          <p style="font-size:11px;color:var(--stone-400);margin-top:2px">${a.date} · ${a.time}</p>
+        </div>
+        <span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:500;${cfg.style}">${cfg.label}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:11px;margin-bottom:${a.notes||actions?'12px':'0'}">
+        <div><p style="font-size:9px;color:var(--stone-400);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Phone</p><p>${a.phone}</p></div>
+        ${a.email ? `<div><p style="font-size:9px;color:var(--stone-400);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Email</p><p style="word-break:break-all">${a.email}</p></div>` : ''}
+        <div><p style="font-size:9px;color:var(--stone-400);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Service</p><p>Any Cut — $30</p></div>
+      </div>
+      ${a.notes ? `<div style="padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:2px;margin-bottom:12px;font-size:12px;color:var(--stone-500);font-style:italic">"${a.notes}"</div>` : ''}
+      ${actions ? `<div style="display:flex;gap:8px;flex-wrap:wrap">${actions}</div>` : ''}
+    </div>`
+  }).join('')
+}
+
+function updateAppt(id, status) {
+  apptData = apptData.map(a => a.id === id ? {...a, status} : a)
+  renderAppts()
+  // Update the pending badge
+  const pendingCount = apptData.filter(a => a.status === 'pending').length
+  document.getElementById('tab-pending').innerHTML =
+    `Pending ${pendingCount > 0 ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#fef3c7;color:#b45309;font-size:9px;margin-left:4px">${pendingCount}</span>` : ''}`
+}
+
+function showAdminDashboard() {
+  showPage('admin-dash')
+  renderAppts()
+}
+
+// ---- Init ----
+renderCal()
+</script>
+</body>
+</html>
